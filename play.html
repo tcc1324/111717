@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>游玩 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    body { min-height: 100vh; margin: 0; background: #fbf7ee; color: #2b2b2b; display: flex; flex-direction: column; align-items: center; font-family: Georgia, "Songti SC", "STSong", serif; }
+    .top { width: calc(100% - 32px); max-width: 520px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+    .top a { color: #2b2b2b; text-decoration: none; font-size: 16px; }
+    .page { width: calc(100% - 56px); max-width: 480px; margin-top: 48px; padding-bottom: 60px; }
+    h1 { text-align: center; font-weight: normal; font-size: 28px; letter-spacing: .5em; margin: 0 0 6px; padding-left: .5em; }
+    .sub { text-align: center; color: #999; font-size: 13px; letter-spacing: .3em; margin-bottom: 44px; }
+    ol { list-style: none; padding: 0; margin: 0; counter-reset: c; }
+    li { counter-increment: c; }
+    li a, li span { display: flex; align-items: baseline; gap: 10px; padding: 20px 2px 12px; border-bottom: 1px solid rgba(0,0,0,.12); color: inherit; text-decoration: none; font-size: 20px; letter-spacing: .15em; }
+    li a::before, li span::before { content: counter(c, decimal-leading-zero); font-size: 13px; color: #b9a78a; letter-spacing: 0; }
+    .dots { flex: 1; border-bottom: 1px dotted #ccc; transform: translateY(-5px); }
+    .pg { font-size: 14px; color: #999; letter-spacing: 0; }
+    li span { color: #bbb; }
+    .end { text-align: center; color: #ccc; font-size: 13px; margin-top: 50px; letter-spacing: .3em; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="park.html">‹ 回去</a><span></span></div>
+  <div class="page">
+    <h1>目录</h1>
+    <div class="sub">CONTENTS</div>
+    <ol>
+      <li><a href="ji.html">寄<i class="dots"></i><em class="pg">p.1</em></a></li>
+      <li><span>留言墙<i class="dots"></i><em class="pg">筹备中</em></span></li>
+      <li><span>秘密抽屉<i class="dots"></i><em class="pg">筹备中</em></span></li>
+    </ol>
+    <div class="end">· 未完待续 ·</div>
+  </div>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    Park.session().then(s => { if (!s) location.replace('login.html'); });
+  </script>
+</body>
+</html>
