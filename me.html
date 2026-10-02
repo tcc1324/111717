@@ -78,7 +78,7 @@
         $('ct').textContent = q(h) + ':' + q(n.getMinutes());
         $('cd').textContent = n.getFullYear() + '年' + (n.getMonth() + 1) + '月' + n.getDate() + '日 · 星期' + days[n.getDay()];
         const g = h < 5 ? '夜深了，早点休息' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : '晚上好';
-        $('hi').textContent = g + '，' + $('nick').textContent + ' ☀';
+        $('hi').textContent = g + '，' + $('nick').textContent + ' ' + (h >= 5 && h < 18 ? '☀' : '☾');
       };
       tick(); setInterval(tick, 1000);
       $('uid5').textContent = me.uid5 || '-----';
