@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>邮局 · 给聆遇的游乐园</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/ji.css">
+  <style>
+    #pv { width: 96px; height: 120px; margin: 8px auto; }
+    .pick { display: block; text-align: center; margin: 14px 0; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="ji.html">‹ 回去</a><span></span></div>
+  <div class="page">
+    <h1>邮局</h1>
+    <div class="sub">POST OFFICE</div>
+
+    <h2>我的邮票</h2>
+    <div class="stamps" id="bag"></div>
+
+    <h2>空白邮票</h2>
+    <p class="hint">每天可以领一张，点一下就领。</p>
+    <div class="stamps" id="blank"></div>
+
+    <h2>大家做的邮票</h2>
+    <p class="hint">每种每天可以取一张。</p>
+    <div class="stamps" id="custom"></div>
+
+    <h2>做一张邮票</h2>
+    <label class="pick link">选一张图片<input type="file" id="file" accept="image/*" hidden></label>
+    <div class="stamp" id="pv" hidden><div class="face"><div class="in" id="pvi"></div></div></div>
+    <input id="words" maxlength="60" placeholder="邮票上的一句话（60 字以内）">
+    <input id="hours" type="number" min="0" max="24" step="0.5" placeholder="送达要几小时（0 到 24）">
+    <div class="center"><button class="btn" id="make">放上架子</button></div>
+  </div>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ji.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    let img = null;
+
+    async function load() {
+      const [b, s] = await Promise.all([Ji.rpc('post_my_bag'), Ji.rpc('post_shelf')]);
+      if (b.err || s.err) return toast(b.err || s.err);
+      $('bag').innerHTML = b.data.map(x => Ji.stamp(x)).join('') || '<div class="empty">还没有邮票</div>';
+      const blanks = s.data.filter(x => x.kind === 'blank').sort((a, b) => a.hours - b.hours), customs = s.data.filter(x => x.kind === 'custom');
+      $('blank').innerHTML = blanks.map(x => Ji.stamp(x, x.blank_today ? 'off' : '')).join('');
+      $('custom').innerHTML = customs.map(x => Ji.stamp(Object.assign({}, x, { words: x.words + (x.maker_nick ? ' · ' + x.maker_nick : '') }), x.got_today ? 'off' : '')).join('') || '<div class="empty">架子还空着</div>';
+    }
+
+    async function take(el, fn) {
+      if (!el || el.classList.contains('off')) return;
+      const r = await Ji.rpc(fn, { sid: +el.dataset.id });
+      if (r.err) return toast(r.err);
+      toast(r.data === 'ok' ? '领到啦，放进你的邮票夹了' : r.data);
+      load();
+    }
+    $('blank').onclick = e => take(e.target.closest('.stamp'), 'post_claim_blank');
+    $('custom').onclick = e => take(e.target.closest('.stamp'), 'post_take_stamp');
+
+    // 图片压缩成小邮票，避免太大
+    $('file').onchange = e => {
+      const f = e.target.files[0]; if (!f) return;
+      const im = new Image();
+      im.onload = () => {
+        const W = 240, H = 300, c = document.createElement('canvas'); c.width = W; c.height = H;
+        const k = Math.max(W / im.width, H / im.height), w = im.width * k, h = im.height * k;
+        c.getContext('2d').drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+        img = c.toDataURL('image/jpeg', .82);
+        $('pvi').style.backgroundImage = `url('${img}')`; $('pv').hidden = false;
+        URL.revokeObjectURL(im.src);
+      };
+      im.onerror = () => toast('这张图片打不开');
+      im.src = URL.createObjectURL(f);
+    };
+
+    $('make').onclick = async () => {
+      const words = $('words').value.trim(), hours = parseFloat($('hours').value);
+      if (!img) return toast('先选一张图片');
+      if (!words) return toast('写一句话吧');
+      if (isNaN(hours) || hours < 0 || hours > 24) return toast('送达时间要在 0 到 24 小时之间');
+      $('make').disabled = true;
+      const r = await Ji.rpc('post_make_stamp', { img, words, hours });
+      $('make').disabled = false;
+      if (r.err) return toast(r.err);
+      if (r.data !== 'ok') return toast(r.data);
+      toast('上架啦');
+      img = null; $('pv').hidden = true; $('words').value = ''; $('hours').value = ''; $('file').value = '';
+      load();
+    };
+    load();
+  </script>
+</body>
+</html>

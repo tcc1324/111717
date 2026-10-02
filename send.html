@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投寄 · 给聆遇的游乐园</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/ji.css">
+  <style>
+    .people { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+    .people b { font-weight: normal; font-size: 14px; padding: 4px 12px; border: 1px solid rgba(0,0,0,.18); border-radius: 999px; cursor: pointer; }
+    .people b.on { background: #2b2b2b; color: #fbf7ee; }
+    .people b i { font-style: normal; color: #aaa; margin-left: 4px; }
+    #re { color: #8a7a60; font-size: 13px; margin-bottom: 8px; }
+    #count { text-align: right; font-size: 12px; color: #aaa; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="ji.html">‹ 回去</a><span></span></div>
+  <div class="page">
+    <h1>投寄</h1>
+    <div class="sub">SEND</div>
+
+    <h2>寄给谁</h2>
+    <div class="people" id="people"></div>
+    <div class="row"><input id="nick" placeholder="对方昵称"><input id="uid" inputmode="numeric" maxlength="5" placeholder="五位 ID"></div>
+    <p class="hint"><button class="link" id="save">存进联系人</button></p>
+
+    <h2>写信</h2>
+    <div id="re" hidden></div>
+    <textarea id="body" maxlength="5000" placeholder="见字如面……"></textarea>
+    <div id="count">0 / 5000</div>
+
+    <h2>贴一张邮票</h2>
+    <div class="stamps" id="bag"></div>
+    <p class="hint">没有邮票的话，先去 <a class="link" href="post-office.html">邮局</a> 领一张。</p>
+
+    <div class="center"><button class="btn" id="go">寄出</button></div>
+  </div>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ji.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const q = new URLSearchParams(location.search);
+    const reply = q.get('reply') ? +q.get('reply') : null;
+    let bagId = null, bag = [];
+    if (q.get('to')) $('nick').value = q.get('to');
+    if (q.get('uid')) $('uid').value = q.get('uid');
+    if (reply) { $('re').hidden = false; $('re').textContent = '↩ 这是一封回信'; }
+
+    async function loadPeople() {
+      const r = await Ji.rpc('post_my_contacts');
+      const list = r.data || [];
+      $('people').innerHTML = list.map(c => `<b data-n="${Ji.esc(c.nickname)}" data-u="${c.uid5}">${Ji.esc(c.nickname)}<i>${c.uid5}</i></b>`).join('');
+      mark();
+    }
+    function mark() {
+      [...$('people').children].forEach(b => b.classList.toggle('on', b.dataset.n === $('nick').value.trim() && b.dataset.u === $('uid').value.trim()));
+    }
+    $('people').onclick = e => {
+      const b = e.target.closest('b'); if (!b) return;
+      $('nick').value = b.dataset.n; $('uid').value = b.dataset.u; mark();
+    };
+    $('nick').oninput = $('uid').oninput = mark;
+
+    $('save').onclick = async () => {
+      const nick = $('nick').value.trim(), uid = $('uid').value.trim();
+      if (!nick || !/^\d{5}$/.test(uid)) return toast('昵称和五位 ID 都要填哦');
+      const r = await Ji.rpc('post_add_contact', { nick, uid });
+      if (r.err) return toast(r.err);
+      toast(r.data === 'ok' ? '存好啦' : r.data);
+      loadPeople();
+    };
+
+    async function loadBag() {
+      const r = await Ji.rpc('post_my_bag');
+      bag = r.data || [];
+      $('bag').innerHTML = bag.map(s => Ji.stamp(s, s.id === bagId ? 'sel' : '')).join('') || '<div class="empty">邮票夹是空的</div>';
+    }
+    $('bag').onclick = e => {
+      const el = e.target.closest('.stamp'); if (!el) return;
+      bagId = +el.dataset.id;
+      [...$('bag').children].forEach(x => x.classList.toggle('sel', x === el));
+    };
+
+    $('body').oninput = () => { $('count').textContent = $('body').value.length + ' / 5000'; };
+
+    $('go').onclick = async () => {
+      const nick = $('nick').value.trim(), uid = $('uid').value.trim(), body = $('body').value;
+      if (!nick || !/^\d{5}$/.test(uid)) return toast('收信人的昵称和五位 ID 都要填哦');
+      if (!body.trim()) return toast('信还是空的呢');
+      if (!bagId) return toast('贴一张邮票再寄吧');
+      const s = bag.find(x => x.id === bagId);
+      if (!confirm(`寄给 ${nick}（${uid}）？\n大约 ${Ji.hrs(s.hours)} 后送到。`)) return;
+      $('go').disabled = true;
+      const r = await Ji.rpc('post_send', { nick, uid, body, bag_id: bagId, reply });
+      $('go').disabled = false;
+      if (r.err) return toast(r.err);
+      if (r.data !== 'ok') return toast(r.data);
+      toast('信寄出去啦');
+      setTimeout(() => location.href = 'mailbox.html?tab=out', 900);
+    };
+    loadPeople(); loadBag();
+  </script>
+</body>
+</html>

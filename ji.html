@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>寄 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✉%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/ji.css">
+  <style>
+    .env { position: relative; margin: 10px auto 40px; width: 260px; height: 160px; background: #f1ead9; border-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,.08); overflow: hidden; }
+    .env::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 90px; background: #e8dfc8; clip-path: polygon(0 0, 100% 0, 50% 100%); }
+    .env i { position: absolute; left: 50%; top: 72px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: #c0573e; }
+    #n { position: absolute; right: 12px; bottom: 10px; font-size: 13px; color: #8a7a60; font-style: normal; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="play.html">‹ 回去</a><span></span></div>
+  <div class="page">
+    <h1>寄</h1>
+    <div class="sub">LETTERS</div>
+    <div class="env"><i></i><em id="n"></em></div>
+    <div class="list">
+      <a href="mailbox.html"><span class="who">信箱</span><span class="when">收信与回信</span></a>
+      <a href="send.html"><span class="who">投寄</span><span class="when">写一封信</span></a>
+      <a href="post-office.html"><span class="who">邮局</span><span class="when">领邮票 · 做邮票</span></a>
+    </div>
+    <p class="hint center">信会按邮票上的时间慢慢走，<br>寄出去以后要等一等才会送到哦。</p>
+  </div>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ji.js"></script>
+  <script>
+    Ji.rpc('post_inbox').then(r => {
+      const k = (r.data || []).filter(l => !l.read_at).length;
+      if (k) document.getElementById('n').textContent = k + ' 封未读';
+    });
+  </script>
+</body>
+</html>

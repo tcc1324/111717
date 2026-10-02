@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>信箱 · 给聆遇的游乐园</title>
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/ji.css">
+  <style>
+    .head { display: flex; gap: 16px; align-items: flex-start; }
+    .head .meta { flex: 1; font-size: 14px; color: #777; line-height: 1.8; }
+    .head .meta b { font-weight: normal; font-size: 18px; color: #2b2b2b; }
+    .way { font-size: 12px; color: #b9a78a; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="ji.html">‹ 回去</a><span></span></div>
+  <div class="page">
+    <h1>信箱</h1>
+    <div class="sub">MAILBOX</div>
+    <div class="tabs"><b data-t="in">收到的</b><b data-t="out">寄出的</b></div>
+    <div class="list" id="list"></div>
+  </div>
+
+  <div class="mask" id="mask">
+    <div class="page">
+      <div class="top" style="width:100%"><a href="#" id="close">‹ 收起</a><span></span></div>
+      <div id="view" style="margin-top:24px"></div>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/ji.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    let tab = new URLSearchParams(location.search).get('tab') === 'out' ? 'out' : 'in';
+    let data = { in: [], out: [] };
+
+    async function load() {
+      const [a, b] = await Promise.all([Ji.rpc('post_inbox'), Ji.rpc('post_outbox')]);
+      if (a.err || b.err) return toast(a.err || b.err);
+      data = { in: a.data, out: b.data };
+      draw();
+    }
+    function draw() {
+      [...document.querySelectorAll('.tabs b')].forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+      const now = Date.now();
+      $('list').innerHTML = data[tab].map(l => {
+        if (tab === 'in') return `<div class="it" data-id="${l.id}">${l.read_at ? '' : '<i class="dot"></i>'}
+          <span class="who">${Ji.esc(l.from_nick || '已离开的人')}</span><span class="when">${Ji.when(l.deliver_at)}</span></div>`;
+        const on = new Date(l.deliver_at) <= now;
+        return `<div class="it" data-id="${l.id}"><span class="who">致 ${Ji.esc(l.to_nick)}</span>
+          <span class="when">${on ? (l.read_at ? '已读' : '已送达') : '在路上 · ' + Ji.when(l.deliver_at) + ' 到'}</span></div>`;
+      }).join('') || `<div class="empty">${tab === 'in' ? '还没有信' : '还没有寄过信'}</div>`;
+    }
+    document.querySelector('.tabs').onclick = e => { const b = e.target.closest('b'); if (b) { tab = b.dataset.t; draw(); } };
+
+    $('list').onclick = async e => {
+      const it = e.target.closest('.it'); if (!it) return;
+      const l = data[tab].find(x => x.id === +it.dataset.id);
+      const st = l.stamp_words != null ? Ji.stamp({ id: 0, img: l.stamp_img, words: l.stamp_words, hours: l.stamp_hours }, 'off" style="opacity:1;cursor:default') : '';
+      const who = tab === 'in' ? `来自 <b>${Ji.esc(l.from_nick || '已离开的人')}</b>${l.from_uid ? ' · ' + l.from_uid : ''}`
+                                : `寄给 <b>${Ji.esc(l.to_nick)}</b> · ${l.to_uid}`;
+      const back = tab === 'in' && l.from_nick
+        ? `<div class="center"><a class="btn" href="send.html?reply=${l.id}&to=${encodeURIComponent(l.from_nick)}&uid=${l.from_uid}">回信</a></div>` : '';
+      $('view').innerHTML = `<div class="head">${st}<div class="meta">${who}<br>
+        <span class="way">${Ji.when(l.sent_at)} 寄出 · ${Ji.when(l.deliver_at)} 送达</span>${l.reply_to ? '<br><span class="way">↩ 回信</span>' : ''}</div></div>
+        <div class="letter">${Ji.esc(l.body)}</div>${back}`;
+      $('mask').classList.add('on'); $('mask').scrollTop = 0;
+      if (tab === 'in' && !l.read_at) {
+        const r = await Ji.rpc('post_mark_read', { lid: l.id });
+        if (r.data === 'ok') { l.read_at = new Date().toISOString(); draw(); }
+      }
+    };
+    $('close').onclick = e => { e.preventDefault(); $('mask').classList.remove('on'); };
+    load();
+  </script>
+</body>
+</html>
