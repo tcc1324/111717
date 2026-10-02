@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>个人 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <style>
+    body { min-height: 100vh; margin: 0; background: linear-gradient(180deg, #fff6d8 0%, #ffe3ea 55%, #dcefff 100%); color: #222; display: flex; flex-direction: column; align-items: center; }
+    .top { width: calc(100% - 32px); max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+    .top a { color: #222; text-decoration: none; font-size: 16px; }
+    h1 { font-size: 22px; font-weight: normal; letter-spacing: .2em; margin: 0; }
+    .card { width: calc(100% - 48px); max-width: 460px; margin-top: 10px; }
+    .clock { text-align: center; margin-top: 34px; }
+    .clock .t { font-size: 52px; letter-spacing: .06em; font-family: Georgia, serif; }
+    .clock .d { font-size: 15px; color: #666; margin-top: 4px; letter-spacing: .1em; }
+    .clock .hi { font-size: 18px; margin-top: 14px; }
+    .row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.08); font-size: 17px; }
+    .row:last-child { border-bottom: none; }
+    .label { color: #777; font-size: 15px; }
+    .id { font-family: monospace; font-size: 22px; letter-spacing: .15em; }
+    button.link { background: none; border: none; color: #e0679a; font-size: 15px; padding: 0 0 0 10px; cursor: pointer; }
+    .edit { display: none; gap: 8px; margin-top: 8px; }
+    .edit.on { display: flex; }
+    .edit input, .danger input { flex: 1; min-width: 0; padding: 10px 12px; border: 2px solid #222; border-radius: 12px; font-size: 16px; background: #fff; }
+    .edit button, .danger button { padding: 10px 16px; border: 2px solid #222; border-radius: 12px; background: #fff3b0; font-size: 15px; }
+    .joined { margin-top: auto; padding: 40px 0 18px; color: #888; font-size: 14px; text-align: center; letter-spacing: .1em; }
+    .bye { background: none; border: none; color: #aaa; font-size: 13px; text-decoration: underline; margin-bottom: 26px; cursor: pointer; }
+    .mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); display: none; align-items: center; justify-content: center; }
+    .mask.on { display: flex; }
+    .danger { width: calc(100% - 48px); max-width: 360px; background: #fff; border: 2px solid #222; border-radius: 18px; padding: 22px 18px; box-sizing: border-box; }
+    .danger p { margin: 0 0 14px; line-height: 1.7; font-size: 15px; }
+    .danger .btns { display: flex; gap: 10px; margin-top: 14px; }
+    .danger .btns button { flex: 1; }
+    .danger .red { background: #ffd6d6; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="park.html">‹ 回去</a><h1>个人</h1><span style="width:48px"></span></div>
+
+  <div class="clock"><div class="t" id="ct">--:--</div><div class="d" id="cd"></div><div class="hi" id="hi"></div></div>
+
+  <div class="card">
+    <div class="row"><span class="label">昵称</span><span><span id="nick">…</span><button class="link" id="editBtn">修改</button></span></div>
+    <div class="edit" id="editBox"><input id="nickInput" maxlength="16" placeholder="新昵称"><button id="saveBtn">保存</button></div>
+    <div class="row"><span class="label">我的 ID</span><span class="id" id="uid5">·····</span></div>
+    <div class="row"><span class="label">密码</span><span>······<button class="link" id="pwBtn">修改</button></span></div>
+    <div class="edit" id="pwBox" style="flex-wrap:wrap"><input id="oldPw" type="password" inputmode="numeric" maxlength="6" placeholder="原密码"><input id="newPw" type="password" inputmode="numeric" maxlength="6" placeholder="新密码（六位数）"><button id="pwSave">保存</button></div>
+  </div>
+
+  <div class="joined" id="joined"></div>
+  <button class="bye" id="byeBtn">注销账号</button>
+
+  <div class="mask" id="mask">
+    <div class="danger">
+      <p>注销后，这个账号和它的资料会被删除，用过的邀请码会退回，可以再次使用。<br>请输入密码确认：</p>
+      <input id="pwd" type="password" inputmode="numeric" maxlength="6" placeholder="六位数密码">
+      <div class="btns"><button id="cancelBtn">再想想</button><button class="red" id="okBtn">确认注销</button></div>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    (async function () {
+      const $ = id => document.getElementById(id);
+      const s = await Park.session();
+      if (!s) return location.replace('login.html');
+      const uid = JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub;
+      const r = await Park.api('profiles?select=nickname,uid5,joined_at&id=eq.' + uid);
+      const me = r.ok ? (await r.json())[0] : null;
+      if (!me) { toast('读取资料失败，稍后再试'); return; }
+      $('nick').textContent = me.nickname;
+      const days = '日一二三四五六';
+      const tick = () => {
+        const n = new Date(), q = x => String(x).padStart(2, '0'), h = n.getHours();
+        $('ct').textContent = q(h) + ':' + q(n.getMinutes());
+        $('cd').textContent = n.getFullYear() + '年' + (n.getMonth() + 1) + '月' + n.getDate() + '日 · 星期' + days[n.getDay()];
+        const g = h < 5 ? '夜深了，早点休息' : h < 11 ? '早上好' : h < 13 ? '中午好' : h < 18 ? '下午好' : '晚上好';
+        $('hi').textContent = g + '，' + $('nick').textContent + ' ☀';
+      };
+      tick(); setInterval(tick, 1000);
+      $('uid5').textContent = me.uid5 || '-----';
+      const d = new Date(me.joined_at);
+      const p = n => String(n).padStart(2, '0');
+      $('joined').textContent = '入住时间 · ' + d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+
+      $('editBtn').onclick = () => { $('editBox').classList.toggle('on'); $('nickInput').value = $('nick').textContent; $('nickInput').focus(); };
+      $('saveBtn').onclick = async () => {
+        const v = $('nickInput').value.trim();
+        if (!v) return toast('昵称不能为空');
+        const res = await Park.api('rpc/me_set_nickname', { method: 'POST', body: JSON.stringify({ nick: v }) });
+        const t = res.ok ? await res.json() : null;
+        if (t === "ok") { $('nick').textContent = v; $('editBox').classList.remove('on'); toast('改好啦'); }
+        else toast(typeof t === 'string' ? t : '没改成功，稍后再试');
+      };
+
+      $('pwBtn').onclick = () => { $('pwBox').classList.toggle('on'); $('oldPw').value = $('newPw').value = ''; };
+      $('pwSave').onclick = async () => {
+        const o = $('oldPw').value, n = $('newPw').value;
+        if (!/^\d{6}$/.test(n)) return toast('新密码需要是六位数字');
+        const res = await Park.api('rpc/me_set_password', { method: 'POST', body: JSON.stringify({ old_pw: o, new_pw: n }) });
+        const t = res.ok ? await res.json() : null;
+        if (t === 'ok') { $('pwBox').classList.remove('on'); toast('密码改好啦，下次用新密码登录'); }
+        else toast(typeof t === 'string' ? t : '没改成功，稍后再试');
+      };
+      $('byeBtn').onclick = () => { $('pwd').value = ''; $('mask').classList.add('on'); };
+      $('cancelBtn').onclick = () => $('mask').classList.remove('on');
+      $('okBtn').onclick = async () => {
+        const pw = $('pwd').value;
+        if (!/^\d{6}$/.test(pw)) return toast('请输入六位数密码');
+        const res = await Park.api('rpc/me_delete', { method: 'POST', body: JSON.stringify({ pw: pw }) });
+        const t = res.ok ? await res.json() : null;
+        if (t === 'ok') { await Park.logout(); toast('已注销，再见啦'); setTimeout(() => location.replace('index.html'), 1200); }
+        else toast(typeof t === 'string' ? t : '注销失败，稍后再试');
+      };
+    })();
+  </script>
+</body>
+</html>
