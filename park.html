@@ -3,32 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#fff6e2">
+  <meta name="theme-color" content="#fff3c4">
   <title>给聆遇的游乐园</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/css/base.css">
-  <link rel="stylesheet" href="assets/css/auth.css">
+  <style>
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      background: linear-gradient(170deg, #fff6c9 0%, #ffe3ea 55%, #dff3ff 100%) no-repeat fixed;
+      background-color: #fff3d6; color: #2b2b2b;
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; min-height: 100dvh; box-sizing: border-box;
+    }
+    .sky { width: 100%; max-width: 560px; padding: 6vh 16px 0; box-sizing: border-box; }
+    .sky svg { width: 100%; height: auto; display: block; }
+    .sky svg * { fill: none; stroke: #222; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+    .spin { transform-origin: 130px 120px; animation: spin 40s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hi { margin: 3vh 0 0; font-size: 15px; opacity: .75; letter-spacing: .05em; text-align: center; }
+    .menu { display: flex; flex-direction: row; justify-content: center; gap: 16px; width: calc(100% - 56px); max-width: 520px; margin: 7vh 0 auto; padding-bottom: 8vh; }
+    .menu a {
+      flex: 1; display: block; text-align: center; text-decoration: none; color: #2b2b2b;
+      font-size: 22px; letter-spacing: .12em; padding: 0; height: 13vh; min-height: 88px; max-height: 130px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,.72); border: 2px solid #222; border-radius: 28px;
+      box-shadow: 3px 4px 0 #222; transition: transform .15s, box-shadow .15s;
+    }
+    .menu a:active { transform: translate(3px,4px); box-shadow: 0 0 0 #222; }
+    @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+  </style>
 </head>
-<body class="auth warm">
-  <!-- 游乐园里面还没建，先放一个落脚的地方 -->
-  <main class="page" hidden>
-    <p class="hello" id="hi">欢迎回来</p>
-    <p class="tip">游乐园里面还在布置中，很快就好</p>
-    <nav class="links"><button type="button" id="out">退出登录</button></nav>
-  </main>
+<body>
+  <header class="sky" aria-hidden="true">
+    <svg viewBox="0 0 520 260">
+      <g class="spin">
+        <circle cx="130" cy="120" r="88"/>
+        <circle cx="130" cy="120" r="10"/>
+        <path d="M130 32V208M42 120H218M68 58l124 124M68 182L192 58"/>
+        <rect x="122" y="22" width="16" height="14" rx="3"/><rect x="122" y="204" width="16" height="14" rx="3"/>
+        <rect x="34" y="113" width="16" height="14" rx="3"/><rect x="210" y="113" width="16" height="14" rx="3"/>
+      </g>
+      <path d="M130 120L90 250M130 120L170 250M70 250H190"/>
+      <path d="M300 150l50-38 50 38z M300 150v4h100v-4 M310 154v72 M390 154v72 M350 112v-14 M346 98h8"/>
+      <path d="M296 226h108v8H296z M342 154v40 M334 194c4-10 18-10 22 0l-4 12h-14z"/>
+      <path d="M420 250c10-80 30-140 50-140s20 60 30 90 10 50 14 50"/>
+      <path d="M440 250v-60M460 250v-130M485 250v-60"/>
+      <path d="M250 70c-10 0-14 10-14 18s8 16 14 16 14-8 14-16-4-18-14-18z M250 104c-4 20 4 40-2 60"/>
+      <path d="M275 50c-8 0-11 8-11 14s6 12 11 12 11-6 11-12-3-14-11-14z M275 76c3 18-4 30 0 50"/>
+      <path d="M20 40q40 14 80 0 M30 44l4 10 4-8 M60 47l4 10 4-9 M88 43l4 10 4-10"/>
+    </svg>
+  </header>
+  <p class="hi" id="hi"></p>
+  <nav class="menu" hidden>
+    <a href="play.html">游玩</a>
+    <a href="shop.html">书店</a>
+    <a href="me.html">个人</a>
+  </nav>
   <script src="assets/js/common.js"></script>
   <script src="assets/js/auth.js"></script>
   <script>
     (async function () {
       const s = await Park.session();
       if (!s) return location.replace('login.html');
-      // 从登录凭证里取出自己的账号 id，只读自己的昵称
       const uid = JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub;
       const r = await Park.api('profiles?select=nickname&id=eq.' + uid);
       const me = r.ok ? (await r.json())[0] : null;
-      if (me) document.getElementById('hi').textContent = me.nickname + '，欢迎回来';
-      document.querySelector('.page').hidden = false;
-      document.getElementById('out').onclick = async () => { await Park.logout(); location.replace('index.html'); };
+      if (me) document.getElementById('hi').textContent = me.nickname + '，今天想去哪儿玩？';
+      document.querySelector('.menu').hidden = false;
     })();
   </script>
 </body>
