@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e2">
+  <title>登录 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body class="auth warm">
+  <main class="page">
+    <p class="hello">欢迎回来</p>
+    <form id="login" novalidate>
+      <label>昵称：<input name="nickname" maxlength="16" autocomplete="username" required></label>
+      <label>密码：<input name="password" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" required></label>
+      <button class="btn-ok" type="submit">确认</button>
+    </form>
+    <nav class="links">
+      <a href="index.html" data-soft>回去</a>
+      <a href="reset.html" data-soft>忘记密码</a>
+    </nav>
+  </main>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    (function () {
+      const f = document.getElementById('login');
+      // 找回密码后带回的昵称，直接填好
+      const nick = new URLSearchParams(location.search).get('n');
+      if (nick) { f.nickname.value = nick; f.password.focus(); }
+
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const nickname = f.nickname.value.trim(), password = f.password.value;
+        if (!nickname || !password) return toast('请填写昵称和密码');
+        const btn = f.querySelector('button');
+        btn.disabled = true;
+        const r = await Park.gate('login', { nickname, password });
+        btn.disabled = false;
+        if (!r.ok) return toast(r.msg);
+        Park.save(r.session);
+        location.replace('park.html');
+      };
+    })();
+  </script>
+</body>
+</html>

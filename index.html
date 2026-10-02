@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffe9f0">
+  <meta name="description" content="给聆遇的游乐园">
+  <title>给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/home.css">
+</head>
+<body class="home">
+  <div class="glow" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="sparkles" aria-hidden="true"></div>
+
+  <main class="page">
+    <header>
+      <h1 class="title">给聆遇的游乐园</h1>
+      <p class="subtitle" aria-label="聆聆风响，遇遇心安">
+        <span style="--i:0">聆</span><span style="--i:1">聆</span><span style="--i:2">风</span><span style="--i:3">响</span><span class="gap"></span><span style="--i:4">遇</span><span style="--i:5">遇</span><span style="--i:6">心</span><span style="--i:7">安</span>
+      </p>
+    </header>
+
+    <section class="entry">
+      <button class="btn-login" id="btnLogin" type="button">登录</button>
+      <button class="link-small" id="btnRegister" type="button">注册</button>
+    </section>
+
+    <footer class="credit">
+      <span>铃铃随风转，心心相牵应 制作</span>
+      <a class="link-small about" href="about.html" data-soft>关于</a>
+    </footer>
+  </main>
+
+  <script src="assets/js/common.js"></script>
+  <script>
+    // 随机撒几颗小光点
+    (function () {
+      const box = document.querySelector('.sparkles');
+      for (let i = 0; i < 14; i++) {
+        const s = document.createElement('i');
+        s.style.left = Math.random() * 100 + '%';
+        s.style.top = Math.random() * 100 + '%';
+        s.style.animationDelay = (Math.random() * 6).toFixed(2) + 's';
+        s.style.animationDuration = (4 + Math.random() * 4).toFixed(2) + 's';
+        box.appendChild(s);
+      }
+    })();
+
+    // 轻轻淡出后进入登录 / 注册
+    const go = (url) => { document.body.classList.add('leaving'); setTimeout(() => { location.href = url; }, 300); };
+    document.getElementById('btnLogin').onclick = () => go('login.html');
+    document.getElementById('btnRegister').onclick = () => go('register.html');
+  </script>
+</body>
+</html>

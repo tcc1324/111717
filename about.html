@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#d6ecf9">
+  <title>关于 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/about.css">
+</head>
+<body class="about-page">
+  <!-- 顶上的绿叶 -->
+  <div class="leaves" aria-hidden="true">
+    <svg viewBox="0 0 400 120" preserveAspectRatio="xMidYMin slice">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7cbf8a"/><stop offset="1" stop-color="#a9d8a4"/></linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fa874"/><stop offset="1" stop-color="#94cc95"/></linearGradient>
+        <symbol id="leaf" viewBox="-10 0 20 40"><path d="M0 0 C9 10 9 28 0 40 C-9 28 -9 10 0 0Z"/><path d="M0 3 L0 37" stroke="rgba(255,255,255,.45)" stroke-width="1" fill="none"/></symbol>
+      </defs>
+      <!-- 枝条 -->
+      <path d="M-10 14 C80 30 150 6 230 20 S350 30 410 10" stroke="#6b9c72" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <g fill="url(#lg1)">
+        <g class="sway"><use href="#leaf" x="8" y="16" width="22" height="44" transform="rotate(14 19 16)"/></g>
+        <g class="sway"><use href="#leaf" x="44" y="22" width="18" height="38" transform="rotate(-18 53 22)"/></g>
+        <g class="sway"><use href="#leaf" x="98" y="20" width="24" height="50" transform="rotate(8 110 20)"/></g>
+        <g class="sway"><use href="#leaf" x="150" y="12" width="18" height="36" transform="rotate(-24 159 12)"/></g>
+        <g class="sway"><use href="#leaf" x="196" y="16" width="22" height="46" transform="rotate(16 207 16)"/></g>
+        <g class="sway"><use href="#leaf" x="262" y="22" width="20" height="40" transform="rotate(-10 272 22)"/></g>
+        <g class="sway"><use href="#leaf" x="318" y="20" width="24" height="48" transform="rotate(20 330 20)"/></g>
+        <g class="sway"><use href="#leaf" x="368" y="12" width="18" height="38" transform="rotate(-16 377 12)"/></g>
+      </g>
+      <g fill="url(#lg2)">
+        <g class="sway"><use href="#leaf" x="70" y="22" width="16" height="32" transform="rotate(30 78 22)"/></g>
+        <g class="sway"><use href="#leaf" x="128" y="16" width="16" height="30" transform="rotate(-34 136 16)"/></g>
+        <g class="sway"><use href="#leaf" x="236" y="18" width="16" height="32" transform="rotate(-30 244 18)"/></g>
+        <g class="sway"><use href="#leaf" x="292" y="24" width="14" height="28" transform="rotate(34 299 24)"/></g>
+        <g class="sway"><use href="#leaf" x="344" y="18" width="14" height="28" transform="rotate(-36 351 18)"/></g>
+      </g>
+    </svg>
+  </div>
+
+  <!-- 线条小鸟 -->
+  <div class="birds" aria-hidden="true">
+    <svg class="bird" viewBox="0 0 26 12" style="left:18%;top:22px"><path d="M1 6 Q7 0 13 7 Q19 0 25 6"/></svg>
+    <svg class="bird" viewBox="0 0 26 12" style="left:30%;top:44px;width:18px;animation-delay:-3s"><path d="M1 6 Q7 0 13 7 Q19 0 25 6" style="animation-delay:-.4s"/></svg>
+    <svg class="bird" viewBox="0 0 26 12" style="left:64%;top:14px;width:22px;animation-delay:-5s"><path d="M1 6 Q7 0 13 7 Q19 0 25 6" style="animation-delay:-.9s"/></svg>
+    <svg class="bird" viewBox="0 0 26 12" style="left:76%;top:50px;width:15px;animation-delay:-7s"><path d="M1 6 Q7 0 13 7 Q19 0 25 6" style="animation-delay:-1.2s"/></svg>
+  </div>
+
+  <main class="page">
+    <article class="words">
+      <p style="--i:0">给聆遇的游乐园.</p>
+      <p style="--i:1">给叫聆遇的好朋友.</p>
+      <p style="--i:2">由叫铃心的制作.</p>
+      <p style="--i:3">希望你开心.</p>
+      <p style="--i:4">制作于智人们的二十一世纪二十年代.</p>
+      <p style="--i:5">希望宇宙会记得这段时间,</p>
+      <p style="--i:6">或者不会.</p>
+      <p style="--i:7" class="aside">（哦为什么用这个标点符号）</p>
+      <div class="space"></div>
+      <p style="--i:9" class="small">铃心设计<br>使用GitHub Pages部署<br>Supabase作为后台系统<br>Ai们：Claude、Deepseek<br>参与代码写作</p>
+    </article>
+    <a class="back" href="index.html" data-soft>回去</a>
+  </main>
+
+  <script src="assets/js/common.js"></script>
+</body>
+</html>

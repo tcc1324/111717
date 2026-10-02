@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+build/
+*.bundle.js
+*.bundle.css
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Cache
+.cache/
+.parcel-cache/
+.webpack/
+
+# AI 接续笔记 & 密钥（绝不上传）
+.ai/
+.operit/
+*.key
+secrets*
+
+# Project specific
+*.tmp
+*.temp
+
+# 本地备份与后台函数源码不上传
+.backup/
+supabase/

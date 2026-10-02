@@ -1,0 +1,59 @@
+/* ===== 关于：天空的淡蓝 ===== */
+body.about-page {
+  color: #4f6f86;
+  background: #e3f2fb;
+  background: linear-gradient(180deg, #d6ecf9 0%, #e5f4fc 40%, #f3faff 100%) no-repeat;
+  background-color: #f3faff;
+  min-height: 100vh; min-height: 100dvh;
+}
+html:has(body.about-page) { background: #f3faff; }
+
+/* 顶部绿叶 */
+.leaves {
+  position: fixed; top: 0; left: 0; right: 0; height: 120px;
+  pointer-events: none; z-index: 2;
+}
+.leaves svg { width: 100%; height: 100%; display: block; }
+.leaves .sway { transform-box: fill-box; transform-origin: top center; animation: sway 6s ease-in-out infinite alternate; }
+.leaves .sway:nth-of-type(2n) { animation-duration: 7.5s; animation-delay: -2s; }
+.leaves .sway:nth-of-type(3n) { animation-duration: 8.5s; animation-delay: -4s; }
+@keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+
+/* 线条小鸟 */
+.birds { position: fixed; top: 118px; left: 0; right: 0; height: 90px; pointer-events: none; z-index: 1; }
+.bird {
+  position: absolute; width: 26px; height: 12px;
+  stroke: #6f8fa6; stroke-width: 1.4; fill: none; stroke-linecap: round; stroke-linejoin: round;
+  animation: glide 9s ease-in-out infinite alternate;
+}
+.bird path { animation: flap 1.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes flap { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.55); } }
+@keyframes glide { from { transform: translate(0, 0); } to { transform: translate(14px, -6px); } }
+
+.about-page .page {
+  position: relative; z-index: 3;
+  min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: calc(210px + env(safe-area-inset-top)) 32px calc(40px + env(safe-area-inset-bottom));
+}
+
+.words {
+  max-width: 22em;
+  font-size: clamp(15px, 4.2vw, 17px);
+  line-height: 2.05; letter-spacing: .06em;
+  text-align: left;
+}
+.words p { opacity: 0; animation: line-in .9s var(--ease-soft) forwards; animation-delay: calc(.25s + var(--i) * .16s); }
+.words .aside { color: #8aa3b5; font-size: .88em; }
+.words .space { height: 1.4em; }
+.words .small { font-size: .88em; color: #6c889c; line-height: 1.9; }
+@keyframes line-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.back {
+  margin-top: 44px;
+  font-size: 13px; letter-spacing: .3em; padding: 8px 4px 8px calc(4px + .3em);
+  color: #6f8fa6; border-bottom: 1px solid rgba(111, 143, 166, .35);
+  transition: color .2s ease;
+}
+.back:hover { color: #3f6580; }
+:focus-visible { outline: 2px dashed #8fb7d3; outline-offset: 4px; border-radius: 6px; }

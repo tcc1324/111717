@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff6e2">
+  <title>给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body class="auth warm">
+  <!-- 游乐园里面还没建，先放一个落脚的地方 -->
+  <main class="page" hidden>
+    <p class="hello" id="hi">欢迎回来</p>
+    <p class="tip">游乐园里面还在布置中，很快就好</p>
+    <nav class="links"><button type="button" id="out">退出登录</button></nav>
+  </main>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    (async function () {
+      const s = await Park.session();
+      if (!s) return location.replace('login.html');
+      // 从登录凭证里取出自己的账号 id，只读自己的昵称
+      const uid = JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub;
+      const r = await Park.api('profiles?select=nickname&id=eq.' + uid);
+      const me = r.ok ? (await r.json())[0] : null;
+      if (me) document.getElementById('hi').textContent = me.nickname + '，欢迎回来';
+      document.querySelector('.page').hidden = false;
+      document.getElementById('out').onclick = async () => { await Park.logout(); location.replace('index.html'); };
+    })();
+  </script>
+</body>
+</html>

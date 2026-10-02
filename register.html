@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>注册 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/auth.css">
+</head>
+<body class="auth">
+  <main class="page">
+    <form id="step1" novalidate>
+      <label>请输入您的昵称：<input name="nickname" maxlength="16" autocomplete="nickname" required></label>
+      <label>请设置您的六位数密码：<input name="password" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" required></label>
+      <label>请输入您的邮箱<input name="email" type="email" autocomplete="email" required></label>
+      <label>请输入您的邀请码：<input name="invite" inputmode="numeric" autocomplete="off" required></label>
+      <button class="btn-ok" type="submit">确认</button>
+    </form>
+
+    <form id="step2" novalidate hidden>
+      <p class="tip" id="sentTip"></p>
+      <label>验证码：<input name="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></label>
+      <button class="btn-ok" type="submit">确认</button>
+    </form>
+
+    <nav class="links">
+      <a href="index.html" data-soft>回去</a>
+      <button type="button" id="resend" hidden>重新发送</button>
+    </nav>
+  </main>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script>
+    (function () {
+      const s1 = document.getElementById('step1'), s2 = document.getElementById('step2');
+      const resend = document.getElementById('resend');
+      let info = null;
+
+      async function send(btn) {
+        btn.disabled = true;
+        const r = await Park.gate('signup_start', info);
+        btn.disabled = false;
+        if (!r.ok) { toast(r.msg); return false; }
+        document.getElementById('sentTip').textContent = '验证码已经寄到 ' + info.email + '，十分钟内有效哦';
+        return true;
+      }
+
+      s1.onsubmit = async (e) => {
+        e.preventDefault();
+        const f = new FormData(s1);
+        info = {
+          nickname: f.get('nickname').trim(), password: f.get('password'),
+          email: f.get('email').trim(), invite: f.get('invite').trim(),
+        };
+        if (!info.nickname || !info.email || !info.invite) return toast('四项都要填哦');
+        if (!/^\d{6}$/.test(info.password)) return toast('密码需要是六位数字');
+        if (await send(s1.querySelector('button'))) {
+          s1.hidden = true; s2.hidden = false; resend.hidden = false;
+          s2.code.focus();
+        }
+      };
+
+      resend.onclick = async () => { if (await send(resend)) toast('又寄了一封，看看邮箱吧'); };
+
+      s2.onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = s2.querySelector('button');
+        btn.disabled = true;
+        const r = await Park.gate('signup_verify', { email: info.email, password: info.password, code: s2.code.value.trim() });
+        btn.disabled = false;
+        if (!r.ok) return toast(r.msg);
+        Park.save(r.session);
+        toast('欢迎入住聆遇游乐园');
+        setTimeout(() => location.replace('park.html'), 900);
+      };
+    })();
+  </script>
+</body>
+</html>
