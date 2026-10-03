@@ -61,7 +61,7 @@
     $('list').onclick = async e => {
       const it = e.target.closest('.it'); if (!it) return;
       const l = data[tab].find(x => x.id === +it.dataset.id);
-      const st = l.stamp_words != null ? Ji.stamp({ id: 0, img: l.stamp_img, words: l.stamp_words, hours: l.stamp_hours }, 'off" style="opacity:1;cursor:default') : '';
+      const st = l.stamp_words != null ? Ji.stamp({ id: 0, img: l.stamp_img, words: l.stamp_words, hours: l.stamp_hours, sid: l.stamp_sid }, 'off" style="opacity:1;cursor:default') : '';
       const who = tab === 'in' ? `来自 <b>${Ji.esc(l.from_nick || '已离开的人')}</b>${l.from_uid ? ' · ' + l.from_uid : ''}`
                                 : `寄给 <b>${Ji.esc(l.to_nick)}</b> · ${l.to_uid}`;
       const back = tab === 'in' && l.from_nick

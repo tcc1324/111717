@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fff3d6">
+  <title>音乐小屋 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏡%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/music.css">
+  <style>
+    /* 壁纸与配色变量 —— 以后换成铃儿提供的图片，改 --wall 即可 */
+    body {
+      --wall: linear-gradient(170deg, #fff8ec 0%, #ffe9d4 48%, #ffdfe9 100%);
+      --ink: #b08d63;        /* 贴纸线条（暖棕） */
+      --ink-soft: #cbb08a;
+      --text: #5c4a3a;
+      --text-soft: #a08a74;
+      --card: rgba(255, 255, 255, .78);
+    }
+    body.dark {
+      --wall: linear-gradient(180deg, #1a1f30 0%, #222a3d 60%, #292c3e 100%);
+      --ink: #9aa1bb;
+      --ink-soft: #6e7690;
+      --text: #d3d8e6;
+      --text-soft: #8289a0;
+      --card: rgba(30, 35, 52, .55);
+    }
+
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      color: var(--text);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100vh; min-height: 100dvh;
+      transition: color .6s ease;
+    }
+
+    /* 顶部导航 */
+    .top {
+      width: calc(100% - 32px); max-width: 520px; z-index: 5;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 20px; padding: 0 4px;
+    }
+    .top a { color: var(--text); text-decoration: none; font-size: 16px; }
+    .top h1 { font-size: 19px; font-weight: normal; letter-spacing: .3em; padding-left: .3em; }
+    .dark-toggle {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--card); border: 2px solid var(--ink);
+      font-size: 17px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .6s ease, border-color .6s ease;
+    }
+
+    /* 那面墙 */
+    .wall {
+      position: relative; flex: 1; width: 100%;
+      display: flex; flex-direction: column; align-items: center;
+      background: var(--wall);
+      transition: background .6s ease;
+      overflow: hidden;
+      margin-top: 16px;
+    }
+
+    /* 贴纸：线条小花与蝴蝶，随意贴在墙上 */
+    .sticker { position: absolute; color: var(--ink); transition: color .6s ease; }
+    .sticker svg { width: 100%; height: 100%; display: block; }
+    .sticker svg * { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .sticker.soft { color: var(--ink-soft); }
+
+    /* 暗夜模式的小星星 */
+    .star {
+      position: absolute; color: #cdd3e6; opacity: 0;
+      font-size: 14px; transition: opacity .8s ease;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+    body.dark .star { opacity: .7; }
+    @keyframes twinkle { 0%, 100% { opacity: .25; } 50% { opacity: .85; } }
+
+    /* 中央内容 */
+    .center {
+      position: relative; z-index: 3;
+      display: flex; flex-direction: column; align-items: center;
+      margin: auto 0; padding: 40px 24px 0;
+      text-align: center;
+    }
+    .center .hello { font-size: 20px; letter-spacing: .18em; margin-bottom: 30px; }
+    .play {
+      width: 88px; height: 88px; border-radius: 50%;
+      background: var(--card); border: 2px solid var(--ink);
+      box-shadow: 4px 5px 0 rgba(0, 0, 0, .16);
+      font-size: 32px; line-height: 1; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      transition: background .6s ease, border-color .6s ease, color .6s ease,
+                  transform .12s ease, box-shadow .12s ease;
+    }
+    .play:active { transform: translate(3px, 4px); box-shadow: 0 0 0 rgba(0, 0, 0, .16); }
+    .center .now { font-size: 14px; color: var(--text-soft); margin-top: 20px; letter-spacing: .05em; min-height: 1.5em; }
+    .center .set {
+      margin-top: 10px; font-size: 13px; color: var(--text-soft);
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+
+    /* 底部收尾 */
+    .foot {
+      position: relative; z-index: 3;
+      padding: 18px 24px calc(20px + env(safe-area-inset-bottom));
+      text-align: center; font-size: 12px; letter-spacing: .25em; color: var(--text-soft);
+    }
+  </style>
+</head>
+<body data-music="none">
+  <div class="top">
+    <a href="park.html">‹ 回去</a>
+    <h1>音乐小屋</h1>
+    <button class="dark-toggle" id="darkToggle" aria-label="切换暗夜模式">🌙</button>
+  </div>
+
+  <div class="wall">
+    <!-- 贴纸：线条的花与蝴蝶 -->
+    <div class="sticker" style="left:7%; top:10%; width:92px; transform:rotate(-12deg);">
+      <svg viewBox="0 0 84 64" aria-hidden="true">
+        <g><path d="M42 46 V 18"/><circle cx="42" cy="15" r="3"/>
+          <path d="M42 18 C 34 10 26 10 24 15"/><path d="M42 18 C 50 10 58 10 60 15"/>
+          <path d="M42 22 C 22 10 8 18 10 32 C 12 46 28 44 42 34 Z"/>
+          <path d="M42 22 C 62 10 76 18 74 32 C 72 46 56 44 42 34 Z"/>
+          <path d="M42 34 C 30 34 22 42 24 49 C 26 54 34 50 42 45 Z"/>
+          <path d="M42 34 C 54 34 62 42 60 49 C 58 54 50 50 42 45 Z"/></g>
+      </svg>
+    </div>
+    <div class="sticker soft" style="right:8%; top:7%; width:64px; transform:rotate(9deg);">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g><ellipse cx="32" cy="17" rx="5" ry="11"/><ellipse cx="32" cy="47" rx="5" ry="11"/>
+          <ellipse cx="17" cy="32" rx="11" ry="5"/><ellipse cx="47" cy="32" rx="11" ry="5"/>
+          <circle cx="32" cy="32" r="4.5"/></g>
+      </svg>
+    </div>
+    <div class="sticker" style="left:16%; top:38%; width:44px; transform:rotate(-6deg);">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <g><circle cx="20" cy="20" r="5"/><circle cx="20" cy="8" r="3.5"/><circle cx="20" cy="32" r="3.5"/>
+          <circle cx="8" cy="20" r="3.5"/><circle cx="32" cy="20" r="3.5"/></g>
+      </svg>
+    </div>
+    <div class="sticker soft" style="right:13%; top:33%; width:60px; transform:rotate(14deg);">
+      <svg viewBox="0 0 84 64" aria-hidden="true">
+        <g><path d="M42 46 V 18"/><circle cx="42" cy="15" r="3"/>
+          <path d="M42 18 C 34 10 26 10 24 15"/><path d="M42 18 C 50 10 58 10 60 15"/>
+          <path d="M42 22 C 22 10 8 18 10 32 C 12 46 28 44 42 34 Z"/>
+          <path d="M42 22 C 62 10 76 18 74 32 C 72 46 56 44 42 34 Z"/>
+          <path d="M42 34 C 30 34 22 42 24 49 C 26 54 34 50 42 45 Z"/>
+          <path d="M42 34 C 54 34 62 42 60 49 C 58 54 50 50 42 45 Z"/></g>
+      </svg>
+    </div>
+    <div class="sticker" style="left:10%; bottom:24%; width:78px; transform:rotate(7deg);">
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <g><ellipse cx="32" cy="17" rx="5" ry="11"/><ellipse cx="32" cy="47" rx="5" ry="11"/>
+          <ellipse cx="17" cy="32" rx="11" ry="5"/><ellipse cx="47" cy="32" rx="11" ry="5"/>
+          <circle cx="32" cy="32" r="4.5"/></g>
+      </svg>
+    </div>
+    <div class="sticker soft" style="right:11%; bottom:16%; width:54px; transform:rotate(-10deg);">
+      <svg viewBox="0 0 40 40" aria-hidden="true">
+        <g><circle cx="20" cy="20" r="5"/><circle cx="20" cy="8" r="3.5"/><circle cx="20" cy="32" r="3.5"/>
+          <circle cx="8" cy="20" r="3.5"/><circle cx="32" cy="20" r="3.5"/></g>
+      </svg>
+    </div>
+
+    <!-- 暗夜的星星 -->
+    <span class="star" style="left:22%; top:16%;">✦</span>
+    <span class="star" style="right:24%; top:22%;">✦</span>
+    <span class="star" style="left:30%; top:60%;">✦</span>
+    <span class="star" style="right:28%; top:55%;">✦</span>
+    <span class="star" style="left:15%; top:74%;">✦</span>
+    <span class="star" style="right:16%; top:72%;">✦</span>
+
+    <!-- 中央 -->
+    <div class="center">
+      <div class="hello">欢迎来我的小屋里坐坐</div>
+      <button class="play" id="housePlay" aria-label="播放/暂停">▶</button>
+      <div class="now" id="houseNow">还没有播放</div>
+      <a class="set" id="houseSet" href="javascript:void 0">音乐设置</a>
+    </div>
+
+    <div class="foot">· 藏在这里，慢慢听 ·</div>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/music.js"></script>
+  <script>
+    (function () {
+      const $ = id => document.getElementById(id);
+
+      // 登录校验
+      Park.session().then(s => { if (!s) location.replace('login.html'); });
+
+      // 暗夜模式
+      const darkOn = localStorage.getItem('park.house.dark') === '1';
+      if (darkOn) document.body.classList.add('dark');
+      $('darkToggle').textContent = darkOn ? '☀️' : '🌙';
+      $('darkToggle').onclick = () => {
+        const on = document.body.classList.toggle('dark');
+        localStorage.setItem('park.house.dark', on ? '1' : '0');
+        $('darkToggle').textContent = on ? '☀️' : '🌙';
+      };
+
+      // 播放控制（状态实时同步）
+      const playBtn = $('housePlay');
+      Music.onChange(s => {
+        playBtn.textContent = s.playing ? '⏸' : '▶';
+        $('houseNow').textContent = s.title || '还没有播放';
+      });
+      playBtn.onclick = () => Music.toggle();
+      $('houseSet').onclick = () => Music.open();
+    })();
+  </script>
+</body>
+</html>

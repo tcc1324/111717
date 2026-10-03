@@ -4,13 +4,15 @@
   const SB_URL = 'https://zvuvncxdyxsgiqurkork.supabase.co';
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA';
   const KEY = 'park.session';
+  // 有些手机浏览器/网络会悄悄丢掉 apikey 请求头，这里把它也放进网址参数里兜底
+  const withKey = url => url + (url.includes('?') ? '&' : '?') + 'apikey=' + encodeURIComponent(SB_ANON);
 
   // 调后台大门函数，网络不好时给温柔的提示
   async function gate(action, data) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20000);
     try {
-      const r = await fetch(SB_URL + '/functions/v1/gate', {
+      const r = await fetch(withKey(SB_URL + '/functions/v1/gate'), {
         method: 'POST',
         headers: { apikey: SB_ANON, 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...data }),
@@ -36,7 +38,7 @@
     if (!s) return null;
     if (s.expires_at * 1000 - Date.now() > 60000) return s;
     try {
-      const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      const r = await fetch(withKey(SB_URL + '/auth/v1/token?grant_type=refresh_token'), {
         method: 'POST',
         headers: { apikey: SB_ANON, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: s.refresh_token }),
@@ -52,7 +54,7 @@
   // 带登录身份读写数据库
   async function api(path, opts = {}) {
     const s = await session();
-    return fetch(SB_URL + '/rest/v1/' + path, {
+    return fetch(withKey(SB_URL + '/rest/v1/' + path), {
       ...opts,
       headers: { apikey: SB_ANON, Authorization: 'Bearer ' + (s ? s.access_token : SB_ANON), 'Content-Type': 'application/json', ...(opts.headers || {}) },
     });
@@ -61,7 +63,7 @@
   async function logout() {
     const s = load();
     clear();
-    if (s) fetch(SB_URL + '/auth/v1/logout', { method: 'POST', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token } }).catch(() => {});
+    if (s) fetch(withKey(SB_URL + '/auth/v1/logout'), { method: 'POST', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token } }).catch(() => {});
   }
 
   window.Park = { gate, save, session, api, logout };

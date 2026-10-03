@@ -48,6 +48,12 @@
   function list() { return TRACKS.filter(t => !state.heartOnly || mark(t.id).heart); }
   function track(id) { return TRACKS.find(t => t.id === id); }
 
+  // 状态变更订阅：供「音乐小屋」等页面实时同步播放状态/曲名
+  const listeners = [];
+  function emit() {
+    const snap = { playing, currentId, title: currentId && track(currentId) ? track(currentId).title : null };
+    listeners.forEach(f => { try { f(snap); } catch {} });
+  }
   function setPlaying(v) {
     playing = v;
     saveLive();
@@ -55,6 +61,7 @@
     if (wrap) wrap.classList.toggle('playing', v);
     const p2 = document.getElementById('musicPlay2');
     if (p2) p2.textContent = v ? '⏸' : '▶';
+    emit();
   }
 
   function play(id) {
@@ -186,6 +193,8 @@
     panel.innerHTML =
       '<div class="music-panel__sheet">' +
         '<div class="music-panel__head"><span>音乐</span><button id="musicClose" aria-label="关闭">×</button></div>' +
+        '<div class="music-note">注意：由于浏览器限制，您更换页面时，音乐会断掉，须再次手动开启。音乐陪伴您在某一页安心浏览；您也可到「音乐小屋」中去聆听音乐。</div>' +
+        '<a class="music-house-link" href="music-house.html">🏡 进入音乐小屋</a>' +
         '<div class="music-now">' +
           '<div class="music-now__title" id="musicNowTitle">还没有播放</div>' +
           '<div class="music-now__ctrl">' +
@@ -249,6 +258,14 @@
     else inject();
   }
 
-  window.Music = { open: openPanel, toggle, play, pause };
+  window.Music = {
+    open: openPanel, toggle, play, pause,
+    isPlaying: () => playing,
+    now: () => currentId && track(currentId) ? track(currentId).title : null,
+    onChange: (fn) => {
+      listeners.push(fn);
+      fn({ playing, currentId, title: currentId && track(currentId) ? track(currentId).title : null });
+    },
+  };
   init();
 })();

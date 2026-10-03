@@ -10,6 +10,14 @@
   <style>
     #pv { width: 96px; height: 120px; margin: 8px auto; }
     .pick { display: block; text-align: center; margin: 14px 0; }
+    .series-box { margin-top: 20px; }
+    .series-tabs { display: flex; justify-content: center; gap: 24px; margin-bottom: 14px; }
+    .series-tabs a { font-size: 13px; color: #8a7a60; letter-spacing: .1em; cursor: pointer; padding-bottom: 3px; }
+    .series-tabs a.on { color: #2b2b2b; border-bottom: 1px solid #2b2b2b; }
+    .series-box select { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
+    .series-box .chk { display: flex; gap: 18px; margin-top: 12px; font-size: 13px; color: #8a7a60; }
+    .series-box .chk label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .series-box .tip { font-size: 12px; color: #b9a78a; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -34,6 +42,21 @@
     <div class="stamp" id="pv" hidden><div class="face"><div class="in" id="pvi"></div></div></div>
     <input id="words" maxlength="60" placeholder="邮票上的一句话（60 字以内）">
     <input id="hours" type="number" min="0" max="24" step="0.5" placeholder="送达要几小时（0 到 24）">
+    <div class="series-box">
+      <div class="series-tabs">
+        <a data-mode="single" class="on">单张</a>
+        <a data-mode="join">归入系列</a>
+        <a data-mode="new">新建系列</a>
+      </div>
+      <div id="join-box" hidden>
+        <select id="series"></select>
+      </div>
+      <div id="new-box" hidden>
+        <input id="new_title" maxlength="20" placeholder="系列名（20 字以内）">
+        <input id="new_theme" maxlength="60" placeholder="这个系列的一句话介绍（可选）">
+        <div class="chk"><label><input type="checkbox" id="new_open">开放加入</label><label><input type="checkbox" id="new_finished">已完结</label></div>
+      </div>
+    </div>
     <div class="center"><button class="btn" id="make">放上架子</button></div>
   </div>
   <script src="assets/js/common.js"></script>
@@ -43,14 +66,30 @@
   <script>
     const $ = id => document.getElementById(id);
     let img = null;
+    let seriesList = [];
+    let mode = 'single';
 
     async function load() {
-      const [b, s] = await Promise.all([Ji.rpc('post_my_bag'), Ji.rpc('post_shelf')]);
+      const [b, s, sl] = await Promise.all([Ji.rpc('post_my_bag'), Ji.rpc('post_shelf'), Ji.rpc('post_series_list')]);
       if (b.err || s.err) return toast(b.err || s.err);
+      seriesList = sl.data || [];
       $('bag').innerHTML = b.data.map(x => Ji.stamp(x)).join('') || '<div class="empty">还没有邮票</div>';
       const blanks = s.data.filter(x => x.kind === 'blank').sort((a, b) => a.hours - b.hours), customs = s.data.filter(x => x.kind === 'custom');
       $('blank').innerHTML = blanks.map(x => Ji.stamp(x, x.blank_today ? 'off' : '')).join('');
       $('custom').innerHTML = customs.map(x => Ji.stamp(Object.assign({}, x, { words: x.words + (x.maker_nick ? ' · ' + x.maker_nick : '') }), x.got_today ? 'off' : '')).join('') || '<div class="empty">架子还空着</div>';
+      fillSeries();
+    }
+
+    // 填「归入系列」下拉框：只列自己可加入的系列
+    function fillSeries() {
+      const sel = $('series');
+      const can = seriesList.filter(x => x.can_join);
+      sel.innerHTML = can.length
+        ? can.map(x => {
+            const who = x.mine ? '我' : (x.maker_nick || '');
+            return `<option value="${Ji.esc(x.id)}">${Ji.esc(x.title)}${who ? ' · ' + Ji.esc(who) : ''} · 已有 ${x.cnt} 张</option>`;
+          }).join('')
+        : '<option value="">还没有可加入的系列</option>';
     }
 
     async function take(el, fn) {
@@ -62,6 +101,16 @@
     }
     $('blank').onclick = e => take(e.target.closest('.stamp'), 'post_claim_blank');
     $('custom').onclick = e => take(e.target.closest('.stamp'), 'post_take_stamp');
+
+    // 三个标签：单张 / 归入系列 / 新建系列
+    document.querySelectorAll('.series-tabs a').forEach(a => {
+      a.onclick = () => {
+        mode = a.dataset.mode;
+        document.querySelectorAll('.series-tabs a').forEach(x => x.classList.toggle('on', x === a));
+        $('join-box').hidden = mode !== 'join';
+        $('new-box').hidden = mode !== 'new';
+      };
+    });
 
     // 图片压缩成小邮票，避免太大
     $('file').onchange = e => {
@@ -84,13 +133,30 @@
       if (!img) return toast('先选一张图片');
       if (!words) return toast('写一句话吧');
       if (isNaN(hours) || hours < 0 || hours > 24) return toast('送达时间要在 0 到 24 小时之间');
+      const args = { img, words, hours };
+      if (mode === 'join') {
+        const sid = $('series').value;
+        if (!sid) return toast('选一个系列吧');
+        args.series_id = sid;
+      } else if (mode === 'new') {
+        const nt = $('new_title').value.trim();
+        if (!nt) return toast('给新系列起个名字吧');
+        args.new_title = nt;
+        args.new_theme = $('new_theme').value.trim();
+        args.new_open = $('new_open').checked;
+        args.new_finished = $('new_finished').checked;
+      }
       $('make').disabled = true;
-      const r = await Ji.rpc('post_make_stamp', { img, words, hours });
+      const r = await Ji.rpc('post_make_stamp', args);
       $('make').disabled = false;
       if (r.err) return toast(r.err);
       if (r.data !== 'ok') return toast(r.data);
       toast('上架啦');
       img = null; $('pv').hidden = true; $('words').value = ''; $('hours').value = ''; $('file').value = '';
+      $('new_title').value = ''; $('new_theme').value = ''; $('new_open').checked = false; $('new_finished').checked = false;
+      mode = 'single';
+      document.querySelectorAll('.series-tabs a').forEach(x => x.classList.toggle('on', x.dataset.mode === 'single'));
+      $('join-box').hidden = true; $('new-box').hidden = true;
       load();
     };
     load();

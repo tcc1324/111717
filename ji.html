@@ -13,6 +13,9 @@
     .env::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 90px; background: #e8dfc8; clip-path: polygon(0 0, 100% 0, 50% 100%); }
     .env i { position: absolute; left: 50%; top: 72px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: #c0573e; }
     #n { position: absolute; right: 12px; bottom: 10px; font-size: 13px; color: #8a7a60; font-style: normal; }
+    .album-entry { text-align: center; margin: 0 0 18px; }
+    .album-entry a { display: inline-block; font-size: 13px; letter-spacing: .2em; color: #8a7a60; border: 1px solid rgba(0,0,0,.12); border-radius: 999px; padding: 6px 18px; }
+    .album-entry a:hover { color: #2b2b2b; border-color: rgba(0,0,0,.25); }
   </style>
 </head>
 <body>
@@ -21,6 +24,7 @@
     <h1>寄</h1>
     <div class="sub">LETTERS</div>
     <div class="env"><i></i><em id="n"></em></div>
+    <div class="album-entry"><a href="album.html">📔 集邮册</a></div>
     <div class="list">
       <a href="mailbox.html"><span class="who">信箱</span><span class="when">收信与回信</span></a>
       <a href="send.html"><span class="who">投寄</span><span class="when">写一封信</span></a>

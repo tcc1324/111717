@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>集邮册 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📔%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css">
+  <link rel="stylesheet" href="assets/css/music.css">
+  <link rel="stylesheet" href="assets/css/ji.css">
+  <style>
+    /* 主体：收起来的来信邮票墙 */
+    .note { color: #8a7a60; font-size: 13px; text-align: center; letter-spacing: .08em; margin: 2px 0 18px; }
+    .album { display: flex; flex-wrap: wrap; gap: 16px; }
+    .stamp .sid { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .08em; color: #b08d5a; margin-top: 5px; }
+    .stamp .series { font-size: 11px; color: #8a7a60; margin-top: 2px; }
+    .stamp .times { font-size: 11px; color: #c0573e; margin-top: 3px; }
+    .stamp .when { font-size: 10px; color: #b9a78a; margin-top: 2px; letter-spacing: .04em; }
+    .stamp .cap { margin-top: 4px; }
+    /* 历史：条状记录流 */
+    .history-list { margin-top: 6px; }
+    .rec { display: flex; gap: 14px; align-items: center; padding: 12px 2px; border-bottom: 1px solid rgba(0,0,0,.07); }
+    .rec .thumb { width: 38px; height: 48px; border-radius: 3px; background: #f1ead9 center / cover no-repeat; flex: none; display: flex; align-items: center; justify-content: center; font-size: 15px; color: #b9a78a; }
+    .rec .meta { flex: 1; min-width: 0; }
+    .rec .w { font-size: 14px; color: #2b2b2b; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rec .s { font-size: 12px; color: #aaa; margin-top: 3px; letter-spacing: .03em; }
+    /* 底部历史入口：一排小字，弱化 */
+    .history { margin-top: 34px; padding-top: 18px; border-top: 1px dashed rgba(0,0,0,.12); text-align: center; }
+    .history a { display: inline-block; font-size: 12px; color: #8a7a60; letter-spacing: .1em; margin: 6px 10px; }
+    .history a.on { color: #2b2b2b; }
+    #back { display: none; color: #8a7a60; }
+    #back.show { display: inline-block; }
+    /* 邮票放大 */
+    .zoom { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .zoom.on { display: flex; }
+    .zoom .zbg { position: absolute; inset: 0; background: rgba(28,24,18,.62); backdrop-filter: blur(2px); }
+    .zoom .zbox { position: relative; width: 100%; max-width: 340px; text-align: center; }
+    .zoom .zstamp { width: 200px; margin: 0 auto; box-sizing: border-box; padding: 11px; background: #fff; cursor: pointer;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle 6px at 6px 6px, transparent 97%, #000) -6px -6px / 18px 18px;
+              mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle 6px at 6px 6px, transparent 97%, #000) -6px -6px / 18px 18px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+    .zoom .zstamp .in { width: 100%; aspect-ratio: 4 / 5; background: #f1ead9 center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 44px; color: #b9a78a; }
+    .zoom .zinfo { color: #eee8d8; margin-top: 16px; }
+    .zoom .zinfo .w { font-size: 16px; line-height: 1.6; color: #fff; }
+    .zoom .zinfo .m { font-size: 12px; color: #c9bda6; margin-top: 5px; letter-spacing: .05em; }
+    .zoom .zimg { display: none; max-width: 92vw; max-height: 86vh; cursor: zoom-out; box-shadow: 0 4px 24px rgba(0,0,0,.4); border-radius: 2px; }
+    .zoom.full .zstamp { display: none; }
+    .zoom.full .zimg { display: block; margin: 0 auto; }
+    .zoom.full .zinfo { display: none; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="ji.html">‹ 回去</a><span></span></div>
+  <div class="page">
+    <h1>集邮册</h1>
+    <div class="sub">STAMP ALBUM</div>
+
+    <div id="head"></div>
+    <div id="album" class="album"></div>
+
+    <div class="history">
+      <a id="back" href="#">‹ 回到来信</a>
+      <a data-t="made">我做过的</a>
+      <a data-t="claimed">我领过的</a>
+      <a data-t="used">我用过的</a>
+      <a data-t="owned">我拥有的</a>
+    </div>
+  </div>
+
+  <div id="zoom" class="zoom">
+    <div class="zbg" id="zbg"></div>
+    <div class="zbox">
+      <div class="zstamp" id="zstamp"></div>
+      <img class="zimg" id="zimg" alt="邮票">
+      <div class="zinfo" id="zinfo"></div>
+    </div>
+  </div>
+
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/music.js"></script>
+  <script src="assets/js/ji.js"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const names = { made: '我做过的', claimed: '我领过的', used: '我用过的', owned: '我拥有的' };
+    let view = 'received';
+    let data = { received: [], made: [], claimed: [], used: [], owned: [] };
+    let cur = [];
+    let shown = null;
+
+    async function load() {
+      const r = await Ji.rpc('post_album');
+      if (r.err) return toast(r.err);
+      data = r.data || data;
+      draw();
+    }
+
+    // 主体：来信邮票墙
+    function card(s, i) {
+      const pic = s.img ? `style="background-image:url('${Ji.esc(s.img)}')"` : '';
+      const sid = s.sid ? `<div class="sid">${Ji.esc(s.sid)}</div>` : '';
+      const cap = s.words ? `${Ji.esc(s.words)}<br>${Ji.hrs(s.hours)}` : `${Ji.hrs(s.hours)}`;
+      let times = '';
+      if (s.n) times += `<div class="times">收到 ×${s.n}</div>`;
+      if (s.last_at) times += `<div class="when">${Ji.when(s.last_at)}</div>`;
+      return `<div class="stamp" data-i="${i}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>${sid}<div class="cap">${cap}</div>${times}</div>`;
+    }
+
+    // 历史：一条条记录
+    function rec(s, i) {
+      const pic = s.img ? `style="background-image:url('${Ji.esc(s.img)}')"` : '';
+      const w = s.words ? Ji.esc(s.words) : '';
+      const at = s.created_at || s.got_at || s.used_at;
+      const parts = [];
+      if (at) parts.push(Ji.when(at));
+      if (s.sid) parts.push(Ji.esc(s.sid));
+      if (s.series_title) parts.push(Ji.esc(s.series_title));
+      parts.push(Ji.hrs(s.hours));
+      return `<div class="rec"><div class="thumb" data-i="${i}" ${pic}>${s.img ? '' : '✉'}</div>
+        <div class="meta"><div class="w">${w || '·'}</div><div class="s">${parts.join(' · ')}</div></div></div>`;
+    }
+
+    function draw() {
+      const isMain = view === 'received';
+      $('head').innerHTML = isMain
+        ? '<div class="note">随信寄来的邮票，要收起来好好保存。</div>'
+        : '<h2>' + names[view] + '</h2>';
+      $('back').classList.toggle('show', !isMain);
+      document.querySelectorAll('.history a[data-t]').forEach(a => a.classList.toggle('on', a.dataset.t === view));
+      const list = data[view] || [];
+      cur = list;
+      const empty = isMain ? '还没有收到邮票' : '还没有记录';
+      if (isMain) {
+        $('album').className = 'album';
+        $('album').innerHTML = list.map((s, i) => card(s, i)).join('') || '<div class="empty">' + empty + '</div>';
+      } else {
+        $('album').className = 'history-list';
+        $('album').innerHTML = list.map((s, i) => rec(s, i)).join('') || '<div class="empty">' + empty + '</div>';
+      }
+    }
+
+    document.querySelector('.history').onclick = e => {
+      const a = e.target.closest('a[data-t]');
+      if (a) { view = a.dataset.t; draw(); }
+    };
+    $('back').onclick = e => { e.preventDefault(); view = 'received'; draw(); };
+
+    function zoom(s) {
+      shown = s;
+      const pic = s.img ? `style="background-image:url('${Ji.esc(s.img)}')"` : '';
+      $('zstamp').innerHTML = `<div class="in" ${pic}>${s.img ? '' : '✉'}</div>`;
+      $('zimg').src = s.img || '';
+      const bits = [];
+      if (s.sid) bits.push(Ji.esc(s.sid));
+      if (s.n) bits.push('收到 ×' + s.n);
+      const at = s.last_at || s.created_at || s.got_at || s.used_at;
+      if (at) bits.push(Ji.when(at));
+      if (s.series_title) bits.push(Ji.esc(s.series_title));
+      bits.push(Ji.hrs(s.hours));
+      const w = s.words ? Ji.esc(s.words) : '';
+      $('zinfo').innerHTML = (w ? `<div class="w">${w}</div>` : '') + `<div class="m">${bits.join(' · ')}</div>`;
+      const z = $('zoom');
+      z.classList.remove('full');
+      z.classList.add('on');
+    }
+    $('album').onclick = e => {
+      const el = e.target.closest('[data-i]');
+      if (!el) return;
+      const s = cur[+el.dataset.i];
+      if (s) zoom(s);
+    };
+    $('zstamp').onclick = e => {
+      e.stopPropagation();
+      if (!shown || !shown.img) return;
+      $('zoom').classList.add('full');
+    };
+    $('zimg').onclick = e => {
+      e.stopPropagation();
+      const z = $('zoom');
+      z.classList.remove('on');
+      z.classList.remove('full');
+    };
+    $('zbg').onclick = () => { const z = $('zoom'); z.classList.remove('on'); z.classList.remove('full'); };
+    load();
+  </script>
+</body>
+</html>

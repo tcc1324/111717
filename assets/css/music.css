@@ -53,6 +53,23 @@ body[data-music="hot"] .music-btn__gear { width: 22px; height: 22px; font-size: 
 }
 .music-panel__head button { font-size: 28px; line-height: 1; color: #999; }
 
+.music-note {
+  margin: 0 0 12px; padding: 10px 12px;
+  border-radius: 12px; background: #fff7e6;
+  border: 1px dashed #e0c58a;
+  font-size: 13px; line-height: 1.65; color: #8a6d3b;
+}
+
+.music-house-link {
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 0 16px; padding: 12px; text-decoration: none;
+  border-radius: 14px; background: #ffe3ea;
+  border: 2px solid #222; box-shadow: 2px 3px 0 #222;
+  font-size: 15px; letter-spacing: .1em; color: #222;
+  transition: transform .12s, box-shadow .12s;
+}
+.music-house-link:active { transform: translate(2px, 3px); box-shadow: 0 0 0 #222; }
+
 .music-now { text-align: center; margin-bottom: 16px; }
 .music-now__title { font-size: 16px; color: #555; margin-bottom: 12px; min-height: 1.4em; }
 .music-now__ctrl { display: flex; justify-content: center; align-items: center; gap: 22px; }

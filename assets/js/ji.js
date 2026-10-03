@@ -13,8 +13,9 @@
   // 一张邮票的样子
   function stamp(s, extra) {
     const pic = s.img ? `style="background-image:url('${esc(s.img)}')"` : '';
+    const sid = s.sid ? `<div class="sid">${esc(s.sid)}</div>` : '';
     return `<div class="stamp ${extra || ''}" data-id="${s.id}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>
-      <div class="cap">${esc(s.words)}<br>${hrs(s.hours)}</div></div>`;
+      ${sid}<div class="cap">${esc(s.words)}<br>${hrs(s.hours)}</div></div>`;
   }
   const when = t => {
     const d = new Date(t), p = n => String(n).padStart(2, '0');

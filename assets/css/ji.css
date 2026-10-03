@@ -26,6 +26,7 @@ textarea { min-height: 260px; resize: vertical; line-height: 2; border: none; ba
           mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle 4px at 4px 4px, transparent 98%, #000) -4px -4px / 12px 12px;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,.15)); }
 .stamp .in { width: 100%; height: 100%; background: #f1ead9 center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #b9a78a; }
+.stamp .sid { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 10px; letter-spacing: .08em; color: #b08d5a; margin-top: 5px; }
 .stamp .cap { font-size: 12px; color: #777; margin-top: 6px; line-height: 1.4; word-break: break-all; }
 .stamp.sel .face { background: #b9a78a; }
 .stamp.off { opacity: .4; cursor: default; }
