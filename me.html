@@ -46,6 +46,7 @@
     <div class="edit" id="editBox"><input id="nickInput" maxlength="16" placeholder="新昵称"><button id="saveBtn">保存</button></div>
     <div class="row"><span class="label">我的 ID</span><span class="id" id="uid5">·····</span></div>
     <div class="row"><span class="label">密码</span><span>······<button class="link" id="pwBtn">修改</button></span></div>
+    <div class="row" style="border-bottom:none"><span class="label">收信邮件提醒</span><span><span id="ntf">…</span><button class="link" id="ntfBtn"></button></span></div>
     <div class="edit" id="pwBox" style="flex-wrap:wrap"><input id="oldPw" type="password" inputmode="numeric" maxlength="6" placeholder="原密码"><input id="newPw" type="password" inputmode="numeric" maxlength="6" placeholder="新密码（六位数）"><button id="pwSave">保存</button></div>
   </div>
 
@@ -86,6 +87,14 @@
       const p = n => String(n).padStart(2, '0');
       $('joined').textContent = '入住时间 · ' + d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
 
+      let ntfOn = true;
+      const showNtf = () => { $('ntf').textContent = ntfOn ? '开着' : '关了'; $('ntfBtn').textContent = ntfOn ? '关掉' : '打开'; };
+      Park.api('rpc/my_mail_notify', { method: 'POST', body: '{}' }).then(r => r.ok ? r.json() : null).then(v => { if (typeof v === 'boolean') ntfOn = v; showNtf(); }).catch(showNtf);
+      $('ntfBtn').onclick = async () => {
+        const want = !ntfOn;
+        const r = await Park.api('rpc/set_mail_notify', { method: 'POST', body: JSON.stringify({ on_: want }) });
+        if (r.ok) { ntfOn = want; showNtf(); toast(want ? '收到信会发邮件提醒你' : '不再发邮件提醒了'); } else toast('没改成功，稍后再试');
+      };
       $('editBtn').onclick = () => { $('editBox').classList.toggle('on'); $('nickInput').value = $('nick').textContent; $('nickInput').focus(); };
       $('saveBtn').onclick = async () => {
         const v = $('nickInput').value.trim();
