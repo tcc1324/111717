@@ -42,3 +42,23 @@ textarea { min-height: 260px; resize: vertical; line-height: 2; border: none; ba
 .tabs { display: flex; justify-content: center; gap: 30px; margin-bottom: 10px; }
 .tabs b { font-weight: normal; letter-spacing: .3em; color: #bbb; cursor: pointer; padding-bottom: 4px; }
 .tabs b.on { color: #2b2b2b; border-bottom: 1px solid #2b2b2b; }
+/* 邮票放大弹层（公共，邮局/集邮册等共用） */
+.zoom { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; padding: 24px; }
+.zoom.on { display: flex; }
+.zoom .zbg { position: absolute; inset: 0; background: rgba(28,24,18,.62); backdrop-filter: blur(2px); }
+.zoom .zbox { position: relative; width: 100%; max-width: 340px; text-align: center; }
+.zoom .zstamp { width: 200px; margin: 0 auto; box-sizing: border-box; padding: 11px; background: #fff; cursor: pointer;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle 6px at 6px 6px, transparent 97%, #000) -6px -6px / 18px 18px;
+          mask: linear-gradient(#000 0 0) content-box, radial-gradient(circle 6px at 6px 6px, transparent 97%, #000) -6px -6px / 18px 18px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
+.zoom .zstamp .in { width: 100%; aspect-ratio: 4 / 5; background: #f1ead9 center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 44px; color: #b9a78a; }
+.zoom .zinfo { color: #eee8d8; margin-top: 16px; }
+.zoom .zinfo .w { font-size: 16px; line-height: 1.6; color: #fff; }
+.zoom .zinfo .m { font-size: 12px; color: #c9bda6; margin-top: 5px; letter-spacing: .05em; }
+.zoom .zimg { display: none; max-width: 92vw; max-height: 86vh; cursor: zoom-out; box-shadow: 0 4px 24px rgba(0,0,0,.4); border-radius: 2px; }
+.zoom .zact { margin-top: 18px; }
+.zoom .zact .btn { color: #2b2b2b; background: #fff; }
+.zoom.full .zstamp { display: none; }
+.zoom.full .zimg { display: block; margin: 0 auto; }
+.zoom.full .zinfo { display: none; }
+.zoom.full .zact { display: none; }

@@ -30,11 +30,11 @@
     <div class="stamps" id="bag"></div>
 
     <h2>空白邮票</h2>
-    <p class="hint">每天可以领一张，点一下就领。</p>
+    <p class="hint">每天可以领一张，点开邮票再领。</p>
     <div class="stamps" id="blank"></div>
 
     <h2>大家做的邮票</h2>
-    <p class="hint">每种每天可以取一张。</p>
+    <p class="hint">每种每天可以取一张，点开邮票再取。</p>
     <div class="stamps" id="custom"></div>
 
     <h2>做一张邮票</h2>
@@ -68,13 +68,16 @@
     let img = null;
     let seriesList = [];
     let mode = 'single';
+    let bagList = [], blankList = [], customList = [];
 
     async function load() {
       const [b, s, sl] = await Promise.all([Ji.rpc('post_my_bag'), Ji.rpc('post_shelf'), Ji.rpc('post_series_list')]);
       if (b.err || s.err) return toast(b.err || s.err);
       seriesList = sl.data || [];
-      $('bag').innerHTML = b.data.map(x => Ji.stamp(x)).join('') || '<div class="empty">还没有邮票</div>';
+      bagList = b.data || [];
+      $('bag').innerHTML = bagList.map(x => Ji.stamp(x)).join('') || '<div class="empty">还没有邮票</div>';
       const blanks = s.data.filter(x => x.kind === 'blank').sort((a, b) => a.hours - b.hours), customs = s.data.filter(x => x.kind === 'custom');
+      blankList = blanks; customList = customs;
       $('blank').innerHTML = blanks.map(x => Ji.stamp(x, x.blank_today ? 'off' : '')).join('');
       $('custom').innerHTML = customs.map(x => Ji.stamp(Object.assign({}, x, { words: x.words + (x.maker_nick ? ' · ' + x.maker_nick : '') }), x.got_today ? 'off' : '')).join('') || '<div class="empty">架子还空着</div>';
       fillSeries();
@@ -92,15 +95,33 @@
         : '<option value="">还没有可加入的系列</option>';
     }
 
-    async function take(el, fn) {
-      if (!el || el.classList.contains('off')) return;
-      const r = await Ji.rpc(fn, { p_sid: +el.dataset.id });
+    async function claim(sid, fn) {
+      const r = await Ji.rpc(fn, { p_sid: +sid });
       if (r.err) return toast(r.err);
       toast(r.data === 'ok' ? '领到啦，放进你的邮票夹了' : r.data);
+      Ji.zoomClose();
       load();
     }
-    $('blank').onclick = e => take(e.target.closest('.stamp'), 'post_claim_blank');
-    $('custom').onclick = e => take(e.target.closest('.stamp'), 'post_take_stamp');
+    const findStamp = (list, el) => list.find(s => String(s.id) === el.dataset.id);
+    // 我的邮票：点一下放大看
+    $('bag').onclick = e => {
+      const el = e.target.closest('.stamp'); if (!el) return;
+      const x = findStamp(bagList, el);
+      if (x) Ji.zoom(x);
+    };
+    // 空白邮票 / 大家做的：点开放大，再在弹层里点「领取」
+    $('blank').onclick = e => {
+      const el = e.target.closest('.stamp'); if (!el) return;
+      const x = findStamp(blankList, el);
+      if (!x) return;
+      Ji.zoom(x, x.blank_today ? { label: '今天领过啦', disabled: true } : { label: '领取', onClick: () => claim(x.id, 'post_claim_blank') });
+    };
+    $('custom').onclick = e => {
+      const el = e.target.closest('.stamp'); if (!el) return;
+      const x = findStamp(customList, el);
+      if (!x) return;
+      Ji.zoom(x, x.got_today ? { label: '今天取过啦', disabled: true } : { label: '领取', onClick: () => claim(x.id, 'post_take_stamp') });
+    };
 
     // 三个标签：单张 / 归入系列 / 新建系列
     document.querySelectorAll('.series-tabs a').forEach(a => {
@@ -112,14 +133,15 @@
       };
     });
 
-    // 图片压缩成小邮票，避免太大
+    // 图片等比缩小（最长边 600），保留完整原图、不裁剪；展示层再用 cover 铺满邮票框
     $('file').onchange = e => {
       const f = e.target.files[0]; if (!f) return;
       const im = new Image();
       im.onload = () => {
-        const W = 240, H = 300, c = document.createElement('canvas'); c.width = W; c.height = H;
-        const k = Math.max(W / im.width, H / im.height), w = im.width * k, h = im.height * k;
-        c.getContext('2d').drawImage(im, (W - w) / 2, (H - h) / 2, w, h);
+        const MAX = 600, k = Math.min(MAX / im.width, MAX / im.height, 1);
+        const w = Math.max(1, Math.round(im.width * k)), h = Math.max(1, Math.round(im.height * k));
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(im, 0, 0, w, h);
         img = c.toDataURL('image/jpeg', .82);
         $('pvi').style.backgroundImage = `url('${img}')`; $('pv').hidden = false;
         URL.revokeObjectURL(im.src);

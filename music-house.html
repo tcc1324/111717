@@ -1,217 +1,371 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#fff3d6">
-  <title>音乐小屋 · 给聆遇的游乐园</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏡%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/base.css">
-  <link rel="stylesheet" href="assets/css/music.css?v=2026100401">
-  <style>
-    /* 壁纸与配色变量 —— 以后换成铃儿提供的图片，改 --wall 即可 */
-    body {
-      --wall: linear-gradient(170deg, #fff8ec 0%, #ffe9d4 48%, #ffdfe9 100%);
-      --ink: #b08d63;        /* 贴纸线条（暖棕） */
-      --ink-soft: #cbb08a;
-      --text: #5c4a3a;
-      --text-soft: #a08a74;
-      --card: rgba(255, 255, 255, .78);
-    }
-    body.dark {
-      --wall: linear-gradient(180deg, #1a1f30 0%, #222a3d 60%, #292c3e 100%);
-      --ink: #9aa1bb;
-      --ink-soft: #6e7690;
-      --text: #d3d8e6;
-      --text-soft: #8289a0;
-      --card: rgba(30, 35, 52, .55);
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>音乐小屋 · 给聆遇的游乐园</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🏡%3C/text%3E%3C/svg%3E">
+<!-- 【暗夜模式】渲染前先读取状态，避免刷新闪亮 -->
+<script>try{if(localStorage.getItem('park.house.dark')==='1')document.documentElement.setAttribute('data-night','');var _th=localStorage.getItem('park.house.theme');if(_th&&_th!=='default')document.documentElement.setAttribute('data-theme',_th)}catch(e){}</script>
+<!-- 【暗夜模式切换】独立脚本：用一条统一的时间线逐帧驱动夜色、窗外夜空、灯光，
+     不依赖浏览器的 CSS transition，各层严格同步：先沉下去，后亮起月亮和灯光；回白天时反过来 -->
+<script>
+(function(){
+  var KEY='park.house.dark', r=document.documentElement;
+  var p=0, target=0, raf=0, last=0, DUR=1500, els=null;
+  try{if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)DUR=1}catch(e){}
+  function all(q){return Array.prototype.slice.call(document.querySelectorAll(q))}
+  function ease(x){x=x<0?0:x>1?1:x;return x*x*(3-2*x)}
+  function put(list,v){for(var i=0;i<list.length;i++)list[i].style.opacity=String(Math.round(v*1000)/1000)}
+  function apply(){
+    if(!els)els={veil:all('#hsVeil'),ns:all('.hs-ns'),fx:all('.hs-fx'),dy:all('.hs-dy')};
+    var v=ease(p);
+    put(els.veil,v);put(els.ns,v);put(els.dy,1-v);put(els.fx,ease((p-.5)/.5));
+    var b=document.getElementById('nightBtn');if(b)b.setAttribute('aria-pressed',target?'true':'false');
+  }
+  function step(t){
+    var dt=last?Math.min(t-last,50):16;last=t;
+    var d=target-p,sv=dt/DUR;
+    p=Math.abs(d)<=sv?target:p+(d>0?sv:-sv);
+    apply();
+    if(p!==target)raf=requestAnimationFrame(step);else{raf=0;last=0}
+  }
+  function go(on){target=on?1:0;if(!raf){last=0;raf=requestAnimationFrame(step)}}
+  window.houseNight=function(on,tip){
+    if(on)r.setAttribute('data-night','');else r.removeAttribute('data-night');
+    try{localStorage.setItem(KEY,on?'1':'0')}catch(e){}
+    go(on);
+    if(tip&&typeof toast==='function'){try{toast(on?'夜深了，藏起来吧':'天亮了')}catch(e){}}
+  };
+  window.houseNightToggle=function(){window.houseNight(!r.hasAttribute('data-night'),true)};
+  function init(){var on=r.hasAttribute('data-night');p=target=on?1:0;apply()}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script>
+<link rel="stylesheet" href="assets/css/base.css">
+<link rel="stylesheet" href="assets/css/music.css?v=2026100401">
+<style>
+/* ============================================================
+   【壁纸变量】--wall ：以后换图只改这一行，例如
+   --wall: url('assets/img/wall.jpg') center / cover no-repeat;
+   ============================================================ */
+:root{--wall:linear-gradient(180deg,#eddcd0 0%,#e8d4c6 100%);--ink:#4a3a35;--tint:#e8b9a2}
+html[data-night]{--ink:#e8e6f2}
+/* 主题：换氛围只改这几组变量（壁纸背景 / 文字色 / 氛围滤镜） */
+html[data-theme="peach"]{--wall:linear-gradient(180deg,#f7dcc6 0%,#f2cbb4 100%);--ink:#5a3b36;--tint:#f0a88c}
+html[data-theme="mint"]{--wall:linear-gradient(180deg,#ddeadd 0%,#cddfcd 100%);--ink:#3f4a3d;--tint:#b7c9a8}
+html[data-theme="dusk"]{--wall:linear-gradient(180deg,#dcd8e6 0%,#cbc6da 100%);--ink:#433f52;--tint:#b7aecf}
+html[data-theme="cream"]{--wall:linear-gradient(180deg,#f3e7c8 0%,#eadcb6 100%);--ink:#54462e;--tint:#e6cf9a}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{overflow:hidden;color:var(--ink);background:#e8d4c6;
+  font-family:var(--font-body,"LXGW WenKai","霞鹜文楷","Songti SC",serif)}
+.wallbg{position:fixed;left:0;top:0;right:0;bottom:0;background:var(--wall);background-size:cover}
+/* 氛围滤镜：罩在房间上，让整幅画随主题一起染上色调 */
+.hs-tint{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:10;
+  background:var(--tint);mix-blend-mode:multiply;opacity:.16;transition:background .6s ease}
+/* 画面：390×720 的插画，底部对齐；整体微微歪一点，像随手拍的 */
+.hs-stage{position:fixed;left:50%;bottom:0;width:min(100vw,calc(100vh*.5417));height:calc(min(100vw,calc(100vh*.5417))*1.846);
+  margin-left:calc(min(100vw,calc(100vh*.5417))/-2);transform:rotate(-2.4deg) scale(1.1);transform-origin:50% 62%}
+.hs-stage svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible}
+.hs-front{pointer-events:none}
+.hs-fx,.hs-dy,.hs-veil,.hs-ns{will-change:opacity}
+.hs-fx,.hs-veil,.hs-ns{opacity:0}
+/* 夜色：HTML 层，中间留台灯一圈暖光；box-shadow 把画面以外也一并压暗 */
+.hs-veil{position:absolute;left:-60%;top:-60%;width:220%;height:220%;pointer-events:none;box-shadow:0 0 0 200vmax rgba(12,14,38,.94);background:radial-gradient(circle farthest-corner at 51% 46.2%,rgba(34,30,68,.6) 0,rgba(22,24,58,.8) 30%,rgba(15,17,46,.9) 60%,rgba(12,14,38,.94) 100%)}
+.hs-stk{color:#8a6a58;opacity:.62;transition:color .9s,opacity .9s}
+.hs-stk *{fill:none;stroke:currentColor;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round}
+html[data-night] .hs-stk{color:#d6dcec;opacity:.42}
+.hs-mult{mix-blend-mode:multiply}
+.rp{opacity:0;transform-box:fill-box;transform-origin:0 50%;fill:none;stroke:#c97d68;stroke-width:1.6;stroke-linecap:round}
+.playing .rp{animation:rp 2.6s ease-out infinite}.playing .r2{animation-delay:.45s}.playing .r3{animation-delay:.9s}
+@keyframes rp{0%{opacity:0;transform:scale(.6)}25%{opacity:.85}100%{opacity:0;transform:scale(1.4)}}
+.steam{fill:none;stroke:#fff;stroke-width:1.3;stroke-linecap:round;opacity:.6;animation:st 4s ease-in-out infinite}
+@keyframes st{50%{transform:translateY(-3px);opacity:.25}}
+.hs-star{animation:tw var(--d) ease-in-out var(--l) infinite}
+@keyframes tw{50%{opacity:.25}}
+#playBtn{cursor:pointer;outline:none}#playBtn:focus-visible .hit{stroke:#c97d68;stroke-width:2}
+.hit{fill:transparent}
 
-    html, body { min-height: 100%; margin: 0; }
-    body {
-      color: var(--text);
-      display: flex; flex-direction: column; align-items: center;
-      min-height: 100vh; min-height: 100dvh;
-      transition: color .6s ease;
-    }
+/* 顶栏：‹ 回去 / 标题 / 两个小开关（挑歌、暗夜） */
+.hs-bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 6px}
+.hs-bar a{all:unset;cursor:pointer;min-width:72px;height:40px;display:inline-flex;align-items:center;font-size:15px;color:var(--ink)}
+.hs-bar h1{margin:0;font-size:18px;font-weight:500;letter-spacing:.14em;color:var(--ink)}
+.hs-tools{min-width:72px;display:flex;justify-content:flex-end;gap:4px}
+.hs-ib{all:unset;cursor:pointer;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:var(--ink);transition:background .3s}
+.hs-ib svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.hs-ib.hs-on{background:rgba(201,125,104,.22)}
+.hs-nb .hs-su{display:none}html[data-night] .hs-nb .hs-su{display:block}html[data-night] .hs-nb .hs-mo{display:none}
+.hs-ib:focus-visible,.hs-bar a:focus-visible{outline:2px solid #c97d68;outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+body[data-music="none"] .music-house-link, body[data-music="none"] .music-note { display: none; }
 
-    /* 顶部导航 */
-    .top {
-      width: calc(100% - 32px); max-width: 520px; z-index: 5;
-      display: flex; align-items: center; justify-content: space-between;
-      margin-top: 20px; padding: 0 4px;
-    }
-    .top a { color: var(--text); text-decoration: none; font-size: 16px; }
-    .top h1 { font-size: 19px; font-weight: normal; letter-spacing: .3em; padding-left: .3em; }
-    .dark-toggle {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--card); border: 2px solid var(--ink);
-      font-size: 17px; line-height: 1;
-      display: flex; align-items: center; justify-content: center;
-      transition: background .6s ease, border-color .6s ease;
-    }
-
-    /* 那面墙 */
-    .wall {
-      position: relative; flex: 1; width: 100%;
-      display: flex; flex-direction: column; align-items: center;
-      background: var(--wall);
-      transition: background .6s ease;
-      overflow: hidden;
-      margin-top: 16px;
-    }
-
-    /* 贴纸：线条小花与蝴蝶，随意贴在墙上 */
-    .sticker { position: absolute; color: var(--ink); transition: color .6s ease; }
-    .sticker svg { width: 100%; height: 100%; display: block; }
-    .sticker svg * { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-    .sticker.soft { color: var(--ink-soft); }
-
-    /* 暗夜模式的小星星 */
-    .star {
-      position: absolute; color: #cdd3e6; opacity: 0;
-      font-size: 14px; transition: opacity .8s ease;
-      animation: twinkle 3s ease-in-out infinite;
-    }
-    body.dark .star { opacity: .7; }
-    @keyframes twinkle { 0%, 100% { opacity: .25; } 50% { opacity: .85; } }
-
-    /* 中央内容 */
-    .center {
-      position: relative; z-index: 3;
-      display: flex; flex-direction: column; align-items: center;
-      margin: auto 0; padding: 40px 24px 0;
-      text-align: center;
-    }
-    .center .hello { font-size: 20px; letter-spacing: .18em; margin-bottom: 30px; }
-    .play {
-      width: 88px; height: 88px; border-radius: 50%;
-      background: var(--card); border: 2px solid var(--ink);
-      box-shadow: 4px 5px 0 rgba(0, 0, 0, .16);
-      font-size: 32px; line-height: 1; color: var(--text);
-      display: flex; align-items: center; justify-content: center;
-      transition: background .6s ease, border-color .6s ease, color .6s ease,
-                  transform .12s ease, box-shadow .12s ease;
-    }
-    .play:active { transform: translate(3px, 4px); box-shadow: 0 0 0 rgba(0, 0, 0, .16); }
-    .center .now { font-size: 14px; color: var(--text-soft); margin-top: 20px; letter-spacing: .05em; min-height: 1.5em; }
-    .center .set {
-      margin-top: 10px; font-size: 13px; color: var(--text-soft);
-      text-decoration: underline; text-underline-offset: 3px;
-    }
-
-    /* 底部收尾 */
-    .foot {
-      position: relative; z-index: 3;
-      padding: 18px 24px calc(20px + env(safe-area-inset-bottom));
-      text-align: center; font-size: 12px; letter-spacing: .25em; color: var(--text-soft);
-    }
-  </style>
+/* ===== 主题选择：底部抽屉 ===== */
+.theme-panel{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:220;display:none}
+.theme-panel.on{display:block}
+.theme-panel__sheet{position:absolute;left:0;right:0;bottom:0;background:rgba(255,252,246,.97);
+  border-radius:24px 24px 0 0;border-top:2px solid var(--ink,#4a3a35);
+  padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-sizing:border-box;
+  animation:tp-up .3s cubic-bezier(.22,.8,.3,1)}
+@keyframes tp-up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
+.theme-panel__head{display:flex;align-items:center;justify-content:space-between;font-size:18px;letter-spacing:.15em;color:var(--ink);margin-bottom:14px}
+.theme-panel__head button{all:unset;cursor:pointer;font-size:28px;line-height:1;color:#999;padding:0 4px}
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.theme-card{border:2px solid transparent;border-radius:14px;padding:10px;cursor:pointer;background:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);transition:border-color .2s,transform .12s}
+.theme-card.on{border-color:var(--ink,#4a3a35)}
+.theme-card:active{transform:scale(.97)}
+.theme-card__sw{height:56px;border-radius:9px;margin-bottom:8px}
+.theme-card__name{font-size:14px;color:var(--ink);letter-spacing:.08em;text-align:center}
+</style>
 </head>
+
 <body data-music="none">
-  <div class="top">
-    <a href="park.html">‹ 回去</a>
-    <h1>音乐小屋</h1>
-    <button class="dark-toggle" id="darkToggle" aria-label="切换暗夜模式">🌙</button>
+<div class="wallbg"></div>
+<div class="hs-tint"></div>
+
+<!-- ============ 房间：坐在书桌前看出去（viewBox 390×720） ============ -->
+<div class="hs-stage"><svg id="back" viewBox="0 0 390 720" preserveAspectRatio="xMidYMax meet" role="img" aria-label="坐在书桌前：窗、书架、凌乱的床">
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe0ea"/><stop offset="1" stop-color="#f6dfcf"/></linearGradient>
+  <radialGradient id="vg" cx=".5" cy=".5" r=".78"><stop offset=".55" stop-color="#6a4636" stop-opacity="0"/><stop offset="1" stop-color="#6a4636" stop-opacity=".22"/></radialGradient>
+  <linearGradient id="nskyb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2350"/><stop offset="1" stop-color="#3f3b72"/></linearGradient>
+  <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2"/><feColorMatrix type="saturate" values="0"/></filter>
+  <symbol id="flower" viewBox="0 0 60 80"><g><ellipse cx="30" cy="11" rx="6" ry="10"/><ellipse cx="30" cy="11" rx="6" ry="10" transform="rotate(72 30 24)"/><ellipse cx="30" cy="11" rx="6" ry="10" transform="rotate(144 30 24)"/><ellipse cx="30" cy="11" rx="6" ry="10" transform="rotate(216 30 24)"/><ellipse cx="30" cy="11" rx="6" ry="10" transform="rotate(288 30 24)"/><circle cx="30" cy="24" r="4"/><path d="M30 38C30 52 28 62 30 78M30 60C20 58 16 52 17 46C25 47 29 52 30 60"/></g></symbol>
+  <symbol id="daisy" viewBox="0 0 40 40"><ellipse cx="20" cy="8" rx="3.4" ry="7"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(45 20 20)"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(90 20 20)"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(135 20 20)"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(180 20 20)"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(225 20 20)"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(270 20 20)"/><ellipse cx="20" cy="8" rx="3.4" ry="7" transform="rotate(315 20 20)"/><circle cx="20" cy="20" r="2.6"/></symbol>
+  <symbol id="bf" viewBox="0 0 70 60"><path d="M35 28C28 8 6 4 6 20C6 32 22 34 35 30M35 28C42 8 64 4 64 20C64 32 48 34 35 30M35 32C24 34 12 40 16 50C20 58 32 50 35 38M35 32C46 34 58 40 54 50C50 58 38 50 35 38"/><circle cx="19" cy="19" r="3.2"/><circle cx="51" cy="19" r="3.2"/><path d="M35 22V46M35 22C32 14 28 10 25 9M35 22C38 14 42 10 45 9"/></symbol>
+</defs>
+
+<!-- 天花板 / 左侧墙（斜着退远）/ 地板 -->
+<polygon points="0,-90 420,-90 420,119 108,119 0,-60" fill="#fff" fill-opacity=".38"/>
+<polygon points="0,-60 108,119 108,451 0,600" fill="#8a6a58" fill-opacity=".11"/>
+<polygon points="0,600 108,451 420,451 420,780 0,780" fill="#e1c7a8"/>
+<rect x="108" y="443" width="312" height="9" fill="#f5eadf"/>
+<g stroke="#b88f6a" stroke-opacity=".14" stroke-width="1"><path d="M200 300L520 780M200 300L640 700M200 300L760 560"/></g>
+
+<!-- 床头墙上的大拱 + 【贴纸】线条画小花和蝴蝶（只描边不填充、散落、微倾斜） -->
+<path d="M274 440V280a56 56 0 0 1 112 0V440Z" fill="#e8b9a2"/><circle cx="330" cy="270" r="14" fill="#f2d9a2"/>
+<g class="hs-stk">
+  <use href="#bf" x="272" y="140" width="36" height="31" transform="rotate(12 290 155)"/>
+  <use href="#flower" x="330" y="146" width="16" height="21" transform="rotate(-10 338 156)"/>
+  <use href="#daisy" x="109" y="196" width="17" height="17" transform="rotate(12 117 204)"/>
+  <use href="#daisy" x="354" y="196" width="16" height="16" transform="rotate(-8 362 204)"/>
+</g>
+
+<!-- 窗：深色细框、淡淡的天、远处的楼、窗外一片叶子 -->
+<rect x="134" y="154" width="120" height="168" fill="url(#sky)"/>
+<rect x="140" y="276" width="20" height="46" fill="#e4d1cb"/><rect x="164" y="288" width="28" height="34" fill="#dcc9c6"/><rect x="200" y="268" width="18" height="54" fill="#e8d6ce"/>
+<rect class="hs-ns" x="134" y="154" width="120" height="168" fill="url(#nskyb)"/>
+<path d="M248 322C226 304 222 270 240 244C252 268 258 298 248 322Z" fill="#8c9c80"/><path d="M228 322C210 312 202 292 210 274C222 288 230 306 228 322Z" fill="#a4b398"/>
+<path d="M194 154V322M134 238H254" stroke="#3a3d45" stroke-width="3.2"/><rect x="132" y="152" width="124" height="172" fill="none" stroke="#3a3d45" stroke-width="4.5"/>
+<rect x="124" y="324" width="140" height="6" fill="#f7eee3"/><rect x="124" y="330" width="140" height="5" fill="#6a4636" opacity=".12"/>
+<rect x="134" y="154" width="58" height="168" fill="#fff" opacity=".2"/>
+<!-- 纱帘：半透明长条，一侧松松收拢 -->
+<path d="M114 138H150C146 180 154 236 144 280C148 300 146 320 144 338H114Z" fill="#f8e9df" opacity=".95"/>
+<path d="M276 138H244C248 176 242 230 250 274C246 298 248 320 250 338H276Z" fill="#f8e9df" opacity=".95"/>
+<g stroke="#d9bfae" stroke-opacity=".7" stroke-width="1.2" fill="none"><path d="M124 142C122 200 128 280 124 336M136 142C134 200 140 280 134 336M266 142C268 200 262 280 266 336M256 142C258 200 252 280 256 336"/></g>
+<path d="M108 136H282" stroke="#3a3d45" stroke-width="2.4"/><circle cx="108" cy="136" r="3.4" fill="#3a3d45"/><circle cx="282" cy="136" r="3.4" fill="#3a3d45"/>
+
+<!-- 左墙书架：随墙面斜着退远 -->
+<g id="shelf"></g>
+<!-- 床（在右边，被书桌挡住一部分）：被子、枕头、娃娃、毯子 -->
+<path d="M236 604C240 470 290 400 340 404C360 384 396 392 410 408V612C360 626 296 620 236 604Z" fill="#b7c3d4"/>
+<path d="M262 470C300 452 340 456 372 440M270 520C310 502 350 508 396 490M262 580C310 566 350 572 396 560" stroke="#cfd9e6" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M262 494C296 480 336 486 366 472M272 546C312 534 352 540 396 526" stroke="#8fa0b8" stroke-width="2" fill="none" stroke-linecap="round" opacity=".7"/>
+<rect x="332" y="350" width="72" height="50" rx="18" fill="#fbf5ec" transform="rotate(-8 368 375)"/><rect x="290" y="374" width="66" height="46" rx="16" fill="#efe4d6" transform="rotate(6 323 397)"/>
+<g><ellipse cx="310" cy="416" rx="22" ry="20" fill="#d3ad86"/><circle cx="310" cy="386" r="18" fill="#d9b790"/><circle cx="295" cy="372" r="7" fill="#d9b790"/><circle cx="325" cy="372" r="7" fill="#d9b790"/><circle cx="295" cy="372" r="3.2" fill="#ecc3b4"/><circle cx="325" cy="372" r="3.2" fill="#ecc3b4"/><ellipse cx="310" cy="392" rx="8" ry="6" fill="#f0dcc4"/><circle cx="303" cy="384" r="1.8" fill="#3b2a24"/><circle cx="317" cy="384" r="1.8" fill="#3b2a24"/><ellipse cx="310" cy="389" rx="2.4" ry="1.7" fill="#3b2a24"/><path d="M292 402q18 9 36 0" stroke="#c97d68" stroke-width="4" fill="none" stroke-linecap="round"/></g>
+<g><ellipse cx="378" cy="362" rx="14" ry="12" fill="#f3efe9"/><rect x="366" y="332" width="7" height="26" rx="3.5" fill="#f3efe9" transform="rotate(-12 369 354)"/><rect x="378" y="330" width="7" height="26" rx="3.5" fill="#f3efe9" transform="rotate(4 381 352)"/><circle cx="372" cy="361" r="1.7" fill="#3b2a24"/><circle cx="383" cy="361" r="1.7" fill="#3b2a24"/></g>
+<path d="M262 476C290 462 326 474 340 498C348 528 340 566 334 592L246 584Z" fill="#d89c86"/><path d="M280 490C294 506 298 540 294 586M312 486C324 508 326 546 322 590" stroke="#bd7c68" stroke-width="2" fill="none" opacity=".7"/>
+<rect x="236" y="610" width="180" height="24" fill="#8c6a50"/><rect x="236" y="610" width="180" height="4" fill="#a98467"/>
+<ellipse cx="330" cy="646" rx="90" ry="9" fill="#6a4636" opacity=".16"/>
+
+<!-- 书桌：桌面铺满画面下半，窗光斜斜落在桌上 -->
+<polygon points="104,368 258,368 430,720 -70,720" fill="#d6b08a"/>
+<polygon points="104,368 258,368 258,386 104,386" fill="#6a4636" opacity=".1"/>
+<g class="hs-dy"><polygon points="140,368 250,368 350,640 118,640" fill="#fff1cf" opacity=".55"/>
+<g stroke="#c4996f" stroke-opacity=".55"><path d="M196 368L236 640" stroke-width="7"/><path d="M130 474H294" stroke-width="8"/></g></g>
+
+<!-- 桌上零散的东西 -->
+<ellipse cx="150" cy="392" rx="5" ry="2" fill="#6a4636" opacity=".2"/><path d="M147 390v-12h6v12z" fill="#b9cfc4"/><path d="M150 378c-1-8 0-14 4-20" stroke="#9aa58c" stroke-width="1.4" fill="none"/><ellipse cx="156" cy="360" rx="3" ry="1.8" fill="#9aa58c" transform="rotate(-30 156 360)"/>
+<ellipse cx="126" cy="386" rx="15" ry="4" fill="#33343b"/><path d="M126 382L146 306L198 290" stroke="#33343b" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="146" cy="306" r="3" fill="#33343b"/>
+<path d="M184 296Q200 268 222 288L212 310Z" fill="#f0c36a"/>
+<!-- 小音箱：点它播放/暂停（【播放键】） -->
+<g id="playBtn" role="button" tabindex="0" aria-label="播放或暂停">
+  <rect class="hit" x="196" y="380" width="68" height="72" rx="10"/>
+  <ellipse cx="246" cy="440" rx="24" ry="6" fill="#6a4636" opacity=".16"/>
+  <path d="M205 402V436Q222 446 239 436V402Z" fill="#dda2b3"/><ellipse cx="222" cy="402" rx="17" ry="5.5" fill="#efc3cf"/>
+  <circle cx="222" cy="422" r="7" fill="none" stroke="#f7e9d6" stroke-width="4" stroke-dasharray="1 3"/><circle cx="222" cy="422" r="2.2" fill="#f2c14e"/>
+  <path class="rp" d="M246 408a12 12 0 0 1 0 20"/><path class="rp r2" d="M252 402a20 20 0 0 1 0 32"/><path class="rp r3" d="M258 396a28 28 0 0 1 0 44"/>
+</g>
+<ellipse cx="140" cy="502" rx="28" ry="6" fill="#6a4636" opacity=".16"/>
+<path d="M102 462L106 496Q122 504 138 496L142 462Z" fill="#fbf3ea"/><ellipse cx="122" cy="462" rx="20" ry="6.5" fill="#fffaf2"/><ellipse cx="122" cy="463" rx="16" ry="4.5" fill="#8b6a52"/>
+<path d="M142 468q16 2 12 16q-4 10-14 8" stroke="#fbf3ea" stroke-width="5" fill="none" stroke-linecap="round"/><path class="steam" d="M114 452q-4-7 0-13M124 452q-4-7 0-13"/>
+<g fill="#fbf4ea"><path d="M44 520l14-6 10 8-6 12-14 2z"/><path d="M286 540l10-8 12 6-2 12-12 4z"/></g>
+<polygon points="38,566 150,552 156,654 24,668" fill="#3a3d45"/><polygon points="150,552 270,566 288,672 156,654" fill="#3a3d45"/>
+<polygon points="46,562 150,548 156,646 34,658" fill="#fbf4ea"/><polygon points="150,548 262,560 278,664 156,646" fill="#f6eddf"/>
+<g stroke="#cfc2b3" stroke-width="1.4" fill="none" stroke-linecap="round"><path d="M54 584L142 572M56 602L144 590M58 620L146 608M168 570L250 580M172 588L254 598M174 606L258 616"/></g>
+<path d="M62 640l30-4M176 626l22 2" stroke="#6a5a52" stroke-width="2" stroke-linecap="round"/>
+<!-- 书页右下角的手写小字 -->
+<!-- 书页上的铅笔涂鸦 -->
+<g fill="none" stroke="#6a4636" stroke-width="1" stroke-linecap="round" opacity="0.45" transform="rotate(7 206 617)">
+  <path d="M198 604c5-3 10-3 15-1"/>
+  <path d="M194 610c7 0 12 2 16 5"/>
+  <path d="M202 616c4 3 8 3 13 1"/>
+  <path d="M197 623c6-1 11-3 16-5"/>
+  <path d="M205 630c4 1 7 0 10-2"/>
+</g>
+<text x="184" y="644" font-family="'LXGW WenKai','霞鹜文楷','Kaiti SC','STKaiti','Songti SC',serif" font-size="9" fill="#6a4636" fill-opacity="0.9" transform="rotate(7 184 644)">藏在这里，慢慢听</text>
+<polygon points="210,606 316,586 318,592 212,612" fill="#e3b8a5"/><polygon points="316,586 330,584 318,592" fill="#f3d9c4"/><polygon points="208,606 212,612 204,612" fill="#d98f78"/>
+<polygon points="-12,652 100,640 104,674 -12,688" fill="#a9b8c6"/><polygon points="-8,622 96,614 98,642 -8,652" fill="#e3b8a5"/><polygon points="4,598 88,592 92,616 4,624" fill="#f0dfba"/>
+<polygon points="296,652 352,642 360,716 302,726" fill="#3a3d45"/><polygon points="301,658 347,650 354,708 307,716" fill="#5f6776"/>
+<polygon points="306,584 346,578 350,618 310,624" fill="#f2d98a"/><path d="M314 596l26-4M315 606l22-3" stroke="#c9a74f" stroke-width="1.4"/>
+
+<!-- 前景右下角：剪纸般的大叶子 -->
+<g id="plant" class="hs-mult"></g>
+
+<rect x="-200" y="-200" width="790" height="1100" fill="url(#vg)"/>
+<rect x="-200" y="-200" width="790" height="1100" filter="url(#grain)" opacity=".11" style="mix-blend-mode:multiply"/>
+</svg></div>
+<!-- ============ 夜里：整个房间沉下去，只留台灯一圈暖光 ============ -->
+<div class="hs-stage hs-front"><div class="hs-veil" id="hsVeil"></div><svg class="hs-fx" viewBox="0 0 390 720" preserveAspectRatio="xMidYMax meet">
+<defs>
+  <radialGradient id="vgn" gradientUnits="userSpaceOnUse" cx="200" cy="300" r="380"><stop offset="0" stop-color="#46283a" stop-opacity=".1"/><stop offset=".5" stop-color="#1a1634" stop-opacity=".84"/><stop offset="1" stop-color="#0e0d20" stop-opacity=".97"/></radialGradient>
+  <radialGradient id="lamp"><stop offset="0" stop-color="#ffd9a0" stop-opacity=".26"/><stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient>
+  <mask id="mn"><rect x="190" y="166" width="50" height="50" fill="#fff"/><circle cx="219" cy="187" r="9" fill="#000"/></mask>
+  <linearGradient id="nsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c2350"/><stop offset="1" stop-color="#3f3b72"/></linearGradient>
+</defs>
+<g>
+  <circle cx="214" cy="190" r="10" fill="#e9e3cc" mask="url(#mn)"/>
+  <g id="stars" fill="#f7f1df"></g>
+  <path d="M194 154V322M134 238H254" stroke="#3a3d45" stroke-width="3.2"/>
+  <polygon points="140,368 250,368 350,640 118,640" fill="#8fa6e0" opacity=".05"/>
+  <path d="M196 296L222 288L300 470H120Z" fill="#ffd9a0" opacity=".07"/>
+  <circle cx="204" cy="300" r="170" fill="url(#lamp)"/>
+  <path d="M184 296Q200 268 222 288L212 310Z" fill="#f0cf98"/>
+  <circle cx="222" cy="422" r="2.4" fill="#ffb59e"/>
+</g>
+</svg></div>
+
+<header class="hs-bar">
+  <a href="park.html" aria-label="回到游乐园">‹ 回去</a>
+  <h1>音乐小屋</h1>
+  <div class="hs-tools">
+    <!-- 小开关：挑歌 / 暗夜 -->
+    <button class="hs-ib" id="noteBtn" type="button" aria-label="音乐设置"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></button>
+    <!-- 【暗夜模式切换】 -->
+    <button class="hs-ib hs-nb" id="nightBtn" type="button" onclick="window.houseNightToggle&&houseNightToggle()" aria-pressed="false" aria-label="切换暗夜模式">
+      <svg class="hs-mo" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+      <svg class="hs-su" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.4 1.4M17.6 17.6L19 19M5 19l1.4-1.4M17.6 6.4L19 5"/></svg>
+    </button>
+    <!-- 【主题切换】调色盘 -->
+    <button class="hs-ib" id="themeBtn" type="button" aria-label="切换主题" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18h1.2a1.8 1.8 0 0 0 0-3.6h-.2a1.6 1.6 0 0 1 0-3.2H15a6 6 0 0 0 6-6c0-2.8-2.2-5.2-9-5.2Z"/><circle cx="7.5" cy="10" r="1.3"/><circle cx="10.5" cy="7" r="1.3"/><circle cx="15" cy="7" r="1.3"/></svg>
+    </button>
   </div>
+</header>
 
-  <div class="wall">
-    <!-- 贴纸：线条的花与蝴蝶 -->
-    <div class="sticker" style="left:7%; top:10%; width:92px; transform:rotate(-12deg);">
-      <svg viewBox="0 0 84 64" aria-hidden="true">
-        <g><path d="M42 46 V 18"/><circle cx="42" cy="15" r="3"/>
-          <path d="M42 18 C 34 10 26 10 24 15"/><path d="M42 18 C 50 10 58 10 60 15"/>
-          <path d="M42 22 C 22 10 8 18 10 32 C 12 46 28 44 42 34 Z"/>
-          <path d="M42 22 C 62 10 76 18 74 32 C 72 46 56 44 42 34 Z"/>
-          <path d="M42 34 C 30 34 22 42 24 49 C 26 54 34 50 42 45 Z"/>
-          <path d="M42 34 C 54 34 62 42 60 49 C 58 54 50 50 42 45 Z"/></g>
-      </svg>
+<!-- ===== 主题选择抽屉 ===== -->
+<div class="theme-panel" id="themePanel" role="dialog" aria-modal="true" aria-label="选择主题">
+  <div class="theme-panel__sheet">
+    <div class="theme-panel__head">
+      <span>挑一个氛围</span>
+      <button class="theme-close" type="button" aria-label="关闭">×</button>
     </div>
-    <div class="sticker soft" style="right:8%; top:7%; width:64px; transform:rotate(9deg);">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <g><ellipse cx="32" cy="17" rx="5" ry="11"/><ellipse cx="32" cy="47" rx="5" ry="11"/>
-          <ellipse cx="17" cy="32" rx="11" ry="5"/><ellipse cx="47" cy="32" rx="11" ry="5"/>
-          <circle cx="32" cy="32" r="4.5"/></g>
-      </svg>
+    <div class="theme-grid">
+      <div class="theme-card" data-theme="default" tabindex="0" role="button" aria-label="晨雾">
+        <div class="theme-card__sw" style="background:linear-gradient(180deg,#eddcd0,#e8d4c6)"></div>
+        <div class="theme-card__name">晨雾</div>
+      </div>
+      <div class="theme-card" data-theme="peach" tabindex="0" role="button" aria-label="蜜桃">
+        <div class="theme-card__sw" style="background:linear-gradient(180deg,#f7dcc6,#f2cbb4)"></div>
+        <div class="theme-card__name">蜜桃</div>
+      </div>
+      <div class="theme-card" data-theme="mint" tabindex="0" role="button" aria-label="青提">
+        <div class="theme-card__sw" style="background:linear-gradient(180deg,#ddeadd,#cddfcd)"></div>
+        <div class="theme-card__name">青提</div>
+      </div>
+      <div class="theme-card" data-theme="dusk" tabindex="0" role="button" aria-label="薄暮">
+        <div class="theme-card__sw" style="background:linear-gradient(180deg,#dcd8e6,#cbc6da)"></div>
+        <div class="theme-card__name">薄暮</div>
+      </div>
+      <div class="theme-card" data-theme="cream" tabindex="0" role="button" aria-label="奶油">
+        <div class="theme-card__sw" style="background:linear-gradient(180deg,#f3e7c8,#eadcb6)"></div>
+        <div class="theme-card__name">奶油</div>
+      </div>
     </div>
-    <div class="sticker" style="left:16%; top:38%; width:44px; transform:rotate(-6deg);">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <g><circle cx="20" cy="20" r="5"/><circle cx="20" cy="8" r="3.5"/><circle cx="20" cy="32" r="3.5"/>
-          <circle cx="8" cy="20" r="3.5"/><circle cx="32" cy="20" r="3.5"/></g>
-      </svg>
-    </div>
-    <div class="sticker soft" style="right:13%; top:33%; width:60px; transform:rotate(14deg);">
-      <svg viewBox="0 0 84 64" aria-hidden="true">
-        <g><path d="M42 46 V 18"/><circle cx="42" cy="15" r="3"/>
-          <path d="M42 18 C 34 10 26 10 24 15"/><path d="M42 18 C 50 10 58 10 60 15"/>
-          <path d="M42 22 C 22 10 8 18 10 32 C 12 46 28 44 42 34 Z"/>
-          <path d="M42 22 C 62 10 76 18 74 32 C 72 46 56 44 42 34 Z"/>
-          <path d="M42 34 C 30 34 22 42 24 49 C 26 54 34 50 42 45 Z"/>
-          <path d="M42 34 C 54 34 62 42 60 49 C 58 54 50 50 42 45 Z"/></g>
-      </svg>
-    </div>
-    <div class="sticker" style="left:10%; bottom:24%; width:78px; transform:rotate(7deg);">
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <g><ellipse cx="32" cy="17" rx="5" ry="11"/><ellipse cx="32" cy="47" rx="5" ry="11"/>
-          <ellipse cx="17" cy="32" rx="11" ry="5"/><ellipse cx="47" cy="32" rx="11" ry="5"/>
-          <circle cx="32" cy="32" r="4.5"/></g>
-      </svg>
-    </div>
-    <div class="sticker soft" style="right:11%; bottom:16%; width:54px; transform:rotate(-10deg);">
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <g><circle cx="20" cy="20" r="5"/><circle cx="20" cy="8" r="3.5"/><circle cx="20" cy="32" r="3.5"/>
-          <circle cx="8" cy="20" r="3.5"/><circle cx="32" cy="20" r="3.5"/></g>
-      </svg>
-    </div>
-
-    <!-- 暗夜的星星 -->
-    <span class="star" style="left:22%; top:16%;">✦</span>
-    <span class="star" style="right:24%; top:22%;">✦</span>
-    <span class="star" style="left:30%; top:60%;">✦</span>
-    <span class="star" style="right:28%; top:55%;">✦</span>
-    <span class="star" style="left:15%; top:74%;">✦</span>
-    <span class="star" style="right:16%; top:72%;">✦</span>
-
-    <!-- 中央 -->
-    <div class="center">
-      <div class="hello">欢迎来我的小屋里坐坐</div>
-      <button class="play" id="housePlay" aria-label="播放/暂停">▶</button>
-      <div class="now" id="houseNow">还没有播放</div>
-      <a class="set" id="houseSet" href="javascript:void 0">音乐设置</a>
-    </div>
-
-    <div class="foot">· 藏在这里，慢慢听 ·</div>
   </div>
+</div>
 
-  <script src="assets/js/common.js"></script>
-  <script src="assets/js/auth.js?v=2026100401"></script>
-  <script src="assets/js/music.js?v=2026100401"></script>
-  <script>
-    (function () {
-      const $ = id => document.getElementById(id);
+<script src="assets/js/common.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/music.js"></script>
+<script>
+(function(){
+  var KEY='park.house.dark', root=document.documentElement, NS='http://www.w3.org/2000/svg';
+  var $=function(i){return document.getElementById(i)};
+  var $$=function(s){return Array.prototype.slice.call(document.querySelectorAll(s))};
+  var say=function(t){if(typeof toast==='function')toast(t)};
+  if(window.Park&&Park.session)Park.session().then(function(s){if(!s)location.replace('login.html')});
 
-      // 登录校验
-      Park.session().then(s => { if (!s) location.replace('login.html'); });
 
-      // 暗夜模式
-      const darkOn = localStorage.getItem('park.house.dark') === '1';
-      if (darkOn) document.body.classList.add('dark');
-      $('darkToggle').textContent = darkOn ? '☀️' : '🌙';
-      $('darkToggle').onclick = () => {
-        const on = document.body.classList.toggle('dark');
-        localStorage.setItem('park.house.dark', on ? '1' : '0');
-        $('darkToggle').textContent = on ? '☀️' : '🌙';
-      };
+  function el(p,t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e}
 
-      // 播放控制（状态实时同步）
-      const playBtn = $('housePlay');
-      Music.onChange(s => {
-        playBtn.textContent = s.playing ? '⏸' : '▶';
-        $('houseNow').textContent = s.title || '还没有播放';
-      });
-      playBtn.onclick = () => Music.toggle();
-      $('houseSet').onclick = () => Music.open();
-    })();
-  </script>
+  /* 书架：画在向右退远的左墙上，近大远小、线条向地平线收拢 */
+  var sh=$('shelf'),C=['#a9b8c6','#e3b8a5','#f0dfba','#9aa58c','#cdbfd8','#d98f78','#3a3d45'];
+  function P(x,yn){return [x,300+(yn-300)*(1-.0046*x)]}
+  function quad(x1,x2,y1,y2,fill){var a=P(x1,y1),b=P(x2,y1),c=P(x2,y2),d=P(x1,y2);
+    return el(sh,'polygon',{points:[a,b,c,d].join(' '),fill:fill})}
+  function bk(x,w,yb,h,c){quad(x,x+w,yb-h,yb,C[c])}
+  quad(8,100,30,520,'#d9c3b4');
+  [[6,78,0],[5,92,6],[7,66,2],[6,84,1],[5,74,4]].forEach(function(b,i){var x=14+[0,7,13,21,28][i];bk(x,b[0],150,b[1],b[2])});
+  quad(60,88,92,150,'#f7eee3');quad(64,84,100,142,'#e8b9a2');
+  quad(14,46,258,270,C[1]);quad(17,43,246,258,C[0]);var o=P(30,226);el(sh,'circle',{cx:o[0],cy:o[1],r:7,fill:'#f7eee3'});
+  [[5,70,3],[6,60,5],[5,76,4]].forEach(function(b,i){bk(52+i*8,b[0],270,b[1],b[2])});
+  var pp=P(86,270);quad(80,92,246,270,'#e8b9a2');el(sh,'path',{d:'M'+pp[0]+' '+(pp[1]-14)+'q-4-12 2-20M'+pp[0]+' '+(pp[1]-14)+'q8-8 12-8',stroke:'#9aa58c','stroke-width':1.6,fill:'none'});
+  for(var i=0;i<6;i++)bk(14+i*6,4,390,74,[0,1,2,4,5,3][i]);
+  quad(54,68,364,390,'#cdbfd8');quad(78,92,368,390,'#f7eee3');
+  quad(14,46,470,510,'#d6b88c');quad(52,92,478,510,'#c9a97c');var cc=P(70,454);el(sh,'circle',{cx:cc[0],cy:cc[1],r:8,fill:'#f3efe9'});
+  [30,150,270,390,510].forEach(function(y){quad(6,102,y,y+7,'#8c6a50')});
+  quad(6,10,30,520,'#8c6a50');quad(98,102,30,520,'#8c6a50');
+
+  /* 前景右下角的大叶子 */
+  var pl=$('plant'),L=[[-58,.8,'#9aa58c'],[-30,1,'#b3bc9f'],[-6,1.15,'#8c9c80'],[22,.9,'#a4b398']];
+  pl.setAttribute('transform','translate(384 724)');
+  el(pl,'path',{d:'M-20 0h40l-5 36h-30z',fill:'#d98f78'});
+  L.forEach(function(l){el(pl,'path',{d:'M0 -2C-16 -22 -13 -62 0 -92C13 -62 16 -22 0 -2Z',fill:l[2],transform:'rotate('+l[0]+') scale('+l[1]+')'})});
+
+  /* 夜里浮现的小星星（窗里） */
+  var st=$('stars');
+  for(var j=0;j<9;j++)el(st,'circle',{class:'hs-star',cx:156+Math.random()*80,cy:164+Math.random()*100,r:1+Math.random()*.6,style:'--d:'+(3+Math.random()*3)+'s;--l:'+(Math.random()*3)+'s'});
+
+  /* 播放器：只调用全局 window.Music，不新建 Audio */
+  var back=$('back'),btn=$('playBtn'),note=$('noteBtn');
+  function render(s){var p=!!(s&&s.playing);back.classList.toggle('playing',p);note.classList.toggle('hs-on',p)}
+  function ready(){if(window.Music)return true;say('音乐还没准备好，稍等一下');return false}
+  function tog(){if(ready())Music.toggle()}
+  btn.addEventListener('click',tog);
+  btn.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();tog()}});
+  note.addEventListener('click',function(){if(ready())Music.open()});
+  if(window.Music){Music.onChange(render);render({playing:Music.isPlaying()})}
+
+  /* ===== 主题切换：换氛围 ===== */
+  var THEME_KEY='park.house.theme', THEMES=['default','peach','mint','dusk','cream'];
+  var tp=$('themePanel'), tb=$('themeBtn');
+  function curTheme(){var t=root.getAttribute('data-theme');return THEMES.indexOf(t)>=0?t:'default'}
+  function paint(t){
+    if(t==='default')root.removeAttribute('data-theme');else root.setAttribute('data-theme',t);
+    try{localStorage.setItem(THEME_KEY,t)}catch(e){}
+    var cs=$$('.theme-card');for(var i=0;i<cs.length;i++)cs[i].classList.toggle('on',cs[i].getAttribute('data-theme')===t);
+  }
+  function openTheme(){tp.classList.add('on');paint(curTheme())}
+  function closeTheme(){tp.classList.remove('on')}
+  tb.addEventListener('click',openTheme);
+  $$('.theme-card').forEach(function(c){c.addEventListener('click',function(){paint(c.getAttribute('data-theme'));say('氛围换好啦');closeTheme()})});
+  tp.addEventListener('click',function(e){if(e.target===tp)closeTheme()});
+  $$('.theme-close').forEach(function(b){b.addEventListener('click',closeTheme)});
+  paint(curTheme());
+})();
+</script>
 </body>
 </html>

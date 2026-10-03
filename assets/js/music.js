@@ -1,9 +1,32 @@
 // 游乐园配乐：左上角音乐按钮 + 播放器 + 设置面板
 (function () {
   // ===== 曲目清单 =====
-  // 等铃儿提供音乐文件后：title 换成真歌名，file 指向 assets/music/ 下的文件即可
   const TRACKS = [
-    { id: 'aerie', title: 'Aerie - Lena Raine & Minecraft', file: 'assets/music/aerie.mp3' },
+    { id: "aerie", title: "Aerie - Lena Raine & Minecraft", file: "assets/music/aerie.mp3" },
+    { id: "incomparable-beauty-sodagreen", title: "无与伦比的美丽 (苏打绿版) - 苏打绿", file: "assets/music/incomparable-beauty-sodagreen.mp3" },
+    { id: "rainy-night-sodagreen", title: "下雨的夜晚 - 苏打绿", file: "assets/music/rainy-night-sodagreen.mp3" },
+    { id: "believe-sodagreen", title: "相信 (苏打绿版) - 苏打绿", file: "assets/music/believe-sodagreen.mp3" },
+    { id: "kanade-music-box", title: "奏(かなで) (スキマスイッチ) - Vega☆オルゴール", file: "assets/music/kanade-music-box.mp3" },
+    { id: "angel-libera", title: "Angel - Libera", file: "assets/music/angel-libera.mp3" },
+    { id: "concertino-bianco", title: "Concertino bianco for Piano in C major_I Con intenerimento - Alexei Lubimov", file: "assets/music/concertino-bianco.mp3" },
+    { id: "dauw", title: "Dauw - Nils Frahm", file: "assets/music/dauw.mp3" },
+    { id: "firebugs", title: "Firebugs - Lena Raine、Minecraft", file: "assets/music/firebugs.mp3" },
+    { id: "hidden-sanctuary", title: "Hidden Sanctuary - Poemme", file: "assets/music/hidden-sanctuary.mp3" },
+    { id: "last-days-yoshida", title: "Last Days - 吉田靖", file: "assets/music/last-days-yoshida.mp3" },
+    { id: "memo-flora-yoshimatsu", title: "Piano Concerto 'Memo Flora', Op.67_ II. Petals_ Andante - 吉松隆", file: "assets/music/memo-flora-yoshimatsu.mp3" },
+    { id: "spiegel-im-spiegel", title: "Spiegel im Spiegel - Arvo Pärt", file: "assets/music/spiegel-im-spiegel.mp3" },
+    { id: "still-life-sakamoto", title: "still life - 坂本龍一", file: "assets/music/still-life-sakamoto.mp3" },
+    { id: "subwoofer-lullaby", title: "Subwoofer Lullaby - C418", file: "assets/music/subwoofer-lullaby.mp3" },
+    { id: "suite-for-toy-piano", title: "Suite For Toy Piano (1948) - John Cage", file: "assets/music/suite-for-toy-piano.mp3" },
+    { id: "to-sun", title: "To Sun - 可可說", file: "assets/music/to-sun.mp3" },
+    { id: "white-landscapes-2", title: "White Landscapes Op. 47a_ 2. Stillness In Snow_ Moderato - 吉松隆", file: "assets/music/white-landscapes-2.mp3" },
+    { id: "white-landscapes-3", title: "White Landscapes Op. 47a_ 3. Disappearance Of Snow_ Largo - 吉松隆", file: "assets/music/white-landscapes-3.mp3" },
+    { id: "kinema-betsuno", title: "キネマ - 別野加奈", file: "assets/music/kinema-betsuno.mp3" },
+    { id: "why-does-life-betsuno", title: "どうして生命は、こんな美しい夜にも涙を流すのだろう - 別野加奈", file: "assets/music/why-does-life-betsuno.mp3" },
+    { id: "piano-folio-yoshimatsu", title: "ピアノ・フォリオ…消えたプレイアードに寄せて - 吉松隆", file: "assets/music/piano-folio-yoshimatsu.mp3" },
+    { id: "dots-neil-jones", title: "点点点（・・・） - Neil Jones", file: "assets/music/dots-neil-jones.mp3" },
+    { id: "tapiola-vision-yoshimatsu", title: "塔皮奥拉幻象（タピオラ幻景）-吉松隆", file: "assets/music/tapiola-vision-yoshimatsu.mp3" },
+    { id: "birthday-romance-yoshimatsu", title: "2つのロマンス　诞生日のロマンス - 吉松隆", file: "assets/music/birthday-romance-yoshimatsu.mp3" },
   ];
 
   const LS_KEY = 'park.music';
@@ -60,7 +83,7 @@
     const wrap = document.getElementById('musicBtn');
     if (wrap) wrap.classList.toggle('playing', v);
     const p2 = document.getElementById('musicPlay2');
-    if (p2) p2.textContent = v ? '⏸' : '▶';
+    if (p2) p2.classList.toggle('playing', v);
     emit();
   }
 
@@ -99,9 +122,8 @@
   function next(auto) {
     const l = list();
     if (!l.length) { toast('没有可播放的歌'); return; }
-    if (state.mode === 'single') {
-      if (auto) { audio.currentTime = 0; audio.play().catch(() => {}); }
-      else play(currentId || l[0].id);
+    if (state.mode === 'single' && auto) {
+      audio.currentTime = 0; audio.play().catch(() => {});
       return;
     }
     if (state.mode === 'random') { play(l[Math.floor(Math.random() * l.length)].id); return; }
@@ -193,14 +215,15 @@
     panel.innerHTML =
       '<div class="music-panel__sheet">' +
         '<div class="music-panel__head"><span>音乐</span><button id="musicClose" aria-label="关闭">×</button></div>' +
+        '<div class="music-hush">静静聆听</div>' +
         '<div class="music-note">注意：由于浏览器限制，您更换页面时，音乐会断掉，须再次手动开启。音乐陪伴您在某一页安心浏览；您也可到「音乐小屋」中去聆听音乐。</div>' +
         '<a class="music-house-link" href="music-house.html">🏡 进入音乐小屋</a>' +
         '<div class="music-now">' +
           '<div class="music-now__title" id="musicNowTitle">还没有播放</div>' +
           '<div class="music-now__ctrl">' +
-            '<button id="musicPrev" aria-label="上一首">⏮</button>' +
-            '<button id="musicPlay2" aria-label="播放/暂停">▶</button>' +
-            '<button id="musicNext" aria-label="下一首">⏭</button>' +
+            '<button id="musicPrev" aria-label="上一首"><svg viewBox="0 0 24 24"><path d="M6 5v14M18 5l-9 7 9 7z" fill="currentColor"/></svg></button>' +
+            '<button id="musicPlay2" aria-label="播放/暂停"><svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5l12 7-12 7z" fill="currentColor"/></svg><svg class="ic-pause" viewBox="0 0 24 24"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg></button>' +
+            '<button id="musicNext" aria-label="下一首"><svg viewBox="0 0 24 24"><path d="M6 5l9 7-9 7zM18 5v14" fill="currentColor"/></svg></button>' +
           '</div>' +
         '</div>' +
         '<div class="music-mode" id="musicMode">' +
