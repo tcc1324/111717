@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>邮局 · 给聆遇的游乐园</title>
   <link rel="stylesheet" href="assets/css/base.css">
-  <link rel="stylesheet" href="assets/css/music.css">
-  <link rel="stylesheet" href="assets/css/ji.css">
+  <link rel="stylesheet" href="assets/css/music.css?v=2026100401">
+  <link rel="stylesheet" href="assets/css/ji.css?v=2026100401">
   <style>
     #pv { width: 96px; height: 120px; margin: 8px auto; }
     .pick { display: block; text-align: center; margin: 14px 0; }
@@ -60,9 +60,9 @@
     <div class="center"><button class="btn" id="make">放上架子</button></div>
   </div>
   <script src="assets/js/common.js"></script>
-  <script src="assets/js/auth.js"></script>
-  <script src="assets/js/music.js"></script>
-  <script src="assets/js/ji.js"></script>
+  <script src="assets/js/auth.js?v=2026100401"></script>
+  <script src="assets/js/music.js?v=2026100401"></script>
+  <script src="assets/js/ji.js?v=2026100401"></script>
   <script>
     const $ = id => document.getElementById(id);
     let img = null;
@@ -94,7 +94,7 @@
 
     async function take(el, fn) {
       if (!el || el.classList.contains('off')) return;
-      const r = await Ji.rpc(fn, { sid: +el.dataset.id });
+      const r = await Ji.rpc(fn, { p_sid: +el.dataset.id });
       if (r.err) return toast(r.err);
       toast(r.data === 'ok' ? '领到啦，放进你的邮票夹了' : r.data);
       load();

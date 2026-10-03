@@ -33,15 +33,15 @@
   const clear = () => localStorage.removeItem(KEY);
 
   // 取一个有效的登录凭证，快过期就自动续期
-  async function session() {
-    const s = load();
-    if (!s) return null;
-    if (s.expires_at * 1000 - Date.now() > 60000) return s;
+  // 续期锁：同一个旧凭证只发一次续期请求，避免页面里多个请求并发续期，
+  // 把 refresh_token 轮换掉（Supabase 开了 refresh token rotation，旧令牌一次就失效）
+  let refreshing = null;
+  async function doRefresh(token) {
     try {
       const r = await fetch(withKey(SB_URL + '/auth/v1/token?grant_type=refresh_token'), {
         method: 'POST',
         headers: { apikey: SB_ANON, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: s.refresh_token }),
+        body: JSON.stringify({ refresh_token: token }),
       });
       if (!r.ok) { if (r.status < 500) clear(); return null; }
       const n = await r.json();
@@ -50,13 +50,26 @@
       return fresh;
     } catch { return null; }
   }
+  async function session() {
+    const s = load();
+    if (!s) return null;
+    if (s.expires_at * 1000 - Date.now() > 60000) return s;
+    if (!refreshing) refreshing = doRefresh(s.refresh_token).finally(() => { refreshing = null; });
+    return refreshing;
+  }
 
   // 带登录身份读写数据库
   async function api(path, opts = {}) {
     const s = await session();
+    if (!s) {
+      // 登录凭证彻底失效了（续期也失败），跳回登录页让用户重新登录，
+      // 而不是用 anon key 硬顶上去（那样调领取函数必然被数据库拒绝）
+      location.replace('login.html');
+      throw new Error('need-login');
+    }
     return fetch(withKey(SB_URL + '/rest/v1/' + path), {
       ...opts,
-      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + (s ? s.access_token : SB_ANON), 'Content-Type': 'application/json', ...(opts.headers || {}) },
+      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json', ...(opts.headers || {}) },
     });
   }
 
