@@ -21,7 +21,7 @@
     if (title) bits.push('页面「' + title + '」');
     if (window.Music) {
       const n = Music.now();
-      if (n) bits.push(Music.isPlaying() ? '正在听《' + n + '》' : '刚听过的歌《' + n + '》');
+      if (n) bits.push(Music.isPlaying() ? '正在听《' + n + '》' : '上次听的歌《' + n + '》');
     }
     if (!bits.length) return '';
     return '此刻她在这座游乐园里：' + bits.join('，') + '。';
