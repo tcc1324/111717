@@ -47,11 +47,6 @@
   // 把当前页面截成图片（截图前藏掉管家自己的气泡和聊天窗），转成 base64 dataURL 给唐甜甜「看」
   async function captureImage() {
     if (typeof html2canvas !== 'function') return '';
-    const hidden = [];
-    ['butlerFab', 'butlerWin'].forEach(id => {
-      const n = document.getElementById(id);
-      if (n) { hidden.push(n); n.style.display = 'none'; }
-    });
     let dataUrl = '';
     try {
       const canvas = await html2canvas(document.body, {
@@ -60,10 +55,15 @@
         logging: false,
         height: window.innerHeight,
         windowHeight: window.innerHeight,
+        onclone: (clonedDoc) => {
+          ['butlerFab', 'butlerWin'].forEach(id => {
+            const n = clonedDoc.getElementById(id);
+            if (n) n.style.display = 'none';
+          });
+        },
       });
       dataUrl = canvas.toDataURL('image/jpeg', 0.72);
     } catch {}
-    hidden.forEach(n => { n.style.display = ''; });
     return dataUrl;
   }
 
@@ -209,6 +209,7 @@
     history.push({ role: 'user', content: text });
     saveHist();
     input.value = '';
+    input.style.height = 'auto';
     const t = addTyping();
     const j = await ask(text);
     if (t) t.remove();
@@ -242,7 +243,7 @@
       '<div class="butler-win__body" id="butlerBody"></div>' +
       '<div class="butler-win__backend" style="text-align:center;padding:6px 12px;background:#fff;border-top:1px dashed rgba(0,0,0,.08);"><button id="butlerBackend" style="border:none;background:none;color:#b9a78a;font-size:12px;letter-spacing:.05em;cursor:pointer;">📮 联系总后台 AI</button></div>' +
       '<div class="butler-win__foot">' +
-        '<input id="butlerInput" placeholder="想和甜甜说什么呀？" maxlength="500">' +
+        '<textarea id="butlerInput" placeholder="想和甜甜说什么呀？" maxlength="500" rows="1"></textarea>' +
         '<button id="butlerSend">发送</button>' +
       '</div>';
 
@@ -283,7 +284,13 @@
     document.getElementById('butlerBackendSend').onclick = () => submitBackend();
     document.getElementById('butlerBackendCancel').onclick = () => { modal.classList.remove('on'); };
     modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('on'); });
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(input.value); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); }
+    });
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 132) + 'px';
+    });
 
     if (history.length) {
       history.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content));
