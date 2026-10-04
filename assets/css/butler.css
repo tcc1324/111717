@@ -90,7 +90,7 @@ body[data-music="hot"] .butler-fab { opacity: 1; }
   flex: 1; padding: 9px 12px; font-size: 14px; line-height: 1.5;
   border: 2px solid #e8e8e8; border-radius: 12px; outline: none;
   background: #fffaf2; resize: none; font-family: inherit;
-  max-height: 132px; overflow-y: auto;
+  min-height: 0; max-height: 132px; overflow-y: auto;
 }
 .butler-win__foot textarea:focus { border-color: #e0679a; }
 .butler-win__foot button {
