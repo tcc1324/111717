@@ -81,7 +81,7 @@
     return e;
   }
 
-  let body = null, input = null, stateEl = null, win = null;
+  let body = null, input = null, win = null;
 
   function addMsg(role, text) {
     if (!body) return;
@@ -124,10 +124,6 @@
     }
   }
 
-  function renderState() {
-    if (stateEl) stateEl.textContent = stateCard();
-  }
-
   function inject() {
     // 气泡按钮
     const fab = el('div', 'butler-fab', '');
@@ -146,7 +142,6 @@
         '<button id="butlerClear" aria-label="清空对话">清空</button>' +
         '<button id="butlerClose" class="close" aria-label="关闭">×</button>' +
       '</div>' +
-      '<div class="butler-state" id="butlerState"></div>' +
       '<div class="butler-win__body" id="butlerBody"></div>' +
       '<div class="butler-win__foot">' +
         '<input id="butlerInput" placeholder="想和甜甜说什么呀？" maxlength="500">' +
@@ -158,11 +153,10 @@
 
     body = document.getElementById('butlerBody');
     input = document.getElementById('butlerInput');
-    stateEl = document.getElementById('butlerState');
 
     btn.onclick = () => {
       win.classList.toggle('on');
-      if (win.classList.contains('on')) { renderState(); input.focus(); }
+      if (win.classList.contains('on')) { input.focus(); }
     };
     document.getElementById('butlerClose').onclick = () => win.classList.remove('on');
     document.getElementById('butlerClear').onclick = () => {
@@ -176,7 +170,6 @@
     } else {
       addWelcome();
     }
-    renderState();
   }
 
   function addWelcome() {
