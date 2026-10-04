@@ -110,7 +110,7 @@ body[data-music="none"] .music-house-link, body[data-music="none"] .music-note {
   animation:tp-up .3s cubic-bezier(.22,.8,.3,1)}
 @keyframes tp-up{from{transform:translateY(30px);opacity:.6}to{transform:none;opacity:1}}
 .theme-panel__head{display:flex;align-items:center;justify-content:space-between;font-size:18px;letter-spacing:.15em;color:var(--ink);margin-bottom:14px}
-.theme-panel__head button{all:unset;cursor:pointer;font-size:28px;line-height:1;color:#999;padding:0 4px}
+.theme-panel__head button{all:unset;cursor:pointer;font-size:15px;line-height:1;color:var(--ink,#4a3a35);letter-spacing:.08em;padding:8px 6px}
 .theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .theme-card{border:2px solid transparent;border-radius:14px;padding:10px;cursor:pointer;background:#fff;
   box-shadow:0 2px 8px rgba(0,0,0,.06);transition:border-color .2s,transform .12s}
@@ -270,7 +270,7 @@ body[data-music="none"] .music-house-link, body[data-music="none"] .music-note {
   <div class="theme-panel__sheet">
     <div class="theme-panel__head">
       <span>挑一个氛围</span>
-      <button class="theme-close" type="button" aria-label="关闭">×</button>
+      <button class="theme-close" type="button" aria-label="完成">完成</button>
     </div>
     <div class="theme-grid">
       <div class="theme-card" data-theme="default" tabindex="0" role="button" aria-label="晨雾">
@@ -361,9 +361,9 @@ body[data-music="none"] .music-house-link, body[data-music="none"] .music-note {
   function openTheme(){tp.classList.add('on');paint(curTheme())}
   function closeTheme(){tp.classList.remove('on')}
   tb.addEventListener('click',openTheme);
-  $$('.theme-card').forEach(function(c){c.addEventListener('click',function(){paint(c.getAttribute('data-theme'));say('氛围换好啦');closeTheme()})});
-  tp.addEventListener('click',function(e){if(e.target===tp)closeTheme()});
-  $$('.theme-close').forEach(function(b){b.addEventListener('click',closeTheme)});
+  $$('.theme-card').forEach(function(c){c.addEventListener('click',function(){paint(c.getAttribute('data-theme'))})});
+  $$('.theme-close').forEach(function(b){b.addEventListener('click',function(){closeTheme();try{say('氛围换好啦')}catch(e){}})});
+  tp.addEventListener('click',function(e){if(!e.target.closest('.theme-panel__sheet'))closeTheme()});
   paint(curTheme());
 })();
 </script>
