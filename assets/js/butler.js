@@ -325,7 +325,7 @@
     const s = await Park.session();
     if (!s) return;                       // 未登录不显示
     const uid = uidOf(s.access_token);
-    if (uid !== OWNER) return;            // 内测：只有铃心能看到（放开聆遇时把这里改成包含 LISTENING）
+    if (uid !== OWNER && uid !== LISTENING) return;  // 铃心 + 聆遇都能看到
     who = uid === LISTENING ? '聆遇' : '铃心';
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
     else inject();
