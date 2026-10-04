@@ -147,7 +147,11 @@
     document.getElementById('butlerSend').onclick = () => send(input.value);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(input.value); });
 
-    addWelcome();
+    if (history.length) {
+      history.forEach(m => addMsg(m.role === 'user' ? 'user' : 'ai', m.content));
+    } else {
+      addWelcome();
+    }
     renderState();
   }
 
