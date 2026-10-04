@@ -7,6 +7,8 @@
 
   // 内测白名单：与后端 butler 函数的 OWNERS 保持一致（只有铃心能看到唐甜甜）
   const OWNER = '5e6d4bcf-7f6d-442e-b2a8-d72e29339f75';
+  const LISTENING = '9e48693c-a8fb-42d8-8929-917bb7c18223'; // 聆遇（调满意后放开）
+  let who = ''; // 当前用户的名字（铃心 / 聆遇），登录后确定
 
   const LS_HIST = 'park.butler.history';
   let history = [];
@@ -17,14 +19,14 @@
   // 状态卡：告诉唐甜甜「此刻她在哪、在听什么」
   function stateCard() {
     const bits = [];
-    const title = (document.title || '').trim();
-    if (title) bits.push('页面「' + title + '」');
+    const room = currentRoom();
+    if (room) bits.push('在「' + room + '」');
     if (window.Music) {
       const n = Music.now();
       if (n) bits.push(Music.isPlaying() ? '正在听《' + n + '》' : '上次听的歌《' + n + '》');
     }
     if (!bits.length) return '';
-    return '此刻她在这座游乐园里：' + bits.join('，') + '。';
+    return '此刻' + (who || '她') + '在这座游乐园里：' + bits.join('，') + '。';
   }
 
   // 抓当前页面可见文字（排除管家自己的气泡和聊天窗），让唐甜甜「看」到这页有什么
@@ -40,27 +42,76 @@
     return t.slice(0, 2000);
   }
 
-  // 传给后端的完整上下文：位置状态 + 页面内容
+  // 把当前页面截成图片（截图前藏掉管家自己的气泡和聊天窗），转成 base64 dataURL 给唐甜甜「看」
+  async function captureImage() {
+    if (typeof html2canvas !== 'function') return '';
+    const hidden = [];
+    ['butlerFab', 'butlerWin'].forEach(id => {
+      const n = document.getElementById(id);
+      if (n) { hidden.push(n); n.style.display = 'none'; }
+    });
+    let dataUrl = '';
+    try {
+      const canvas = await html2canvas(document.body, {
+        scale: 0.5,
+        useCORS: true,
+        logging: false,
+        height: window.innerHeight,
+        windowHeight: window.innerHeight,
+      });
+      dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+    } catch {}
+    hidden.forEach(n => { n.style.display = ''; });
+    return dataUrl;
+  }
+
+  // 全站房间清单（动态站点地图的数据源）：加新房间只需在这里加一行、push 即可，不用改后端提示词
+  const SITE = [
+    ['park.html',        '主界面',     '游乐园大门，通往「游玩」「个人」「书店」，右下角是音乐小屋'],
+    ['play.html',        '游玩·目录',  '列着：寄、留言墙(筹备中)、秘密抽屉(筹备中)'],
+    ['ji.html',          '寄',         '写信的起点，通往「信箱」「投寄」「邮局」「集邮册」'],
+    ['mailbox.html',     '信箱',       '收信、回信'],
+    ['send.html',        '投寄',       '写一封信寄出去'],
+    ['post-office.html', '邮局',       '领邮票、做邮票'],
+    ['album.html',       '集邮册',     '看她收集的照片'],
+    ['music-house.html', '音乐小屋',   '听歌、换颜色'],
+    ['me.html',          '个人',       '她的小角落'],
+    ['shop.html',        '书店',       '（页面还没建好，导航里是个空位）'],
+  ];
+
+  // 当前页面对应地图里的哪个房间（用文件名匹配 SITE，保证状态卡和地图用同一套名字）
+  function currentRoom() {
+    const file = (location.pathname.split('/').pop() || '').toLowerCase();
+    const hit = SITE.find(r => r[0].toLowerCase() === file);
+    return hit ? hit[1] : '';
+  }
+
+  // 把全站地图序列化成一段文字，随上下文发给唐甜甜，让她始终清楚游乐园有哪些房间
+  function siteMap() {
+    const lines = SITE.map(r => '· ' + r[1] + '（' + r[0] + '）' + r[2]);
+    return '【游乐园全站地图】\n' + lines.join('\n');
+  }
+
+  // 传给后端的完整上下文：全站地图 + 位置状态 + 当前页内容
   function context() {
+    const map = siteMap();
     const head = stateCard();
     const body = pageText();
     const content = body ? '【当前页面上能看到的内容】' + body : '';
-    if (head && content) return head + ' ' + content;
-    if (head) return head;
-    if (content) return content;
-    return '';
+    return [map, head, content].filter(Boolean).join('\n\n');
   }
 
   async function ask(text) {
     const s = await Park.session();
     if (!s) return { ok: false, msg: '要先登录哦' };
+    const image = await captureImage();
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 30000);
     try {
       const r = await fetch(withKey(SB_URL + '/functions/v1/butler'), {
         method: 'POST',
         headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, history: history.slice(-20), state: context() }),
+        body: JSON.stringify({ text, history: history.slice(-20), state: context(), image }),
         signal: ctrl.signal,
       });
       const j = await r.json().catch(() => ({}));
@@ -71,6 +122,38 @@
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  // 联系总后台 AI：把诉求写进诉求表，总后台 AI 每天九点自检处理
+  async function contactBackend(text) {
+    const s = await Park.session();
+    if (!s) return { ok: false, msg: '要先登录哦' };
+    const uid = uidOf(s.access_token);
+    if (!uid) return { ok: false, msg: '登录状态有点怪，重登试试' };
+    try {
+      const r = await fetch(withKey(SB_URL + '/rest/v1/butler_requests'), {
+        method: 'POST',
+        headers: {
+          apikey: SB_ANON,
+          Authorization: 'Bearer ' + s.access_token,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ from_uid: uid, content: text, status: 'pending' }),
+      });
+      return r.ok ? { ok: true } : { ok: false, msg: '没送出去，稍后再试' };
+    } catch {
+      return { ok: false, msg: '没送出去，稍后再试' };
+    }
+  }
+
+  function openBackend() {
+    const t = prompt('📮 联系总后台 AI\n\n可以询问后台数据、提出乐园的修建请求或建议。\n总后台 AI 每天九点自检一次，需要时间答复哦。\n\n想对总后台 AI 说什么？');
+    if (!t || !t.trim()) return;
+    contactBackend(t.trim()).then(j => {
+      if (j.ok) toast('已经转告总后台 AI 啦，它会定期处理');
+      else toast(j.msg || '没送出去，稍后再试');
+    });
   }
 
   // ===== DOM =====
@@ -144,6 +227,7 @@
       '</div>' +
       '<div class="butler-win__body" id="butlerBody"></div>' +
       '<div class="butler-win__foot">' +
+        '<div class="butler-win__backend" style="text-align:center;padding:0 12px 8px;"><button id="butlerBackend" style="border:none;background:none;color:#b9a78a;font-size:12px;letter-spacing:.05em;cursor:pointer;">📮 联系总后台 AI</button></div>' +
         '<input id="butlerInput" placeholder="想和甜甜说什么呀？" maxlength="500">' +
         '<button id="butlerSend">发送</button>' +
       '</div>';
@@ -163,6 +247,7 @@
       clearHist(); body.innerHTML = ''; addWelcome(); toast('对话清空啦');
     };
     document.getElementById('butlerSend').onclick = () => send(input.value);
+    document.getElementById('butlerBackend').onclick = () => openBackend();
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(input.value); });
 
     if (history.length) {
@@ -187,7 +272,9 @@
     if (!window.Park || typeof Park.session !== 'function') return;
     const s = await Park.session();
     if (!s) return;                       // 未登录不显示
-    if (uidOf(s.access_token) !== OWNER) return;  // 内测：只有铃心能看到
+    const uid = uidOf(s.access_token);
+    if (uid !== OWNER) return;            // 内测：只有铃心能看到（放开聆遇时把这里改成包含 LISTENING）
+    who = uid === LISTENING ? '聆遇' : '铃心';
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
     else inject();
   }
