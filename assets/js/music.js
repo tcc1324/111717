@@ -3,9 +3,9 @@
   // ===== 曲目清单 =====
   const TRACKS = [
     { id: "aerie", title: "Aerie - Lena Raine & Minecraft", file: "assets/music/aerie.mp3" },
-    { id: "incomparable-beauty-sodagreen", title: "无与伦比的美丽 (苏打绿版) - 苏打绿", file: "assets/music/incomparable-beauty-sodagreen.mp3" },
+    { id: "incomparable-beauty-sodagreen", title: "无与伦比的美丽 - 苏打绿", file: "assets/music/incomparable-beauty-sodagreen.mp3" },
     { id: "rainy-night-sodagreen", title: "下雨的夜晚 - 苏打绿", file: "assets/music/rainy-night-sodagreen.mp3" },
-    { id: "believe-sodagreen", title: "相信 (苏打绿版) - 苏打绿", file: "assets/music/believe-sodagreen.mp3" },
+    { id: "believe-sodagreen", title: "相信 - 苏打绿", file: "assets/music/believe-sodagreen.mp3" },
     { id: "kanade-music-box", title: "奏(かなで) (スキマスイッチ) - Vega☆オルゴール", file: "assets/music/kanade-music-box.mp3" },
     { id: "angel-libera", title: "Angel - Libera", file: "assets/music/angel-libera.mp3" },
     { id: "concertino-bianco", title: "Concertino bianco for Piano in C major_I Con intenerimento - Alexei Lubimov", file: "assets/music/concertino-bianco.mp3" },
