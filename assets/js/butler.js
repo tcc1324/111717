@@ -148,12 +148,24 @@
   }
 
   function openBackend() {
-    const t = prompt('您可以使用此选项让甜甜帮忙联系到有乐园管理权限的总后台AI，甜甜作为中间人帮你们传话，您可以询问后台数据情况、提出乐园的修建请求或建议等，不需要通过其他人。但请注意后台AI每天晚上九点（您可提出修改）自检一次，需要时间才能给出答复。\n\n想对总后台 AI 说什么？');
-    if (!t || !t.trim()) return;
-    contactBackend(t.trim()).then(j => {
-      if (j.ok) toast('已经转告总后台 AI 啦，它会定期处理');
-      else toast(j.msg || '没送出去，稍后再试');
-    });
+    if (!modal) return;
+    modal.classList.add('on');
+    backendTextarea.value = '';
+    backendHint.textContent = '';
+    setTimeout(() => backendTextarea.focus(), 60);
+  }
+
+  async function submitBackend() {
+    const text = backendTextarea.value.trim();
+    if (!text) { backendHint.textContent = '先写点什么再发送吧～'; return; }
+    backendHint.textContent = '正在转告总后台 AI…';
+    const j = await contactBackend(text);
+    if (j.ok) {
+      modal.classList.remove('on');
+      toast('已经转告总后台 AI 啦，它会定期处理');
+    } else {
+      backendHint.textContent = j.msg || '没送出去，稍后再试';
+    }
   }
 
   // ===== DOM =====
@@ -164,7 +176,7 @@
     return e;
   }
 
-  let body = null, input = null, win = null;
+  let body = null, input = null, win = null, modal = null, backendTextarea = null, backendHint = null;
 
   function addMsg(role, text) {
     if (!body) return;
@@ -235,6 +247,24 @@
     document.body.appendChild(fab);
     document.body.appendChild(win);
 
+    // 联系总后台 AI 弹窗（替代原生 prompt，输入框清楚、反馈明确）
+    modal = el('div', 'butler-modal', '');
+    modal.id = 'butlerModal';
+    modal.innerHTML =
+      '<div class="butler-modal__box">' +
+        '<div class="butler-modal__title">📮 联系总后台 AI</div>' +
+        '<div class="butler-modal__desc">您可以使用此选项让甜甜帮忙联系到有乐园管理权限的总后台AI，甜甜作为中间人帮你们传话，您可以询问后台数据情况、提出乐园的修建请求或建议等，不需要通过其他人。但请注意后台AI每天晚上九点（您可提出修改）自检一次，需要时间才能给出答复。</div>' +
+        '<textarea id="butlerBackendText" placeholder="想对总后台 AI 说什么？"></textarea>' +
+        '<div class="butler-modal__btns">' +
+          '<button class="cancel" id="butlerBackendCancel">取消</button>' +
+          '<button class="send" id="butlerBackendSend">发送</button>' +
+        '</div>' +
+        '<div class="butler-modal__hint" id="butlerBackendHint"></div>' +
+      '</div>';
+    document.body.appendChild(modal);
+    backendTextarea = document.getElementById('butlerBackendText');
+    backendHint = document.getElementById('butlerBackendHint');
+
     body = document.getElementById('butlerBody');
     input = document.getElementById('butlerInput');
 
@@ -248,6 +278,9 @@
     };
     document.getElementById('butlerSend').onclick = () => send(input.value);
     document.getElementById('butlerBackend').onclick = () => openBackend();
+    document.getElementById('butlerBackendSend').onclick = () => submitBackend();
+    document.getElementById('butlerBackendCancel').onclick = () => { modal.classList.remove('on'); };
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('on'); });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(input.value); });
 
     if (history.length) {

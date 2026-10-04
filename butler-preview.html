@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>唐甜甜 · 样式预览</title>
+  <link rel="stylesheet" href="assets/css/butler.css">
+  <style>
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      background: linear-gradient(170deg, #fff6c9 0%, #ffe3ea 55%, #dff3ff 100%) no-repeat fixed;
+      background-color: #fff3d6;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; min-height: 100dvh;
+    }
+    .tip {
+      max-width: 420px; padding: 24px; text-align: center;
+      background: rgba(255,255,255,.8); border: 2px solid #222; border-radius: 20px;
+      box-shadow: 3px 4px 0 #222; font-size: 15px; line-height: 1.7; color: #555;
+    }
+    .tip b { color: #2b2b2b; }
+    .tip .hint { font-size: 13px; color: #999; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="tip">
+    <div style="font-size:32px;margin-bottom:6px">🍭</div>
+    <b>右下角那个棒棒糖，就是唐甜甜的气泡按钮</b><br>
+    点它，聊天窗就会弹出来（下面是已经展开的样子）
+    <div class="hint">这只是样式预览，真正上线后只有登录的你（铃心）才看得到</div>
+  </div>
+
+  <!-- 气泡按钮（与 butler.js 注入的结构一致） -->
+  <div class="butler-fab" style="opacity:1">
+    <button class="butler-fab__btn" onclick="toggle()" aria-label="唐甜甜">🍭</button>
+    <span class="butler-fab__dot"></span>
+  </div>
+
+  <!-- 聊天窗（预览默认展开） -->
+  <div class="butler-win on" id="win">
+    <div class="butler-win__head">
+      <div class="name">🍭 唐甜甜<span class="sub">游乐园小管家</span></div>
+      <button onclick="document.getElementById('bodyEl').innerHTML='';addWelcome()">清空</button>
+      <button class="close" onclick="toggle()">×</button>
+    </div>
+    <div class="butler-state">此刻她在这座游乐园里：页面「给聆遇的游乐园」，正在听《Aerie - Lena Raine & Minecraft》。</div>
+    <div class="butler-win__body" id="bodyEl"></div>
+    <div class="butler-win__foot">
+      <input placeholder="想和甜甜说什么呀？" onkeydown="if(event.key==='Enter')say()">
+      <button onclick="say()">发送</button>
+    </div>
+  </div>
+
+  <script>
+    const bodyEl = document.getElementById('bodyEl');
+    function add(role, text) {
+      const row = document.createElement('div');
+      row.className = 'butler-msg ' + role;
+      if (role === 'ai') { const a = document.createElement('span'); a.className = 'avatar'; a.textContent = '🍭'; row.appendChild(a); }
+      const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text; row.appendChild(b);
+      bodyEl.appendChild(row); bodyEl.scrollTop = bodyEl.scrollHeight;
+    }
+    function addWelcome() {
+      add('ai', '你好呀，我是唐甜甜～这座游乐园的灯给你留了一盏。今天想逛哪儿？');
+      add('user', '音乐小屋怎么走呀？');
+      add('ai', '音乐小屋在那边，我带你去好不好？那里能听歌、挑氛围、换颜色～');
+    }
+    function say() {
+      const i = document.querySelector('.butler-win__foot input');
+      if (!i.value.trim()) return;
+      add('user', i.value.trim());
+      i.value = '';
+      setTimeout(() => add('ai', '（预览页不会真的回复哦，上线后唐甜甜会在这里回你～）'), 600);
+    }
+    function toggle() { document.getElementById('win').classList.toggle('on'); }
+    addWelcome();
+  </script>
+</body>
+</html>

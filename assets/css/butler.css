@@ -97,3 +97,40 @@ body[data-music="hot"] .butler-fab { opacity: 1; }
   transition: transform .12s, box-shadow .12s;
 }
 .butler-win__foot button:active { transform: translate(2px, 3px); box-shadow: 0 0 0 #222; }
+
+/* ===== 联系总后台 AI 弹窗 ===== */
+.butler-modal {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0, 0, 0, .4);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.butler-modal.on { display: flex; }
+.butler-modal__box {
+  width: 100%; max-width: 340px;
+  background: #fffaf2; border: 2px solid #222; border-radius: 20px;
+  box-shadow: 4px 5px 0 #222; padding: 18px 16px 16px;
+  animation: butler-pop .22s cubic-bezier(.22, .8, .3, 1);
+}
+.butler-modal__title { font-size: 16px; letter-spacing: .05em; margin-bottom: 8px; }
+.butler-modal__desc {
+  font-size: 12px; line-height: 1.75; color: #8a6f5a;
+  margin-bottom: 12px; word-break: break-word;
+}
+.butler-modal textarea {
+  width: 100%; box-sizing: border-box; min-height: 92px;
+  padding: 10px 12px; font-size: 14px; line-height: 1.6;
+  border: 2px solid #e8e8e8; border-radius: 12px; outline: none;
+  background: #fff; resize: vertical; font-family: inherit;
+}
+.butler-modal textarea:focus { border-color: #e0679a; }
+.butler-modal__btns { display: flex; gap: 10px; margin-top: 12px; }
+.butler-modal__btns button {
+  flex: 1; padding: 10px; font-size: 14px; border-radius: 12px;
+  border: 2px solid #222; box-shadow: 2px 3px 0 #222; cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+}
+.butler-modal__btns button:active { transform: translate(2px, 3px); box-shadow: 0 0 0 #222; }
+.butler-modal__btns .cancel { background: #fff; color: #666; }
+.butler-modal__btns .send { background: #e0679a; color: #fff; }
+.butler-modal__hint { font-size: 11px; color: #c48a9e; margin-top: 10px; min-height: 15px; }
