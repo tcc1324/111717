@@ -25,8 +25,10 @@
       const n = Music.now();
       if (n) bits.push(Music.isPlaying() ? '正在听《' + n + '》' : '上次听的歌《' + n + '》');
     }
-    if (!bits.length) return '';
-    return '此刻' + (who || '她') + '在这座游乐园里：' + bits.join('，') + '。';
+    const whoName = who || '她';
+    const head = '当前正在跟你说话的人是：' + whoName + '。';
+    if (!bits.length) return head;
+    return head + '此刻' + whoName + '在这座游乐园里：' + bits.join('，') + '。';
   }
 
   // 抓当前页面可见文字（排除管家自己的气泡和聊天窗），让唐甜甜「看」到这页有什么
