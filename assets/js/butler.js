@@ -220,6 +220,7 @@
     saveHist();
     input.value = '';
     input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';   // 收拢回单行（已清空，scrollHeight 即单行高度）
     const t = addTyping();
     const j = await ask(text);
     if (t) t.remove();
