@@ -226,8 +226,8 @@
         '<button id="butlerClose" class="close" aria-label="关闭">×</button>' +
       '</div>' +
       '<div class="butler-win__body" id="butlerBody"></div>' +
+      '<div class="butler-win__backend" style="text-align:center;padding:6px 12px;background:#fff;border-top:1px dashed rgba(0,0,0,.08);"><button id="butlerBackend" style="border:none;background:none;color:#b9a78a;font-size:12px;letter-spacing:.05em;cursor:pointer;">📮 联系总后台 AI</button></div>' +
       '<div class="butler-win__foot">' +
-        '<div class="butler-win__backend" style="text-align:center;padding:0 12px 8px;"><button id="butlerBackend" style="border:none;background:none;color:#b9a78a;font-size:12px;letter-spacing:.05em;cursor:pointer;">📮 联系总后台 AI</button></div>' +
         '<input id="butlerInput" placeholder="想和甜甜说什么呀？" maxlength="500">' +
         '<button id="butlerSend">发送</button>' +
       '</div>';
