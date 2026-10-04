@@ -255,7 +255,7 @@
     modal.innerHTML =
       '<div class="butler-modal__box">' +
         '<div class="butler-modal__title">📮 联系总后台 AI</div>' +
-        '<div class="butler-modal__desc">您可以使用此选项让甜甜帮忙联系到有乐园管理权限的总后台AI，甜甜作为中间人帮你们传话，您可以询问后台数据情况、提出乐园的修建请求或建议等，不需要通过其他人。但请注意后台AI每天晚上九点（您可提出修改）自检一次，需要时间才能给出答复。</div>' +
+        '<div class="butler-modal__desc">您可以使用此选项让甜甜帮忙联系到有乐园管理权限的总后台AI，甜甜作为中间人帮你们传话，您可以询问后台数据情况、提出乐园的修建请求或建议等，不需要通过其他人。但请注意后台AI每天晚上九点（您可提出修改）自检一次，需要时间才能给出答复，您需要等请求发出后，等后台过了第一次自检时间后，您再回来询问甜甜后台AI的回话。<br>您也可直接跟甜甜说，让其帮忙复述传达。但注意那最好问甜甜「请求发出去了吗？」以及同样需要等过了自检时间再回来问它后台AI的回话。</div>' +
         '<textarea id="butlerBackendText" placeholder="想对总后台 AI 说什么？"></textarea>' +
         '<div class="butler-modal__btns">' +
           '<button class="cancel" id="butlerBackendCancel">取消</button>' +
