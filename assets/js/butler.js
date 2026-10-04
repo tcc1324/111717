@@ -33,15 +33,25 @@
 
   // 抓当前页面可见文字（排除管家自己的气泡和聊天窗），让唐甜甜「看」到这页有什么
   function pageText() {
-    const hidden = [];
-    ['butlerFab', 'butlerWin'].forEach(id => {
-      const n = document.getElementById(id);
-      if (n) { hidden.push(n); n.style.display = 'none'; }
-    });
-    let t = '';
-    try { t = (document.body.innerText || '').trim(); } catch {}
-    hidden.forEach(n => { n.style.display = ''; });
-    return t.slice(0, 2000);
+    const SKIP = ['butlerFab', 'butlerWin', 'butlerModal'];
+    const parts = [];
+    try {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        let el = node.parentElement;
+        let skip = false;
+        while (el && el !== document.body) {
+          if (el.id && SKIP.indexOf(el.id) >= 0) { skip = true; break; }
+          el = el.parentElement;
+        }
+        if (!skip) {
+          const s = node.nodeValue.replace(/\s+/g, ' ').trim();
+          if (s) parts.push(s);
+        }
+      }
+    } catch {}
+    return parts.join(' ').slice(0, 2000);
   }
 
   // 把当前页面截成图片（截图前藏掉管家自己的气泡和聊天窗），转成 base64 dataURL 给唐甜甜「看」
