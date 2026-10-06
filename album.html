@@ -33,9 +33,12 @@
     .joinlayer .jtitle { font-size: 15px; color: #2b2b2b; text-align: center; letter-spacing: .08em; margin-bottom: 14px; }
     .joinlayer .jitem { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; color: #2b2b2b; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.08); padding: 10px 2px; cursor: pointer; }
     .joinlayer .jitem small { color: #b9a78a; font-size: 12px; margin-left: 6px; }
+     .joinlayer .jitem .jt { display: block; }
+     .joinlayer .jitem .jd { display: block; font-size: 12px; color: #a89678; margin-top: 4px; line-height: 1.5; letter-spacing: .02em; }
     .joinlayer .jempty { font-size: 13px; color: #b9a78a; text-align: center; padding: 8px 0; }
     .joinlayer .jnew { margin-top: 16px; padding-top: 14px; border-top: 1px dashed rgba(0,0,0,.12); }
-    .joinlayer .jnew input { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
+     .joinlayer .jnew input { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
+     .joinlayer .jnew textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; resize: none; min-height: 34px; margin-top: 6px; line-height: 1.5; }
     .joinlayer .jnew .chk { margin: 10px 0 12px; font-size: 12px; color: #8a7a60; }
     .joinlayer .jnew .chk label { cursor: pointer; }
     .joinlayer .jnew .btn { width: 100%; }
@@ -89,6 +92,7 @@
       <div id="jlist"></div>
       <div class="jnew">
         <input id="jnew_title" maxlength="20" placeholder="或新建系列（系列名，20 字内）">
+        <textarea id="jnew_theme" maxlength="200" placeholder="系列介绍（可选，200 字内）"></textarea>
         <div class="chk"><label><input type="checkbox" id="jnew_open">开放加入</label></div>
         <button class="btn" id="jnew_btn">新建并归入</button>
       </div>
@@ -227,9 +231,10 @@
       joinSid = sid;
       const can = seriesList;
       $('jlist').innerHTML = can.length
-        ? can.map(x => `<button class="jitem" data-series="${Ji.esc(x.id)}">${Ji.esc(x.title)}<small>${x.mine ? '我的' : (x.maker_nick || '')} · ${x.cnt} 张</small></button>`).join('')
+        ? can.map(x => `<button class="jitem" data-series="${Ji.esc(x.id)}"><span class="jt">${Ji.esc(x.title)}<small>${x.mine ? '我的' : (x.maker_nick || '')} · ${x.cnt} 张</small></span>${x.theme ? `<span class="jd">${Ji.esc(x.theme)}</span>` : ''}</button>`).join('')
         : '<div class="jempty">还没有可加入的系列</div>';
       $('jnew_title').value = '';
+      $('jnew_theme').value = '';
       $('jnew_open').checked = false;
       $('joinlayer').classList.add('on');
     }
@@ -246,7 +251,7 @@
     $('jnew_btn').onclick = async () => {
       const t = $('jnew_title').value.trim();
       if (!t) return toast('给新系列起个名字吧');
-      const r = await Ji.rpc('post_stamp_join_series', { p_sid: joinSid, new_title: t, new_open: $('jnew_open').checked });
+      const r = await Ji.rpc('post_stamp_join_series', { p_sid: joinSid, new_title: t, new_theme: $('jnew_theme').value.trim(), new_open: $('jnew_open').checked });
       if (r.err) return toast(r.err);
       if (r.data !== 'ok') return toast(r.data);
       toast('建好系列并归入啦');
