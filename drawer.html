@@ -213,8 +213,12 @@ html{overflow-anchor:none}
 .leaf textarea{border:0;outline:none;resize:none;padding:0;height:252px;background-color:transparent}
 .ptxt.blank{color:var(--soft)}
 .ptxt.cap{background:none;min-height:0;font-size:14px;line-height:1.8}
-.albph{display:block;width:100%;aspect-ratio:4/3;border-radius:3px;margin:0 0 10px;background:linear-gradient(150deg,#f6dccf,#efe0bd);box-shadow:inset 0 0 0 1px rgba(122,92,72,.15),0 3px 8px rgba(122,92,72,.12)}
-.albph.blank{background:linear-gradient(150deg,#efe8dc,#e5dcc8)}
+.albph{display:block;width:100%;margin:0 0 10px}
+.albph .albimg{display:block;max-width:100%;max-height:56vh;margin:0 auto;border-radius:3px;object-fit:contain;box-shadow:0 3px 8px rgba(122,92,72,.12);cursor:zoom-in}
+.phprev{display:block;max-width:100%;max-height:56vh;margin:0 auto;object-fit:contain;border-radius:3px;box-shadow:0 3px 8px rgba(122,92,72,.12)}
+#mLb{display:none;align-items:center;justify-content:center;padding:24px;background:rgba(18,12,8,.85);cursor:zoom-out}
+#mLb.on{display:flex}
+#mLb img{max-width:100%;max-height:92vh;object-fit:contain;border-radius:3px}
 .pno{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12px;color:var(--soft);letter-spacing:.3em}
 .rdnav{display:flex;align-items:center;justify-content:space-between;margin:12px 4px 4px;font-size:12px;color:var(--soft);letter-spacing:.14em}
 .rdnav .back[disabled]{opacity:.3;cursor:default}
@@ -384,6 +388,8 @@ html{overflow-anchor:none}
     <div class="acts"><button class="btn line" id="noteCancel">先不写了</button><button class="btn" id="noteOk">放进去</button></div>
   </div>
 </div>
+
+<div class="mask" id="mLb"><img id="lbImg" alt=""></div>
 <script>
 (function(){
   if(window.Park&&Park.session) Park.session().then(function(s){ if(!s) location.replace('login.html'); });
@@ -452,6 +458,39 @@ html{overflow-anchor:none}
     return plain;
   }
 
+  /* 二进制加密（照片用）：ArrayBuffer → 密文，返回 {iv(base64), data(ArrayBuffer)} */
+  async function _sealBytes(buf,key){
+    const iv=crypto.getRandomValues(new Uint8Array(12));
+    const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,buf);
+    return {iv:_b64(iv), data:ct};
+  }
+  async function _openBytes(ctBuf,ivB64,key){
+    return crypto.subtle.decrypt({name:'AES-GCM',iv:_unb64(ivB64)},key,ctBuf);
+  }
+  /* 照片的加解密 key：和文字同一个 key（同口令同盐） */
+  async function _photoKey(book){
+    return _derive(book._pass, book.lock_salt);
+  }
+
+  /* Storage：照片上传/下载（bucket 私有，带登录身份） */
+  const SB_URL='https://zvuvncxdyxsgiqurkork.supabase.co';
+  const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA';
+  async function storageUpload(path, blob){
+    const s=await Park.session(); if(!s) return false;
+    const r=await fetch(SB_URL+'/storage/v1/object/drawer-photos/'+path+'?apikey='+encodeURIComponent(SB_ANON),{
+      method:'POST', headers:{Authorization:'Bearer '+s.access_token,'Content-Type':blob.type||'application/octet-stream'}, body:blob
+    });
+    return r.ok;
+  }
+  async function storageDownload(path){
+    const s=await Park.session(); if(!s) return null;
+    const r=await fetch(SB_URL+'/storage/v1/object/drawer-photos/'+path+'?apikey='+encodeURIComponent(SB_ANON),{
+      headers:{Authorization:'Bearer '+s.access_token}
+    });
+    if(!r.ok) return null;
+    return await r.arrayBuffer();
+  }
+
   const $=id=>document.getElementById(id);
   const say=m=>typeof toast==='function'?toast(m):alert(m);
   const DAY=864e5, now=()=>Date.now();
@@ -509,15 +548,17 @@ html{overflow-anchor:none}
     <div class="pdate" id="pdate"></div>
     <div class="albph" id="albph" hidden></div>
     <div class="ptxt" id="ptxt"></div>
+    <img id="phPrev" class="phprev" hidden alt="">
     <textarea id="wr" maxlength="2000" placeholder="写下今天的事……" hidden></textarea>
     <div class="pno" id="pno"></div>
   </div>
   <div class="rdnav" id="rdnav"><button class="back" id="pPrev">‹ 上一页</button><span id="pOf"></span><button class="back" id="pNext">下一页 ›</button></div>
   <div class="acts rdact" id="rdActs"><button class="btn line del" id="pDel">撕掉这页</button><button class="btn line" id="pEdit">改这页</button><button class="btn" id="pNew">＋ 写新的一页</button></div>
   <div class="acts rdact" id="wrActs" hidden><button class="btn line" id="wrCancel">先不写了</button><button class="btn" id="wrOk">写好了</button></div>
+  <input type="file" id="phFile" accept="image/*" hidden>
 </div>`);
 
-  let drawers=[], cur=null, curIdx=0, tab='note', newColor=PAL[0], book=null, pi=0, editing=null, draft={}, wmode=null, coverKind='diary', delArm=false, delTimer=null;
+  let drawers=[], cur=null, curIdx=0, tab='note', newColor=PAL[0], book=null, pi=0, editing=null, draft={}, wmode=null, coverKind='diary', delArm=false, delTimer=null, pendingImg=null;
   let noteColor=PAL[0], notePattern='petal', curNote=null;
   const VIEWS=['vList','vNew','vIn','vCover','vRead'];
   function show(id){
@@ -823,6 +864,7 @@ e.onclick=async()=>{
       $('albph').className='albph'+(p?'':' blank');
       box.className='ptxt cap'+(p?'':' blank');
       box.textContent=p?(p.cap||''):'这本相册还是空的，放第一张照片吧';
+      loadPhoto(p);
     }else{
       box.className='ptxt'+(p?'':' blank');
       box.textContent=p?p.text:'这本还是空白的，写下第一页吧';
@@ -840,6 +882,49 @@ e.onclick=async()=>{
   function setWrite(on,mode){
     wmode=on?mode:null;
     $('ptxt').hidden=on; $('wr').hidden=!on; $('wrActs').hidden=!on; $('rdActs').hidden=on; $('rdnav').hidden=on;
+    if(book && book.kind==='photo') $('albph').hidden=on;
+    if(!on){ $('phPrev').hidden=true; $('phPrev').src=''; }
+  }
+  /* 显示相册照片：下载（+解密）后用 img 完整呈现，可点开看大图 */
+  async function loadPhoto(p){
+    const el=$('albph');
+    el.innerHTML='';
+    if(!p || !p.img || !p.img.path) return;
+    try{
+      let data=await storageDownload(p.img.path);
+      if(!data) return;
+      if(p.img.iv){
+        const key=await _photoKey(book);
+        data=await _openBytes(data, p.img.iv, key);
+      }
+      const blob=new Blob([data],{type:p.img.type||'image/jpeg'});
+      const url=URL.createObjectURL(blob);
+      const img=document.createElement('img');
+      img.src=url; img.className='albimg'; img.alt=p.cap||'';
+      img.onclick=()=>openLightbox(url);
+      el.appendChild(img);
+    }catch(e){}
+  }
+  function openLightbox(url){
+    $('lbImg').src=url; $('mLb').classList.add('on');
+  }
+  $('mLb').onclick=()=>{ $('mLb').classList.remove('on'); $('lbImg').src=''; };
+  /* 上传照片：有锁则加密，返回 {path, iv?, type} */
+  async function uploadPhoto(file){
+    const path=book.id+'_'+now()+'_'+Math.random().toString(36).slice(2,8);
+    const buf=await file.arrayBuffer();
+    const img={path:path, type:file.type||'image/jpeg'};
+    let blob;
+    if((book.lock_kind==='password'||book.lock_kind==='question') && book._pass){
+      const key=await _photoKey(book);
+      const enc=await _sealBytes(buf,key);
+      img.iv=enc.iv;
+      blob=new Blob([enc.data],{type:'application/octet-stream'});
+    }else{
+      blob=new Blob([buf],{type:file.type||'image/jpeg'});
+    }
+    const ok=await storageUpload(path,blob);
+    return ok?img:null;
   }
   function openRead(b){
     book=b; pi=Math.max(0,b.pages.length-1);
@@ -863,7 +948,24 @@ e.onclick=async()=>{
     const dx=e.changedTouches[0].clientX-sx; sx=null;
     if(dx<-50) $('pNext').click(); else if(dx>50) $('pPrev').click();
   });
-  $('pNew').onclick=()=>{ $('wr').value=''; setWrite(true,'new'); if(!coarse()) $('wr').focus({preventScroll:true}); };
+  $('pNew').onclick=()=>{
+    if(book.kind==='photo'){
+      pendingImg=null; $('phPrev').hidden=true; $('phPrev').src='';
+      $('phFile').click();
+    }else{
+      $('wr').value=''; setWrite(true,'new'); if(!coarse()) $('wr').focus({preventScroll:true});
+    }
+  };
+  $('phFile').onchange=()=>{
+    const f=$('phFile').files && $('phFile').files[0];
+    $('phFile').value='';
+    if(!f) return;
+    if(!f.type || f.type.indexOf('image/')!==0){ say('选一张图片吧'); return; }
+    pendingImg=f;
+    $('phPrev').src=URL.createObjectURL(f); $('phPrev').hidden=false;
+    $('wr').value=''; setWrite(true,'new');
+    if(!coarse()) $('wr').focus({preventScroll:true});
+  };
   $('pEdit').onclick=()=>{ $('wr').value=book.kind==='photo'?book.pages[pi].cap:book.pages[pi].text; setWrite(true,'edit'); if(!coarse()) $('wr').focus({preventScroll:true}); };
   $('pDel').onclick=()=>{
     if(delArm){ doDel(); return; }
@@ -887,17 +989,25 @@ e.onclick=async()=>{
   $('wrCancel').onclick=()=>{ if(document.activeElement===$('wr')) $('wr').blur(); setWrite(false); };
   $('wrOk').onclick=async()=>{
     const t=$('wr').value.trim();
-    if(!t){ say('还没写什么呢'); return; }
     const pages=book.pages.slice();
     if(book.kind==='photo'){
-      if(wmode==='new') pages.push({id:now(),cap:t,at:new Date().toISOString()}); else pages[pi]=Object.assign({},pages[pi],{cap:t});
+      if(wmode==='new'){
+        if(!pendingImg){ say('先选一张照片吧'); return; }
+        const img=await uploadPhoto(pendingImg);
+        if(!img){ say('照片没传上去，稍后再试'); return; }
+        pages.push({id:now(),cap:t,at:new Date().toISOString(),img:img});
+      }else{
+        pages[pi]=Object.assign({},pages[pi],{cap:t});
+      }
     }else{
+      if(!t){ say('还没写什么呢'); return; }
       if(wmode==='new') pages.push({id:now(),text:t,at:new Date().toISOString()}); else pages[pi]=Object.assign({},pages[pi],{text:t});
     }
     const r=await rpc('drawer_item_update',{p_id:book.id,p_content:await reenc(book,JSON.stringify(pages))});
     if(r.err){ say(r.err); return; }
     book.pages=pages; if(wmode==='new') pi=pages.length-1;
     if(document.activeElement===$('wr')) $('wr').blur();
+    pendingImg=null; $('phPrev').hidden=true; $('phPrev').src='';
     setWrite(false); renderPage(true); say('记好了');
   };
   $('rdBack').onclick=()=>{ show('vIn'); renderItems(); $('inSub').textContent=sub(cur); };
