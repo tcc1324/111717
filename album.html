@@ -25,6 +25,20 @@
     .rec .meta { flex: 1; min-width: 0; }
     .rec .w { font-size: 14px; color: #2b2b2b; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .rec .s { font-size: 12px; color: #aaa; margin-top: 3px; letter-spacing: .03em; }
+    .rec .joinbtn { margin-top: 8px; font-size: 12px; color: #b08d5a; background: transparent; border: 1px solid rgba(176,141,90,.45); border-radius: 2px; padding: 3px 12px; cursor: pointer; letter-spacing: .06em; }
+    .joinlayer { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; padding: 24px; }
+    .joinlayer.on { display: flex; }
+    .joinlayer .jbg { position: absolute; inset: 0; background: rgba(28,24,18,.62); backdrop-filter: blur(2px); }
+    .joinlayer .jbox { position: relative; width: 100%; max-width: 320px; background: #fbf6ea; border-radius: 6px; padding: 20px 18px; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+    .joinlayer .jtitle { font-size: 15px; color: #2b2b2b; text-align: center; letter-spacing: .08em; margin-bottom: 14px; }
+    .joinlayer .jitem { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; color: #2b2b2b; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.08); padding: 10px 2px; cursor: pointer; }
+    .joinlayer .jitem small { color: #b9a78a; font-size: 12px; margin-left: 6px; }
+    .joinlayer .jempty { font-size: 13px; color: #b9a78a; text-align: center; padding: 8px 0; }
+    .joinlayer .jnew { margin-top: 16px; padding-top: 14px; border-top: 1px dashed rgba(0,0,0,.12); }
+    .joinlayer .jnew input { width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
+    .joinlayer .jnew .chk { margin: 10px 0 12px; font-size: 12px; color: #8a7a60; }
+    .joinlayer .jnew .chk label { cursor: pointer; }
+    .joinlayer .jnew .btn { width: 100%; }
     /* 底部历史入口：一排小字，弱化 */
     .history { margin-top: 34px; padding-top: 18px; border-top: 1px dashed rgba(0,0,0,.12); text-align: center; }
     .history a { display: inline-block; font-size: 12px; color: #8a7a60; letter-spacing: .1em; margin: 6px 10px; }
@@ -68,6 +82,19 @@
     </div>
   </div>
 
+  <div id="joinlayer" class="joinlayer">
+    <div class="jbg"></div>
+    <div class="jbox">
+      <div class="jtitle">把邮票归入系列</div>
+      <div id="jlist"></div>
+      <div class="jnew">
+        <input id="jnew_title" maxlength="20" placeholder="或新建系列（系列名，20 字内）">
+        <div class="chk"><label><input type="checkbox" id="jnew_open">开放加入</label></div>
+        <button class="btn" id="jnew_btn">新建并归入</button>
+      </div>
+    </div>
+  </div>
+
   <div id="zoom" class="zoom">
     <div class="zbg" id="zbg"></div>
     <div class="zbox">
@@ -90,6 +117,13 @@
     let data = { received: [], made: [], claimed: [], used: [], owned: [] };
     let cur = [];
     let shown = null;
+    let seriesList = [];
+    let joinSid = null;
+
+    async function loadSeries() {
+      const sl = await Ji.rpc('post_series_list');
+      seriesList = (sl.data || []).filter(x => x.can_join);
+    }
 
     async function load() {
       const r = await Ji.rpc('post_album');
@@ -119,8 +153,9 @@
       if (s.sid) parts.push(Ji.esc(s.sid));
       if (s.series_title) parts.push(Ji.esc(s.series_title));
       parts.push(Ji.hrs(s.hours));
+      const join = view === 'made' ? `<button class="joinbtn" data-join="${Ji.esc(s.sid)}">归系列</button>` : '';
       return `<div class="rec"><div class="thumb" data-i="${i}" ${pic}>${s.img ? '' : '✉'}</div>
-        <div class="meta"><div class="w">${w || '·'}</div><div class="s">${parts.join(' · ')}</div></div></div>`;
+        <div class="meta"><div class="w">${w || '·'}</div><div class="s">${parts.join(' · ')}</div>${join}</div></div>`;
     }
 
     function draw() {
@@ -167,6 +202,8 @@
       z.classList.add('on');
     }
     $('album').onclick = e => {
+      const jb = e.target.closest('.joinbtn');
+      if (jb) { openJoin(jb.dataset.join); return; }
       const el = e.target.closest('[data-i]');
       if (!el) return;
       const s = cur[+el.dataset.i];
@@ -184,7 +221,40 @@
       z.classList.remove('full');
     };
     $('zbg').onclick = () => { const z = $('zoom'); z.classList.remove('on'); z.classList.remove('full'); };
-    load();
+
+    // 归入系列弹层
+    function openJoin(sid) {
+      joinSid = sid;
+      const can = seriesList;
+      $('jlist').innerHTML = can.length
+        ? can.map(x => `<button class="jitem" data-series="${Ji.esc(x.id)}">${Ji.esc(x.title)}<small>${x.mine ? '我的' : (x.maker_nick || '')} · ${x.cnt} 张</small></button>`).join('')
+        : '<div class="jempty">还没有可加入的系列</div>';
+      $('jnew_title').value = '';
+      $('jnew_open').checked = false;
+      $('joinlayer').classList.add('on');
+    }
+    function closeJoin() { $('joinlayer').classList.remove('on'); }
+    $('jlist').onclick = async e => {
+      const b = e.target.closest('.jitem'); if (!b) return;
+      const r = await Ji.rpc('post_stamp_join_series', { p_sid: joinSid, p_series_id: b.dataset.series });
+      if (r.err) return toast(r.err);
+      if (r.data !== 'ok') return toast(r.data);
+      toast('归入系列啦');
+      closeJoin();
+      load(); loadSeries();
+    };
+    $('jnew_btn').onclick = async () => {
+      const t = $('jnew_title').value.trim();
+      if (!t) return toast('给新系列起个名字吧');
+      const r = await Ji.rpc('post_stamp_join_series', { p_sid: joinSid, new_title: t, new_open: $('jnew_open').checked });
+      if (r.err) return toast(r.err);
+      if (r.data !== 'ok') return toast(r.data);
+      toast('建好系列并归入啦');
+      closeJoin();
+      load(); loadSeries();
+    };
+    $('joinlayer').querySelector('.jbg').onclick = closeJoin;
+    load(); loadSeries();
   </script>
 </body>
 </html>
