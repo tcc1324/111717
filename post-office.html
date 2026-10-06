@@ -51,6 +51,7 @@
       </div>
       <div id="join-box" hidden>
         <select id="series"></select>
+        <div id="series-tip" class="tip"></div>
       </div>
       <div id="new-box" hidden>
         <input id="new_title" maxlength="20" placeholder="系列名（20 字以内）">
@@ -96,7 +97,13 @@
             return `<option value="${Ji.esc(x.id)}">${Ji.esc(x.title)}${who ? ' · ' + Ji.esc(who) : ''} · 已有 ${x.cnt} 张</option>`;
           }).join('')
         : '<option value="">还没有可加入的系列</option>';
+      updateSeriesTip();
     }
+    function updateSeriesTip() {
+      const x = seriesList.find(s => String(s.id) === $('series').value);
+      $('series-tip').textContent = (x && x.theme) ? '· ' + x.theme : '';
+    }
+    $('series').onchange = updateSeriesTip;
 
     async function claim(sid, fn) {
       const r = await Ji.rpc(fn, { p_sid: +sid });
