@@ -118,7 +118,15 @@ html{overflow-anchor:none}
 .slip input[type=text],.slip select{width:100%;font:inherit;font-size:16px;padding:8px 12px;margin-bottom:8px;
   border:1.5px solid rgba(122,92,72,.45);border-radius:4px;background:#fff9ee;color:var(--ink)}
 .passin{width:100%;font:inherit;font-size:16px;padding:8px 12px;margin-bottom:8px;
-  border:1.5px solid rgba(122,92,72,.45);border-radius:4px;background:#fff9ee;color:var(--ink)}
+   border:1.5px solid rgba(122,92,72,.45);border-radius:4px;background:#fff9ee;color:var(--ink)}
+.secret{-webkit-text-security:disc;text-security:disc}
+.timebox{margin:0 0 8px;padding:9px;border:1.5px dashed rgba(122,92,72,.35);border-radius:6px;background:rgba(255,249,238,.55)}
+.tseg{display:flex;gap:6px;margin-bottom:8px}
+.tbtn{flex:1;font:inherit;font-size:13px;padding:6px 0;border:1.5px solid rgba(122,92,72,.4);border-radius:999px;background:transparent;color:var(--soft);cursor:pointer}
+.tbtn.on{background:#8a6a56;color:#fff9f1;border-color:#8a6a56}
+.tdur{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--soft)}
+.tdur input{width:52px;font:inherit;font-size:15px;padding:6px 4px;text-align:center;border:1.5px solid rgba(122,92,72,.45);border-radius:4px;background:#fff9ee;color:var(--ink)}
+.tcal input{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1.5px solid rgba(122,92,72,.45);border-radius:4px;background:#fff9ee;color:var(--ink)}
 .slip label{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--soft);margin:0 0 10px}
 .slip .pal{gap:6px;margin:0 0 6px}
 
@@ -334,7 +342,7 @@ html{overflow-anchor:none}
         <option value="time">时间锁</option>
       </select>
       <input type="text" id="nQ" class="passin" placeholder="设个问题（解锁提示）" maxlength="60" hidden>
-      <input type="password" id="nPass" class="passin" placeholder="设个密码" maxlength="64" hidden>
+      <input type="text" id="nPass" class="passin secret" placeholder="设个密码" maxlength="64" hidden>
       <label><input type="checkbox" id="nVis" checked>别人能看见这个抽屉</label>
       <div class="acts"><button class="btn line" id="nCancel">先不了</button><button class="btn" id="nOk">放好</button></div>
     </div>
@@ -384,7 +392,7 @@ html{overflow-anchor:none}
       <option value="time">时间锁</option>
     </select>
     <input type="text" id="noteQ" class="passin" placeholder="设个问题（解锁提示）" maxlength="60" hidden>
-    <input type="password" id="notePass" class="passin" placeholder="设个密码" maxlength="64" hidden>
+    <input type="text" id="notePass" class="passin secret" placeholder="设个密码" maxlength="64" hidden>
     <div class="acts"><button class="btn line" id="noteCancel">先不写了</button><button class="btn" id="noteOk">放进去</button></div>
   </div>
 </div>
@@ -538,7 +546,7 @@ html{overflow-anchor:none}
       <option value="none">不上锁</option><option value="password">密码锁</option>
       <option value="question">问题锁</option><option value="time">时间锁</option></select></div>
     <input type="text" id="cvQ" class="passin" placeholder="设个问题（解锁提示）" maxlength="60" hidden>
-    <input type="password" id="cvPass" class="passin" placeholder="设个密码" maxlength="64" hidden>
+    <input type="text" id="cvPass" class="passin secret" placeholder="设个密码" maxlength="64" hidden>
     <div class="acts"><button class="btn line" id="cvCancel">先不了</button><button class="btn" id="cvOk">放好</button></div>
   </div>
 </div>
@@ -557,6 +565,9 @@ html{overflow-anchor:none}
   <div class="acts rdact" id="wrActs" hidden><button class="btn line" id="wrCancel">先不写了</button><button class="btn" id="wrOk">写好了</button></div>
   <input type="file" id="phFile" accept="image/*" hidden>
 </div>`);
+  mountTime('n','nPass');
+  mountTime('note','notePass');
+  mountTime('cv','cvPass');
 
   let drawers=[], cur=null, curIdx=0, tab='note', newColor=PAL[0], book=null, pi=0, editing=null, draft={}, wmode=null, coverKind='diary', delArm=false, delTimer=null, pendingImg=null;
   let noteColor=PAL[0], notePattern='petal', curNote=null;
@@ -595,7 +606,8 @@ html{overflow-anchor:none}
 
   function sub(d){
     let s='';
-    if(d.lock_kind!=='none') s='🔒 '+LOCK[d.lock_kind];
+    const timeUnlocked = d.lock_kind==='time' && d.unlock_at && new Date(d.unlock_at).getTime()<=now();
+    if(d.lock_kind!=='none' && !timeUnlocked) s='🔒 '+LOCK[d.lock_kind];
     if(!d.visible) s+=(s?' · ':'')+'仅自己可见';
     if(!s && !d.items.length) s='还是空的';
     return s;
@@ -705,13 +717,51 @@ html{overflow-anchor:none}
     if(k==='time'&&leftMs(it)<=0) return null;
     return k;
   }
-  function leftTxt(ms){ const d=Math.ceil(ms/DAY); return d>1?'还有 '+d+' 天':'今天就到'; }
+  function leftTxt(ms){ ms=Math.max(0,ms); const d=Math.floor(ms/DAY), hh=Math.floor(ms%DAY/3600e3), mm=Math.floor(ms%3600e3/60e3);
+  if(d>0) return '还有 '+d+' 天 '+hh+' 小时 '+mm+' 分';
+  if(hh>0) return '还有 '+hh+' 小时 '+mm+' 分';
+  if(mm>0) return '还有 '+mm+' 分钟';
+  return '就到时间了'; }
   /* 锁选择器：密码/问题锁时显示口令框 */
   function lockUI(selId,passId,qId){
     const lk=$(selId).value;
     $(passId).hidden=!(lk==='password'||lk==='question');
     $(qId).hidden=lk!=='question';
     $(passId).placeholder=lk==='question'?'设个答案':'设个密码';
+    var _tb=$(selId.replace(/Lock$/,'')+'Time'); if(_tb) _tb.hidden=lk!=='time';
+  }
+  /* 时间锁：倒计时（天/时/分）与日历（精确到分）二选一 */
+  function mountTime(prefix,afterId){
+    const box=h('div','timebox'); box.id=prefix+'Time'; box.hidden=true;
+    box.innerHTML='<div class="tseg"><button type="button" class="tbtn on" data-m="dur">倒计时</button><button type="button" class="tbtn" data-m="cal">日历</button></div>'
+      +'<div class="tdur"><span>天</span><input type="number" id="'+prefix+'D" min="0" max="365" value="0" inputmode="numeric"><span>时</span><input type="number" id="'+prefix+'H" min="0" max="23" value="0" inputmode="numeric"><span>分</span><input type="number" id="'+prefix+'M" min="0" max="59" value="0" inputmode="numeric"></div>'
+      +'<div class="tcal" hidden><input type="datetime-local" id="'+prefix+'DT"></div>';
+    $(afterId).insertAdjacentElement('afterend',box);
+    box.querySelectorAll('.tbtn').forEach(b=>b.onclick=()=>setTimeMode(prefix,b.dataset.m));
+  }
+  function setTimeMode(prefix,m){
+    const box=$(prefix+'Time');
+    box.querySelectorAll('.tbtn').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+    box.querySelector('.tdur').hidden=(m!=='dur');
+    box.querySelector('.tcal').hidden=(m!=='cal');
+  }
+  function resetTime(prefix){
+    $(prefix+'D').value=0; $(prefix+'H').value=0; $(prefix+'M').value=0;
+    $(prefix+'DT').value=''; setTimeMode(prefix,'dur');
+  }
+  function computeUnlockAt(prefix){
+    const mode=$(prefix+'Time').querySelector('.tbtn.on').dataset.m;
+    if(mode==='dur'){
+      const d=Math.max(0,+$(prefix+'D').value||0), hh=Math.max(0,+$(prefix+'H').value||0), mm=Math.max(0,+$(prefix+'M').value||0);
+      const ms=d*DAY+hh*3600e3+mm*60e3;
+      if(ms<=0){ say('设个比 0 长一点的时间吧'); return null; }
+      return new Date(now()+ms).toISOString();
+    }
+    const v=$(prefix+'DT').value;
+    if(!v){ say('选个日期和时间吧'); return null; }
+    const t=new Date(v).getTime();
+    if(isNaN(t)||t<=now()){ say('这个时间已经过去了，选个未来的吧'); return null; }
+    return new Date(t).toISOString();
   }
   $('noteLock').onchange=()=>lockUI('noteLock','notePass','noteQ');
   $('cvLock').onchange=()=>lockUI('cvLock','cvPass','cvQ');
@@ -809,7 +859,7 @@ e.onclick=async()=>{
     draft=b?{color:b.color,pattern:patOf(b)}
            :{color:COVERS[cur.items.filter(i=>i.kind===coverKind).length%COVERS.length],pattern:coverKind==='photo'?'film':'lines'};
     $('cvH').textContent=b?'改封面':(coverKind==='photo'?'新的相册':'新的日记本');
-    $('cvTitle').value=b?b.title:''; $('cvLock').value='none'; lockUI('cvLock','cvPass','cvQ'); $('cvPass').value=''; $('cvQ').value=''; $('cvLockRow').hidden=!!b; // 锁的种类建好后不能改（要重新加密）
+    $('cvTitle').value=b?b.title:''; $('cvLock').value='none'; lockUI('cvLock','cvPass','cvQ'); resetTime('cv'); $('cvPass').value=''; $('cvQ').value=''; $('cvLockRow').hidden=!!b; // 锁的种类建好后不能改（要重新加密）
     paintPreview(); renderPats();
     palette($('cvPal'),()=>draft.color,c=>{ draft.color=c; paintPreview(); renderPats(); },()=>{},COVERS);
     freeze(true); show('vCover'); window.scrollTo(0,0);
@@ -833,7 +883,8 @@ e.onclick=async()=>{
       leaveCover(); say('封面换好了'); return;
     }
     const lk=$('cvLock').value;
-    const unlock_at=lk==='time'?new Date(now()+7*DAY).toISOString():null;
+    const unlock_at=lk==='time'?computeUnlockAt('cv'):null;
+    if(lk==='time'&&!unlock_at) return;
     let content=JSON.stringify([]), title=t, question=null, salt=null, nonce=null, verifier=null;
     if(lk==='password'||lk==='question'){
       const pass=$('cvPass').value.trim();
@@ -1017,7 +1068,7 @@ e.onclick=async()=>{
   const pvSub=()=>{ const lk=$('nLock').value; $('pvS').textContent=(lk==='none'?'':'🔒 '+LOCK[lk]+' · ')+'还是空的'; };
   function openNew(){
     newColor=PAL[drawers.length%3];
-    $('nTitle').value=''; $('nLock').value='none'; lockUI('nLock','nPass','nQ'); $('nPass').value=''; $('nQ').value=''; $('nVis').checked=true;
+    $('nTitle').value=''; $('nLock').value='none'; lockUI('nLock','nPass','nQ'); resetTime('n'); $('nPass').value=''; $('nQ').value=''; $('nVis').checked=true;
     $('pvT').textContent='新抽屉'; pvSub();
     $('pv').style.setProperty('--tone',newColor);
     palette($('nPal'),()=>newColor,c=>{ newColor=c; $('pv').style.setProperty('--tone',c); },()=>{});
@@ -1035,7 +1086,8 @@ e.onclick=async()=>{
     const t=$('nTitle').value.trim();
     if(!t){ say('先给它起个名字吧'); return; }
     const lk=$('nLock').value, vis=$('nVis').checked;
-    const unlock_at=lk==='time'?new Date(now()+7*DAY).toISOString():null;
+    const unlock_at=lk==='time'?computeUnlockAt('n'):null;
+    if(lk==='time'&&!unlock_at) return;
     let title=t, question=null, salt=null, nonce=null, verifier=null;
     if(lk==='password'||lk==='question'){
       const pass=$('nPass').value.trim();
@@ -1078,7 +1130,7 @@ e.onclick=async()=>{
   function openNote(){
     $('noteTxt').value='';
     noteColor=PAL[0]; notePattern='petal';
-    $('noteLock').value='none'; lockUI('noteLock','notePass','noteQ');
+    $('noteLock').value='none'; lockUI('noteLock','notePass','noteQ'); resetTime('note');
     $('notePass').value=''; $('noteQ').value='';
     const refresh=()=>patSwatches($('notePats'),()=>noteColor,()=>notePattern,k=>notePattern=k);
     palette($('notePal'),()=>noteColor,c=>{ noteColor=c; refresh(); },()=>{});
@@ -1092,7 +1144,8 @@ e.onclick=async()=>{
     const t=$('noteTxt').value.trim();
     if(!t){ say('先写点什么再放进去'); return; }
     const lk=$('noteLock').value;
-    const unlock_at=lk==='time'?new Date(now()+7*DAY).toISOString():null;
+    const unlock_at=lk==='time'?computeUnlockAt('note'):null;
+    if(lk==='time'&&!unlock_at) return;
     let content=t, title=null, question=null, salt=null, nonce=null, verifier=null;
     if(lk==='password'||lk==='question'){
       const pass=$('notePass').value.trim();
