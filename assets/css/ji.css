@@ -28,6 +28,9 @@ textarea { min-height: 260px; resize: vertical; line-height: 2; border: none; ba
 .stamp .in { width: 100%; height: 100%; background: #f1ead9 center / cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #b9a78a; }
 .stamp .sid { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 10px; letter-spacing: .08em; color: #b08d5a; margin-top: 5px; }
 .stamp .cap { font-size: 12px; color: #777; margin-top: 6px; line-height: 1.4; word-break: break-all; }
+.stamp .series { margin-top: 4px; line-height: 1.35; }
+.stamp .series .sn { display: block; font-size: 11px; color: #6b5d47; letter-spacing: .03em; }
+.stamp .series .st { display: block; font-size: 10px; color: #a89678; word-break: break-all; }
 .stamp.sel .face { background: #b9a78a; }
 .stamp.off { opacity: .4; cursor: default; }
 /* 信件列表 */
@@ -55,6 +58,9 @@ textarea { min-height: 260px; resize: vertical; line-height: 2; border: none; ba
 .zoom .zinfo { color: #eee8d8; margin-top: 16px; }
 .zoom .zinfo .w { font-size: 16px; line-height: 1.6; color: #fff; }
 .zoom .zinfo .m { font-size: 12px; color: #c9bda6; margin-top: 5px; letter-spacing: .05em; }
+.zoom .zseries { margin-top: 8px; font-size: 12px; color: #eee8d8; line-height: 1.6; }
+.zoom .zseries b { display: block; font-size: 13px; color: #fff; letter-spacing: .06em; }
+.zoom .zseries span { color: #c9bda6; }
 .zoom .zimg { display: none; max-width: 92vw; max-height: 86vh; cursor: zoom-out; box-shadow: 0 4px 24px rgba(0,0,0,.4); border-radius: 2px; }
 .zoom .zact { margin-top: 18px; }
 .zoom .zact .btn { color: #2b2b2b; background: #fff; }

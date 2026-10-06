@@ -92,7 +92,7 @@
       <div id="jlist"></div>
       <div class="jnew">
         <input id="jnew_title" maxlength="20" placeholder="或新建系列（系列名，20 字内）">
-        <textarea id="jnew_theme" maxlength="200" placeholder="系列介绍（可选，200 字内）"></textarea>
+        <textarea id="jnew_theme" maxlength="99" placeholder="系列介绍（可选，99 字内）"></textarea>
         <div class="chk"><label><input type="checkbox" id="jnew_open">开放加入</label></div>
         <button class="btn" id="jnew_btn">新建并归入</button>
       </div>
@@ -140,11 +140,12 @@
     function card(s, i) {
       const pic = s.img ? `style="background-image:url('${Ji.esc(s.img)}')"` : '';
       const sid = s.sid ? `<div class="sid">${Ji.esc(s.sid)}</div>` : '';
+      const series = s.series_title ? `<div class="series"><span class="sn">${Ji.esc(s.series_title)}</span>${s.series_theme ? `<span class="st">${Ji.esc(s.series_theme)}</span>` : ''}</div>` : '';
       const cap = s.words ? `${Ji.esc(s.words)}<br>${Ji.hrs(s.hours)}` : `${Ji.hrs(s.hours)}`;
       let times = '';
       if (s.n) times += `<div class="times">收到 ×${s.n}</div>`;
       if (s.last_at) times += `<div class="when">${Ji.when(s.last_at)}</div>`;
-      return `<div class="stamp" data-i="${i}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>${sid}<div class="cap">${cap}</div>${times}</div>`;
+      return `<div class="stamp" data-i="${i}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>${sid}${series}<div class="cap">${cap}</div>${times}</div>`;
     }
 
     // 历史：一条条记录
@@ -155,7 +156,7 @@
       const parts = [];
       if (at) parts.push(Ji.when(at));
       if (s.sid) parts.push(Ji.esc(s.sid));
-      if (s.series_title) parts.push(Ji.esc(s.series_title));
+      if (s.series_title) { parts.push(Ji.esc(s.series_title)); if (s.series_theme) parts.push(Ji.esc(s.series_theme)); }
       parts.push(Ji.hrs(s.hours));
       const join = view === 'made' ? `<button class="joinbtn" data-join="${Ji.esc(s.sid)}">归系列</button>` : '';
       return `<div class="rec"><div class="thumb" data-i="${i}" ${pic}>${s.img ? '' : '✉'}</div>
@@ -197,10 +198,10 @@
       if (s.n) bits.push('收到 ×' + s.n);
       const at = s.last_at || s.created_at || s.got_at || s.used_at;
       if (at) bits.push(Ji.when(at));
-      if (s.series_title) bits.push(Ji.esc(s.series_title));
       bits.push(Ji.hrs(s.hours));
+      const series = s.series_title ? `<div class="zseries"><b>${Ji.esc(s.series_title)}</b>${s.series_theme ? `<span>${Ji.esc(s.series_theme)}</span>` : ''}</div>` : '';
       const w = s.words ? Ji.esc(s.words) : '';
-      $('zinfo').innerHTML = (w ? `<div class="w">${w}</div>` : '') + `<div class="m">${bits.join(' · ')}</div>`;
+      $('zinfo').innerHTML = (w ? `<div class="w">${w}</div>` : '') + series + `<div class="m">${bits.join(' · ')}</div>`;
       const z = $('zoom');
       z.classList.remove('full');
       z.classList.add('on');

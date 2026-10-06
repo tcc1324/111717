@@ -14,8 +14,9 @@
   function stamp(s, extra) {
     const pic = s.img ? `style="background-image:url('${esc(s.img)}')"` : '';
     const sid = s.sid ? `<div class="sid">${esc(s.sid)}</div>` : '';
+    const series = s.series_title ? `<div class="series"><span class="sn">${esc(s.series_title)}</span>${s.series_theme ? `<span class="st">${esc(s.series_theme)}</span>` : ''}</div>` : '';
     return `<div class="stamp ${extra || ''}" data-id="${s.id}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>
-      ${sid}<div class="cap">${esc(s.words)}<br>${hrs(s.hours)}</div></div>`;
+      ${sid}${series}<div class="cap">${esc(s.words)}<br>${hrs(s.hours)}</div></div>`;
   }
   const when = t => {
     const d = new Date(t), p = n => String(n).padStart(2, '0');
@@ -56,10 +57,10 @@
     if (s.maker_nick) bits.push(esc(s.maker_nick));
     const at = s.last_at || s.created_at || s.got_at || s.used_at;
     if (at) bits.push(when(at));
-    if (s.series_title) bits.push(esc(s.series_title));
     if (s.hours != null) bits.push(hrs(s.hours));
+    const series = s.series_title ? `<div class="zseries"><b>${esc(s.series_title)}</b>${s.series_theme ? `<span>${esc(s.series_theme)}</span>` : ''}</div>` : '';
     const w = s.words ? esc(s.words) : '';
-    g('stampZoomInfo').innerHTML = (w ? `<div class="w">${w}</div>` : '') + (bits.length ? `<div class="m">${bits.join(' · ')}</div>` : '');
+    g('stampZoomInfo').innerHTML = (w ? `<div class="w">${w}</div>` : '') + series + (bits.length ? `<div class="m">${bits.join(' · ')}</div>` : '');
     const act = g('stampZoomAct');
     if (action) {
       act.style.display = 'block';
