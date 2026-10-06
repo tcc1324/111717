@@ -15,7 +15,10 @@
     .series-tabs { display: flex; justify-content: center; gap: 24px; margin-bottom: 14px; }
     .series-tabs a { font-size: 13px; color: #8a7a60; letter-spacing: .1em; cursor: pointer; padding-bottom: 3px; }
     .series-tabs a.on { color: #2b2b2b; border-bottom: 1px solid #2b2b2b; }
-    .series-box select { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
+     .series-box .slist { display: flex; flex-direction: column; }
+     .series-box .sitem { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; color: #2b2b2b; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.08); padding: 10px 2px; cursor: pointer; letter-spacing: .03em; }
+     .series-box .sitem small { color: #b9a78a; font-size: 12px; margin-left: 4px; }
+     .series-box .sitem.on { color: #b08d5a; }
     .series-box .chk { display: flex; gap: 18px; margin-top: 12px; font-size: 13px; color: #8a7a60; }
     .series-box .chk label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
     .series-box .tip { font-size: 12px; color: #b9a78a; margin-top: 6px; }
@@ -50,7 +53,7 @@
         <a data-mode="new">新建系列</a>
       </div>
       <div id="join-box" hidden>
-        <select id="series"></select>
+        <div id="series" class="slist"></div>
         <div id="series-tip" class="tip"></div>
       </div>
       <div id="new-box" hidden>
@@ -69,9 +72,10 @@
   <script src="assets/js/ji.js?v=2026100401"></script>
   <script>
     const $ = id => document.getElementById(id);
-    let img = null;
-    let seriesList = [];
-    let mode = 'single';
+     let img = null;
+     let seriesList = [];
+     let selectedSeriesId = '';
+     let mode = 'single';
     let bagList = [], blankList = [], customList = [];
 
     async function load() {
@@ -87,23 +91,29 @@
       fillSeries();
     }
 
-    // 填「归入系列」下拉框：只列自己可加入的系列
+    // 填「归入系列」列表：只列自己可加入的系列，一列向下直接显示
     function fillSeries() {
-      const sel = $('series');
+      const box = $('series');
       const can = seriesList.filter(x => x.can_join);
-      sel.innerHTML = can.length
+      box.innerHTML = can.length
         ? can.map(x => {
             const who = x.mine ? '我' : (x.maker_nick || '');
-            return `<option value="${Ji.esc(x.id)}">${Ji.esc(x.title)}${who ? ' · ' + Ji.esc(who) : ''} · 已有 ${x.cnt} 张</option>`;
+            return `<button class="sitem" data-series="${Ji.esc(x.id)}">${Ji.esc(x.title)}${who ? '<small>· ' + Ji.esc(who) + ' · 已有 ' + x.cnt + ' 张</small>' : ''}</button>`;
           }).join('')
-        : '<option value="">还没有可加入的系列</option>';
+        : '<div class="empty">还没有可加入的系列</div>';
+      if (!can.some(x => String(x.id) === selectedSeriesId)) selectedSeriesId = can.length ? String(can[0].id) : '';
       updateSeriesTip();
     }
     function updateSeriesTip() {
-      const x = seriesList.find(s => String(s.id) === $('series').value);
+      const x = seriesList.find(s => String(s.id) === selectedSeriesId);
       $('series-tip').textContent = (x && x.theme) ? '· ' + x.theme : '';
+      document.querySelectorAll('#series .sitem').forEach(b => b.classList.toggle('on', b.dataset.series === selectedSeriesId));
     }
-    $('series').onchange = updateSeriesTip;
+    $('series').onclick = e => {
+      const b = e.target.closest('.sitem'); if (!b) return;
+      selectedSeriesId = b.dataset.series;
+      updateSeriesTip();
+    };
 
     async function claim(sid, fn) {
       const r = await Ji.rpc(fn, { p_sid: +sid });
@@ -167,9 +177,8 @@
       if (isNaN(hours) || hours < 0 || hours > 24) return toast('送达时间要在 0 到 24 小时之间');
       const args = { img, words, hours };
       if (mode === 'join') {
-        const sid = $('series').value;
-        if (!sid) return toast('选一个系列吧');
-        args.series_id = sid;
+        if (!selectedSeriesId) return toast('选一个系列吧');
+        args.series_id = selectedSeriesId;
       } else if (mode === 'new') {
         const nt = $('new_title').value.trim();
         if (!nt) return toast('给新系列起个名字吧');
