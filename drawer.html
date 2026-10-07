@@ -728,7 +728,6 @@ html{overflow-anchor:none}
     $(passId).hidden=!(lk==='password'||lk==='question');
     $(qId).hidden=lk!=='question';
     $(passId).placeholder=lk==='question'?'设个答案':'设个密码';
-    $(passId).classList.toggle('secret', lk==='password'); // 问题锁答案不遮盖（能正常输文字），密码锁才遮盖
     var _tb=$(selId.replace(/Lock$/,'')+'Time'); if(_tb) _tb.hidden=lk!=='time';
   }
   /* 时间锁：倒计时（天/时/分）与日历（精确到分）二选一 */
