@@ -8,11 +8,20 @@
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/music.css?v=2026100401">
   <link rel="stylesheet" href="assets/css/butler.css?v=2026100404">
-  <link rel="stylesheet" href="assets/css/ji.css?v=2026100401">
+  <link rel="stylesheet" href="assets/css/ji.css?v=2026100701">
   <style>
     /* 主体：收起来的来信邮票墙 */
     .note { color: #8a7a60; font-size: 13px; text-align: center; letter-spacing: .08em; margin: 2px 0 18px; }
     .album { display: flex; flex-wrap: wrap; gap: 16px; }
+    /* 全部/系列切换 */
+    .switch { display: flex; justify-content: center; gap: 8px; margin: -4px 0 16px; }
+    .switch .sw { font: inherit; font-size: 13px; color: #8a7a60; background: transparent; border: 1px solid rgba(176,141,90,.42); border-radius: 20px; padding: 4px 20px; cursor: pointer; letter-spacing: .1em; }
+    .switch .sw.on { color: #fff; background: #b08d5a; border-color: #b08d5a; }
+    /* 系列分组 */
+    .series-groups { display: flex; flex-direction: column; gap: 24px; }
+    .series-group .sg-title { font-size: 14px; color: #2b2b2b; letter-spacing: .06em; }
+    .series-group .sg-theme { font-size: 12px; color: #b9a78a; margin: 2px 0 10px; letter-spacing: .03em; }
+    .series-group .sg-stamps { display: flex; flex-wrap: wrap; gap: 16px; }
     .stamp .sid { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 11px; letter-spacing: .08em; color: #b08d5a; margin-top: 5px; }
     .stamp .series { font-size: 11px; color: #8a7a60; margin-top: 2px; }
     .stamp .times { font-size: 11px; color: #c0573e; margin-top: 3px; }
@@ -92,7 +101,7 @@
       <div id="jlist"></div>
       <div class="jnew">
         <input id="jnew_title" maxlength="20" placeholder="或新建系列（系列名，20 字内）">
-        <textarea id="jnew_theme" maxlength="99" placeholder="系列介绍（可选，99 字内）"></textarea>
+        <textarea id="jnew_theme" maxlength="120" placeholder="系列介绍（可选，120 字内）"></textarea>
         <div class="chk"><label><input type="checkbox" id="jnew_open">开放加入</label></div>
         <button class="btn" id="jnew_btn">新建并归入</button>
       </div>
@@ -113,11 +122,12 @@
   <script src="assets/js/music.js?v=2026100402"></script>
   <script src="assets/js/html2canvas.min.js"></script>
   <script src="assets/js/butler.js?v=2026100521"></script>
-  <script src="assets/js/ji.js?v=2026100401"></script>
+  <script src="assets/js/ji.js?v=2026100701"></script>
   <script>
     const $ = id => document.getElementById(id);
     const names = { made: '我做过的', claimed: '我领过的', used: '我用过的', owned: '我拥有的' };
     let view = 'received';
+    let mode = 'all';
     let data = { received: [], made: [], claimed: [], used: [], owned: [] };
     let cur = [];
     let shown = null;
@@ -140,12 +150,42 @@
     function card(s, i) {
       const pic = s.img ? `style="background-image:url('${Ji.esc(s.img)}')"` : '';
       const sid = s.sid ? `<div class="sid">${Ji.esc(s.sid)}</div>` : '';
-      const series = s.series_title ? `<div class="series"><span class="sn">${Ji.esc(s.series_title)}</span>${s.series_theme ? `<span class="st">${Ji.esc(s.series_theme)}</span>` : ''}</div>` : '';
+      const st = s.series_theme ? (s.series_theme.length > 20 ? s.series_theme.slice(0, 20) + '…' : s.series_theme) : '';
+      const series = s.series_title ? `<div class="series"><span class="sn">${Ji.esc(s.series_title)}</span>${st ? `<span class="st">${Ji.esc(st)}</span>` : ''}</div>` : '';
       const cap = s.words ? `${Ji.esc(s.words)}<br>${Ji.hrs(s.hours)}` : `${Ji.hrs(s.hours)}`;
       let times = '';
       if (s.n) times += `<div class="times">收到 ×${s.n}</div>`;
       if (s.last_at) times += `<div class="when">${Ji.when(s.last_at)}</div>`;
       return `<div class="stamp" data-i="${i}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>${sid}${series}<div class="cap">${cap}</div>${times}</div>`;
+    }
+
+    // 系列分组视图：按 series_id 归组，没系列的归「未归类」
+    function seriesView(list) {
+      const groups = [];
+      const idx = {};
+      const orphans = [];
+      list.forEach((s, gi) => {
+        if (s.series_id) {
+          if (!(s.series_id in idx)) {
+            idx[s.series_id] = { title: s.series_title || '未命名系列', theme: s.series_theme || '', stamps: [] };
+            groups.push(idx[s.series_id]);
+          }
+          idx[s.series_id].stamps.push(gi);
+        } else {
+          orphans.push(gi);
+        }
+      });
+      let html = '';
+      groups.forEach(g => {
+        html += '<div class="series-group"><div class="sg-title">' + Ji.esc(g.title) + '</div>'
+          + (g.theme ? '<div class="sg-theme">' + Ji.esc(g.theme) + '</div>' : '')
+          + '<div class="sg-stamps">' + g.stamps.map(gi => card(list[gi], gi)).join('') + '</div></div>';
+      });
+      if (orphans.length) {
+        html += '<div class="series-group"><div class="sg-title">未归类</div><div class="sg-stamps">'
+          + orphans.map(gi => card(list[gi], gi)).join('') + '</div></div>';
+      }
+      return html;
     }
 
     // 历史：一条条记录
@@ -156,7 +196,7 @@
       const parts = [];
       if (at) parts.push(Ji.when(at));
       if (s.sid) parts.push(Ji.esc(s.sid));
-      if (s.series_title) { parts.push(Ji.esc(s.series_title)); if (s.series_theme) parts.push(Ji.esc(s.series_theme)); }
+      if (s.series_title) { parts.push(Ji.esc(s.series_title)); if (s.series_theme) parts.push(Ji.esc(s.series_theme.length > 20 ? s.series_theme.slice(0, 20) + '…' : s.series_theme)); }
       parts.push(Ji.hrs(s.hours));
       const join = view === 'made' ? `<button class="joinbtn" data-join="${Ji.esc(s.sid)}">归系列</button>` : '';
       return `<div class="rec"><div class="thumb" data-i="${i}" ${pic}>${s.img ? '' : '✉'}</div>
@@ -167,6 +207,10 @@
       const isMain = view === 'received';
       $('head').innerHTML = isMain
         ? '<div class="note">随信寄来的邮票，要收起来好好保存。</div>'
+          + '<div class="switch">'
+          + '<button class="sw' + (mode === 'all' ? ' on' : '') + '" data-m="all">全部</button>'
+          + '<button class="sw' + (mode === 'series' ? ' on' : '') + '" data-m="series">系列</button>'
+          + '</div>'
         : '<h2>' + names[view] + '</h2>';
       $('back').classList.toggle('show', !isMain);
       document.querySelectorAll('.history a[data-t]').forEach(a => a.classList.toggle('on', a.dataset.t === view));
@@ -174,8 +218,13 @@
       cur = list;
       const empty = isMain ? '还没有收到邮票' : '还没有记录';
       if (isMain) {
-        $('album').className = 'album';
-        $('album').innerHTML = list.map((s, i) => card(s, i)).join('') || '<div class="empty">' + empty + '</div>';
+        if (mode === 'series') {
+          $('album').className = 'series-groups';
+          $('album').innerHTML = seriesView(list) || '<div class="empty">' + empty + '</div>';
+        } else {
+          $('album').className = 'album';
+          $('album').innerHTML = list.map((s, i) => card(s, i)).join('') || '<div class="empty">' + empty + '</div>';
+        }
       } else {
         $('album').className = 'history-list';
         $('album').innerHTML = list.map((s, i) => rec(s, i)).join('') || '<div class="empty">' + empty + '</div>';
@@ -187,6 +236,10 @@
       if (a) { view = a.dataset.t; draw(); }
     };
     $('back').onclick = e => { e.preventDefault(); view = 'received'; draw(); };
+    $('head').onclick = e => {
+      const b = e.target.closest('.sw');
+      if (b) { mode = b.dataset.m; draw(); }
+    };
 
     function zoom(s) {
       shown = s;

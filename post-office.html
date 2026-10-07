@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/music.css?v=2026100401">
   <link rel="stylesheet" href="assets/css/butler.css?v=2026100404">
-  <link rel="stylesheet" href="assets/css/ji.css?v=2026100401">
+  <link rel="stylesheet" href="assets/css/ji.css?v=2026100701">
   <style>
     #pv { width: 96px; height: 120px; margin: 8px auto; }
     .pick { display: block; text-align: center; margin: 14px 0; }
@@ -21,7 +21,15 @@
      .series-box .sitem.on { color: #b08d5a; }
     .series-box .chk { display: flex; gap: 18px; margin-top: 12px; font-size: 13px; color: #8a7a60; }
     .series-box .chk label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-    .series-box .tip { font-size: 12px; color: #b9a78a; margin-top: 6px; }
+     .series-box .tip { font-size: 12px; color: #b9a78a; margin-top: 6px; }
+     /* 大家做的邮票：全部/系列切换 */
+     .switch { display: flex; justify-content: center; gap: 8px; margin: -2px 0 12px; }
+     .switch .sw { font: inherit; font-size: 13px; color: #8a7a60; background: transparent; border: 1px solid rgba(176,141,90,.42); border-radius: 20px; padding: 4px 20px; cursor: pointer; letter-spacing: .1em; }
+     .switch .sw.on { color: #fff; background: #b08d5a; border-color: #b08d5a; }
+     .series-groups { display: flex; flex-direction: column; gap: 20px; }
+     .series-group .sg-title { font-size: 14px; color: #2b2b2b; letter-spacing: .06em; }
+     .series-group .sg-theme { font-size: 12px; color: #b9a78a; margin: 2px 0 10px; letter-spacing: .03em; }
+     .series-group .sg-stamps { display: flex; flex-wrap: wrap; gap: 16px; }
   </style>
 </head>
 <body>
@@ -39,6 +47,10 @@
 
     <h2>大家做的邮票</h2>
     <p class="hint">每种每天可以取一张，点开邮票再取。</p>
+    <div class="switch" id="custom-switch">
+      <button class="sw on" data-m="all">全部</button>
+      <button class="sw" data-m="series">系列</button>
+    </div>
     <div class="stamps" id="custom"></div>
 
     <h2>做一张邮票</h2>
@@ -58,7 +70,7 @@
       </div>
       <div id="new-box" hidden>
         <input id="new_title" maxlength="20" placeholder="系列名（20 字以内）">
-        <input id="new_theme" maxlength="99" placeholder="系列介绍（99 字以内，可选）">
+        <input id="new_theme" maxlength="120" placeholder="系列介绍（120 字以内，可选）">
         <div class="chk"><label><input type="checkbox" id="new_open">开放加入</label><label><input type="checkbox" id="new_finished">已完结</label></div>
       </div>
     </div>
@@ -69,14 +81,48 @@
   <script src="assets/js/music.js?v=2026100402"></script>
   <script src="assets/js/html2canvas.min.js"></script>
   <script src="assets/js/butler.js?v=2026100521"></script>
-  <script src="assets/js/ji.js?v=2026100401"></script>
+  <script src="assets/js/ji.js?v=2026100701"></script>
   <script>
     const $ = id => document.getElementById(id);
      let img = null;
      let seriesList = [];
      let selectedSeriesId = '';
      let mode = 'single';
-    let bagList = [], blankList = [], customList = [];
+     let customMode = 'all';
+     let bagList = [], blankList = [], customList = [];
+
+    // 大家做的邮票：一张的样子（拼上制作者昵称）
+    const customStamp = x => Ji.stamp(Object.assign({}, x, { words: x.words + (x.maker_nick ? ' · ' + x.maker_nick : '') }), x.got_today ? 'off' : '');
+    // 系列分组视图
+    function customSeriesView(list) {
+      const groups = [], idx = {}, orphans = [];
+      list.forEach(x => {
+        if (x.series_id) {
+          if (!(x.series_id in idx)) { idx[x.series_id] = { title: x.series_title || '未命名系列', theme: x.series_theme || '', stamps: [] }; groups.push(idx[x.series_id]); }
+          idx[x.series_id].stamps.push(x);
+        } else { orphans.push(x); }
+      });
+      let html = '';
+      groups.forEach(g => {
+        html += '<div class="series-group"><div class="sg-title">' + Ji.esc(g.title) + '</div>'
+          + (g.theme ? '<div class="sg-theme">' + Ji.esc(g.theme) + '</div>' : '')
+          + '<div class="sg-stamps">' + g.stamps.map(customStamp).join('') + '</div></div>';
+      });
+      if (orphans.length) {
+        html += '<div class="series-group"><div class="sg-title">未归类</div><div class="sg-stamps">' + orphans.map(customStamp).join('') + '</div></div>';
+      }
+      return html;
+    }
+    function drawCustom() {
+      $('custom').innerHTML = (customMode === 'series' ? customSeriesView(customList) : customList.map(customStamp).join('')) || '<div class="empty">架子还空着</div>';
+    }
+    // 全部 / 系列 切换
+    $('custom-switch').onclick = e => {
+      const b = e.target.closest('.sw'); if (!b) return;
+      customMode = b.dataset.m;
+      document.querySelectorAll('#custom-switch .sw').forEach(x => x.classList.toggle('on', x === b));
+      drawCustom();
+    };
 
     async function load() {
       const [b, s, sl] = await Promise.all([Ji.rpc('post_my_bag'), Ji.rpc('post_shelf'), Ji.rpc('post_series_list')]);
@@ -87,7 +133,7 @@
       const blanks = s.data.filter(x => x.kind === 'blank').sort((a, b) => a.hours - b.hours), customs = s.data.filter(x => x.kind === 'custom');
       blankList = blanks; customList = customs;
       $('blank').innerHTML = blanks.map(x => Ji.stamp(x, x.blank_today ? 'off' : '')).join('');
-      $('custom').innerHTML = customs.map(x => Ji.stamp(Object.assign({}, x, { words: x.words + (x.maker_nick ? ' · ' + x.maker_nick : '') }), x.got_today ? 'off' : '')).join('') || '<div class="empty">架子还空着</div>';
+      drawCustom();
       fillSeries();
     }
 

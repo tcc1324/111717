@@ -14,7 +14,8 @@
   function stamp(s, extra) {
     const pic = s.img ? `style="background-image:url('${esc(s.img)}')"` : '';
     const sid = s.sid ? `<div class="sid">${esc(s.sid)}</div>` : '';
-    const series = s.series_title ? `<div class="series"><span class="sn">${esc(s.series_title)}</span>${s.series_theme ? `<span class="st">${esc(s.series_theme)}</span>` : ''}</div>` : '';
+    const st = s.series_theme ? (s.series_theme.length > 20 ? s.series_theme.slice(0, 20) + '…' : s.series_theme) : '';
+    const series = s.series_title ? `<div class="series"><span class="sn">${esc(s.series_title)}</span>${st ? `<span class="st">${esc(st)}</span>` : ''}</div>` : '';
     return `<div class="stamp ${extra || ''}" data-id="${s.id}"><div class="face"><div class="in" ${pic}>${s.img ? '' : '✉'}</div></div>
       ${sid}${series}<div class="cap">${esc(s.words)}<br>${hrs(s.hours)}</div></div>`;
   }
