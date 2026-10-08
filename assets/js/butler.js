@@ -311,7 +311,13 @@
   }
 
   function addWelcome() {
-    addMsg('ai', '你好呀，我是唐甜甜～这座游乐园的小守家\n给你吹个大泡泡～');
+    const d = new Date();
+    let bless = '';
+    // 寒露（10-08 至 10-22）期间，提醒添衣
+    if (d.getMonth() === 9 && d.getDate() >= 8 && d.getDate() <= 22) {
+      bless = '\n寒露啦，露水渐凉，记得添件衣裳，别着凉呀～';
+    }
+    addMsg('ai', '你好呀，我是唐甜甜～这座游乐园的小守家\n给你吹个大泡泡～' + bless);
   }
 
   // 解码 token 拿 uid，非白名单不显示气泡
