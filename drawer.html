@@ -663,6 +663,7 @@ html{overflow-anchor:none}
       if(pass==null){ b.classList.remove('pulled'); return; }
       const v=await verifyPass(pass, d.lock_salt, d.lock_nonce, d.lock_verifier);
       if(v.err){ say(v.err); b.classList.remove('pulled'); return; }
+      d._pass = pass;
     }else if(lk==='time' && d.unlock_at && new Date(d.unlock_at).getTime()>now()){
       say('到点开启 · '+leftTxt(new Date(d.unlock_at).getTime()-now()));
       b.classList.remove('pulled'); return;
@@ -680,12 +681,36 @@ html{overflow-anchor:none}
     const r=await rpc('drawer_item_list',{p_drawer_id:d.id});
     if(r.err){ say(r.err); return; }
     cur.items=(Array.isArray(r.data)?r.data:[]).map(parseItem);
+    await migrateInherit();
     renderItems();
     palette($('dPal'),()=>colorOf(cur,curIdx),
       c=>{ cur.color=c; $('tray').style.setProperty('--tone',c); },
       async c=>{ const r=await rpc('drawer_update',{p_id:cur.id,p_color:c}); if(r.err) say(r.err); });
     requestAnimationFrame(()=>requestAnimationFrame(()=>$('tray').classList.add('opened')));
     window.scrollTo({top:0,behavior:'smooth'});
+  }
+  /* 迁移：抽屉有密码/问题锁时，把旧的无锁明文内容用抽屉密码加密回写 */
+  async function migrateInherit(){
+    if(!cur || !(cur.lock_kind==='password'||cur.lock_kind==='question') || !cur._pass) return;
+    const targets=cur.items.filter(it=>it.lock_kind==='none'||it.lock_kind==='inherit');
+    if(!targets.length) return;
+    for(const it of targets){
+      try{
+        const key=await _derive(cur._pass, cur.lock_salt);
+        const enc=await _seal(it.content||'', key);
+        const content=enc.iv+'.'+enc.data;
+        const r=await rpc('drawer_item_relock',{
+          p_id:it.id, p_lock_kind:cur.lock_kind, p_question:cur.question||null,
+          p_lock_salt:cur.lock_salt, p_lock_nonce:cur.lock_nonce, p_lock_verifier:cur.lock_verifier,
+          p_content:content });
+        if(r.err || r.data!=='ok') continue;
+        it.lock_kind=cur.lock_kind;
+        it.question=cur.question||null;
+        it.lock_salt=cur.lock_salt; it.lock_nonce=cur.lock_nonce; it.lock_verifier=cur.lock_verifier;
+        it.content=content;
+        if(it.kind!=='note') it.pages=[];
+      }catch(e){}
+    }
   }
   function shut(){
     $('tray').classList.remove('opened');
@@ -711,6 +736,7 @@ html{overflow-anchor:none}
   const kindOf=it=>it.lock_kind==='inherit'?cur.lock_kind:it.lock_kind;
   const uaOf=it=>it.unlock_at||(it.lock_kind==='inherit'?cur.unlock_at:null);
   const leftMs=it=>uaOf(it)?new Date(uaOf(it)).getTime()-now():0;
+  const isInherited=it=>cur && (cur.lock_kind==='password'||cur.lock_kind==='question') && it.lock_salt && it.lock_salt===cur.lock_salt;
   function lockedOf(it){
     const k=kindOf(it);
     if(k==='none') return null;
@@ -783,12 +809,15 @@ html{overflow-anchor:none}
     if(tab==='diary'||tab==='photo'){
       list.forEach(b=>{
         const k=lockedOf(b), e=bookEl(b);
-        if(k) e.appendChild(h('span','lk','🔒 '+LOCK[k]));
+        if(k && !isInherited(b)) e.appendChild(h('span','lk','🔒 '+LOCK[k]));
         e.onclick=async()=>{
           if(k==='time'){ say('到点开启 · '+leftTxt(leftMs(b))); return; }
           if(k==='password'||k==='question'){
-            const pass=prompt(k==='password'?'这本上了密码锁，请输入密码：':(b.question?'问题：'+b.question+'\n请输入答案：':'这本上了问题锁，请输入答案：'));
-            if(pass==null) return;
+            let pass=(cur._pass && b.lock_salt===cur.lock_salt)?cur._pass:null;
+            if(!pass){
+              pass=prompt(k==='password'?'这本上了密码锁，请输入密码：':(b.question?'问题：'+b.question+'\n请输入答案：':'这本上了问题锁，请输入答案：'));
+              if(pass==null) return;
+            }
             const uc=await unlockContent(pass, b.lock_salt, b.lock_nonce, b.lock_verifier, b.content);
             if(uc.err){ say(uc.err); return; }
             try{ b.pages=JSON.parse(uc.data); }catch(e){ b.pages=[]; }
@@ -807,10 +836,11 @@ html{overflow-anchor:none}
     if(!list.length){ W.appendChild(h('div','empty','这一格还空着')); return; }
     list.forEach(it=>{
       const k=lockedOf(it);
-      const e=h('button','it '+it.kind+(k?' locked':'')); e.type='button';
+      const inherited=isInherited(it);
+      const e=h('button','it '+it.kind+((k && !inherited)?' locked':''));
       e.style.setProperty('--r',((it.id*37)%5-2)+'deg');
-      if(!k) paintNote(e,it);
-      if(k){
+      if(!k || inherited) paintNote(e,it);
+      if(k && !inherited){
         e.appendChild(h('i','','🔒'));
         e.appendChild(h('small','',k==='time'?'到点开启 · '+leftTxt(leftMs(it)):LOCK[k]));
       }else if(it.kind==='photo'){
@@ -821,8 +851,11 @@ html{overflow-anchor:none}
 e.onclick=async()=>{
           if(k==='time'){ say('到点开启 · '+leftTxt(leftMs(it))); return; }
           if(k==='password'||k==='question'){
-            const pass=prompt(k==='password'?'这张纸条上了密码锁，请输入密码：':(it.question?'问题：'+it.question+'\n请输入答案：':'这张纸条上了问题锁，请输入答案：'));
-            if(pass==null) return;
+            let pass=(cur._pass && it.lock_salt===cur.lock_salt)?cur._pass:null;
+            if(!pass){
+              pass=prompt(k==='password'?'这张纸条上了密码锁，请输入密码：':(it.question?'问题：'+it.question+'\n请输入答案：':'这张纸条上了问题锁，请输入答案：'));
+              if(pass==null) return;
+            }
             const uc=await unlockContent(pass, it.lock_salt, it.lock_nonce, it.lock_verifier, it.content);
             if(uc.err){ say(uc.err); return; }
             curNote=it; resetArm($('vDel'),'删掉');
@@ -882,11 +915,16 @@ e.onclick=async()=>{
       Object.assign(editing,{title:t,color:draft.color,pattern:draft.pattern});
       leaveCover(); say('封面换好了'); return;
     }
-    const lk=$('cvLock').value;
+    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
+    const lk=inherits?cur.lock_kind:$('cvLock').value;
     const unlock_at=lk==='time'?computeUnlockAt('cv'):null;
     if(lk==='time'&&!unlock_at) return;
-    let content=JSON.stringify([]), title=t, question=null, salt=null, nonce=null, verifier=null;
-    if(lk==='password'||lk==='question'){
+    let content=JSON.stringify([]), title=t, question=inherits?(cur.question||null):null, salt=null, nonce=null, verifier=null;
+    if(inherits){
+      const key=await _derive(cur._pass, cur.lock_salt);
+      const enc=await _seal(content,key);
+      salt=cur.lock_salt; nonce=cur.lock_nonce; verifier=cur.lock_verifier; content=enc.iv+'.'+enc.data;
+    }else if(lk==='password'||lk==='question'){
       const pass=$('cvPass').value.trim();
       if(!pass){ say(lk==='password'?'密码锁要先设个密码':'问题锁要先设个答案'); return; }
       if(lk==='question'){
@@ -1143,11 +1181,16 @@ e.onclick=async()=>{
   $('noteOk').onclick=async()=>{
     const t=$('noteTxt').value.trim();
     if(!t){ say('先写点什么再放进去'); return; }
-    const lk=$('noteLock').value;
+    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
+    const lk=inherits?cur.lock_kind:$('noteLock').value;
     const unlock_at=lk==='time'?computeUnlockAt('note'):null;
     if(lk==='time'&&!unlock_at) return;
-    let content=t, title=null, question=null, salt=null, nonce=null, verifier=null;
-    if(lk==='password'||lk==='question'){
+    let content=t, title=null, question=inherits?(cur.question||null):null, salt=null, nonce=null, verifier=null;
+    if(inherits){
+      const key=await _derive(cur._pass, cur.lock_salt);
+      const enc=await _seal(content,key);
+      salt=cur.lock_salt; nonce=cur.lock_nonce; verifier=cur.lock_verifier; content=enc.iv+'.'+enc.data;
+    }else if(lk==='password'||lk==='question'){
       const pass=$('notePass').value.trim();
       if(!pass){ say(lk==='password'?'密码锁要先设个密码':'问题锁要先设个答案'); return; }
       if(lk==='question'){
