@@ -498,6 +498,14 @@ html{overflow-anchor:none}
     if(!r.ok) return null;
     return await r.arrayBuffer();
   }
+  /* 删除 Storage 里的单个照片文件（bucket 私有，DELETE 仅限 owner） */
+  async function storageDelete(path){
+    const s=await Park.session(); if(!s) return false;
+    const r=await fetch(SB_URL+'/storage/v1/object/drawer-photos/'+path+'?apikey='+encodeURIComponent(SB_ANON),{
+      method:'DELETE', headers:{Authorization:'Bearer '+s.access_token}
+    });
+    return r.ok;
+  }
 
   const $=id=>document.getElementById(id);
   const say=m=>typeof toast==='function'?toast(m):alert(m);
@@ -1044,9 +1052,12 @@ e.onclick=async()=>{
   }
   $('bDel').onclick=()=>armRun($('bDel'),book.kind==='photo'?'删掉相册':'删掉日记本',async()=>{
     const k=book.kind;
+    const photoPaths = k==='photo' ? (book.pages||[]).map(p=>p.img&&p.img.path).filter(Boolean) : [];
     const r=await rpc('drawer_item_remove',{p_id:book.id}); if(r.err){ say(r.err); return; }
     cur.items=cur.items.filter(x=>x.id!==book.id);
     book=null; show('vIn'); renderItems(); $('inSub').textContent=sub(cur); say(k==='photo'?'相册删掉了':'日记本删掉了');
+    // 数据库记录已删，再清 Storage 里的照片文件（失败仅留下无害孤儿文件，不阻断）
+    photoPaths.forEach(p=>storageDelete(p).catch(()=>{}));
   });
   $('pPrev').onclick=()=>{ if(pi>0){ pi--; renderPage(true); } };
   $('pNext').onclick=()=>{ if(pi<book.pages.length-1){ pi++; renderPage(true); } };
@@ -1087,10 +1098,12 @@ e.onclick=async()=>{
   async function doDel(){
     clearTimeout(delTimer); delArm=false;
     const isPhoto=book.kind==='photo';
+    const gone=isPhoto?book.pages[pi]:null;
     const pages=book.pages.slice(); pages.splice(pi,1);
     const r=await rpc('drawer_item_update',{p_id:book.id,p_content:await reenc(book,JSON.stringify(pages))});
     if(r.err){ say(r.err); $('pDel').classList.remove('arm'); $('pDel').textContent=isPhoto?'删掉这张':'撕掉这页'; return; }
     book.pages=pages;
+    if(gone && gone.img && gone.img.path) storageDelete(gone.img.path).catch(()=>{});
     if(pi>=pages.length) pi=Math.max(0,pages.length-1);
     renderPage(true);
     say(isPhoto?'这张照片删掉了':'这一页撕掉了');
