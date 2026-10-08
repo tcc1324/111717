@@ -43,7 +43,7 @@
         headers: { apikey: SB_ANON, 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh_token: token }),
       });
-      if (!r.ok) { if (r.status < 500) clear(); return null; }
+      if (!r.ok) { if (r.status === 400 || r.status === 401) clear(); return null; }
       const n = await r.json();
       const fresh = { access_token: n.access_token, refresh_token: n.refresh_token, expires_at: n.expires_at };
       save(fresh);
@@ -55,7 +55,8 @@
     if (!s) return null;
     if (s.expires_at * 1000 - Date.now() > 60000) return s;
     if (!refreshing) refreshing = doRefresh(s.refresh_token).finally(() => { refreshing = null; });
-    return refreshing;
+    const fresh = await refreshing;
+    return fresh || s;
   }
 
   // 带登录身份读写数据库
@@ -76,6 +77,7 @@
   async function logout() {
     const s = load();
     clear();
+    localStorage.removeItem('park.butler.history');
     if (s) fetch(withKey(SB_URL + '/auth/v1/logout'), { method: 'POST', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token } }).catch(() => {});
   }
 
