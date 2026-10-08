@@ -56,7 +56,7 @@
     if (s.expires_at * 1000 - Date.now() > 60000) return s;
     if (!refreshing) refreshing = doRefresh(s.refresh_token).finally(() => { refreshing = null; });
     const fresh = await refreshing;
-    return fresh || s;
+    return fresh || (load() ? s : null);
   }
 
   // 带登录身份读写数据库

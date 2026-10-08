@@ -702,9 +702,9 @@ html{overflow-anchor:none}
     if(!cur || !(cur.lock_kind==='password'||cur.lock_kind==='question') || !cur._pass) return;
     const targets=cur.items.filter(it=>it.lock_kind==='none'||it.lock_kind==='inherit');
     if(!targets.length) return;
+    const key=await _derive(cur._pass, cur.lock_salt);
     for(const it of targets){
       try{
-        const key=await _derive(cur._pass, cur.lock_salt);
         const enc=await _seal(it.content||'', key);
         const content=enc.iv+'.'+enc.data;
         const r=await rpc('drawer_item_relock',{
@@ -923,7 +923,7 @@ e.onclick=async()=>{
       Object.assign(editing,{title:t,color:draft.color,pattern:draft.pattern});
       leaveCover(); say('封面换好了'); return;
     }
-    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
+    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass && $('cvLock').value==='none';
     const lk=inherits?cur.lock_kind:$('cvLock').value;
     const unlock_at=lk==='time'?computeUnlockAt('cv'):null;
     if(lk==='time'&&!unlock_at) return;
@@ -1214,7 +1214,7 @@ e.onclick=async()=>{
   $('noteOk').onclick=async()=>{
     const t=$('noteTxt').value.trim();
     if(!t){ say('先写点什么再放进去'); return; }
-    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
+    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass && $('noteLock').value==='none';
     const lk=inherits?cur.lock_kind:$('noteLock').value;
     const unlock_at=lk==='time'?computeUnlockAt('note'):null;
     if(lk==='time'&&!unlock_at) return;
