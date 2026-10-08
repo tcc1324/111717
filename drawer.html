@@ -998,11 +998,31 @@ e.onclick=async()=>{
     $('lbImg').src=url; $('mLb').classList.add('on');
   }
   $('mLb').onclick=()=>{ $('mLb').classList.remove('on'); $('lbImg').src=''; };
-  /* 上传照片：有锁则加密，返回 {path, iv?, type} */
+  /* 等比压缩：最长边压到 maxDim、质量 quality、转 jpeg；gif 动图或压缩反而变大时保留原图 */
+  async function _compressImage(file, maxDim=1600, quality=0.8){
+    if(file.type==='image/gif') return file;
+    const url=URL.createObjectURL(file);
+    try{
+      const img=await new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=()=>rej(new Error('load')); im.src=url; });
+      let w=img.naturalWidth, h=img.naturalHeight;
+      const max=Math.max(w,h);
+      if(max>maxDim){ const k=maxDim/max; w=Math.max(1,Math.round(w*k)); h=Math.max(1,Math.round(h*k)); }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      const blob=await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error('blob')),'image/jpeg',quality));
+      return (blob && blob.size<file.size)?blob:file;
+    }catch(e){
+      return file;
+    }finally{
+      URL.revokeObjectURL(url);
+    }
+  }
+  /* 上传照片：先压缩，有锁则加密，返回 {path, iv?, type} */
   async function uploadPhoto(file){
     const path=book.id+'_'+now()+'_'+Math.random().toString(36).slice(2,8);
-    const buf=await file.arrayBuffer();
-    const img={path:path, type:file.type||'image/jpeg'};
+    let src=file; try{ src=await _compressImage(file); }catch(e){ src=file; }
+    const buf=await src.arrayBuffer();
+    const img={path:path, type:src.type||'image/jpeg'};
     let blob;
     if((book.lock_kind==='password'||book.lock_kind==='question') && book._pass){
       const key=await _photoKey(book);
@@ -1010,7 +1030,7 @@ e.onclick=async()=>{
       img.iv=enc.iv;
       blob=new Blob([enc.data],{type:'application/octet-stream'});
     }else{
-      blob=new Blob([buf],{type:file.type||'image/jpeg'});
+      blob=new Blob([buf],{type:src.type||'image/jpeg'});
     }
     const ok=await storageUpload(path,blob);
     return ok?img:null;
