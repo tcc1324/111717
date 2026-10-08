@@ -320,7 +320,7 @@ html{overflow-anchor:none}
   <h1>秘密抽屉</h1>
   <p class="en">Secret Drawers</p>
   <p class="sub">藏起秘密</p>
-   <p class="note">（秘密抽屉除了时间锁及未上锁状态外，其余的锁都采用端到端加密技术，确保内容仅您可见，本站后台也无法得知。正因此，需要注意：请您保护好设置的密钥，它无法靠我们找回，若丢失内容将无法再打开。<br>以及，为了绝对安全，建议不要在秘密抽屉中向唐甜甜发送消息。）</p>
+   <p class="note">（秘密抽屉的密码锁与问题锁都采用端到端加密技术，确保内容仅您可见，本站后台也无法得知；上了密码锁或问题锁的抽屉里，时间锁的内容也会随抽屉一并加密。正因此，需要注意：请您保护好设置的密钥，它无法靠我们找回，若丢失内容将无法再打开。<br>以及，为了绝对安全，建议不要在秘密抽屉中向唐甜甜发送消息。）</p>
 
   <div class="view" id="vList"><div class="dlist" id="dlist"></div></div>
 
@@ -458,7 +458,7 @@ html{overflow-anchor:none}
   }
   /* 有锁的本子写页/撕页后，用已解锁口令重新加密再上传 */
   async function reenc(book,plain){
-    if((book.lock_kind==='password'||book.lock_kind==='question') && book._pass){
+    if(book._pass && book.lock_salt){
       const key=await _derive(book._pass, book.lock_salt);
       const enc=await _seal(plain,key);
       return enc.iv+'.'+enc.data;
@@ -700,20 +700,22 @@ html{overflow-anchor:none}
   /* 迁移：抽屉有密码/问题锁时，把旧的无锁明文内容用抽屉密码加密回写 */
   async function migrateInherit(){
     if(!cur || !(cur.lock_kind==='password'||cur.lock_kind==='question') || !cur._pass) return;
-    const targets=cur.items.filter(it=>it.lock_kind==='none'||it.lock_kind==='inherit');
+    const targets=cur.items.filter(it=>it.lock_kind==='none'||it.lock_kind==='inherit'||(it.lock_kind==='time'&&!it.lock_salt));
     if(!targets.length) return;
     const key=await _derive(cur._pass, cur.lock_salt);
     for(const it of targets){
       try{
+        if(it.lock_kind==='time' && !it.content) continue; /* 时间锁未到点：服务端还没返回内容，等它到点再迁 */
+        const keepTime=it.lock_kind==='time';
         const enc=await _seal(it.content||'', key);
         const content=enc.iv+'.'+enc.data;
         const r=await rpc('drawer_item_relock',{
-          p_id:it.id, p_lock_kind:cur.lock_kind, p_question:cur.question||null,
+          p_id:it.id, p_lock_kind:keepTime?'time':cur.lock_kind, p_question:keepTime?(it.question||null):(cur.question||null),
           p_lock_salt:cur.lock_salt, p_lock_nonce:cur.lock_nonce, p_lock_verifier:cur.lock_verifier,
           p_content:content });
         if(r.err || r.data!=='ok') continue;
-        it.lock_kind=cur.lock_kind;
-        it.question=cur.question||null;
+        it.lock_kind=keepTime?'time':cur.lock_kind;
+        it.question=keepTime?(it.question||null):(cur.question||null);
         it.lock_salt=cur.lock_salt; it.lock_nonce=cur.lock_nonce; it.lock_verifier=cur.lock_verifier;
         it.content=content;
         if(it.kind!=='note') it.pages=[];
@@ -817,13 +819,15 @@ html{overflow-anchor:none}
     if(tab==='diary'||tab==='photo'){
       list.forEach(b=>{
         const k=lockedOf(b), e=bookEl(b);
-        if(k && !isInherited(b)) e.appendChild(h('span','lk','🔒 '+LOCK[k]));
+        if(k && (!isInherited(b) || k==='time')) e.appendChild(h('span','lk','🔒 '+LOCK[k]));
         e.onclick=async()=>{
           if(k==='time'){ say('到点开启 · '+leftTxt(leftMs(b))); return; }
-          if(k==='password'||k==='question'){
+          const sealed=(k==='password'||k==='question') || !!(b.lock_salt && b.lock_nonce && b.lock_verifier);
+          if(sealed){
             let pass=(cur._pass && b.lock_salt===cur.lock_salt)?cur._pass:null;
             if(!pass){
-              pass=prompt(k==='password'?'这本上了密码锁，请输入密码：':(b.question?'问题：'+b.question+'\n请输入答案：':'这本上了问题锁，请输入答案：'));
+              const ak=(k==='password'||k==='question')?k:(cur.lock_kind==='question'?'question':'password');
+              pass=prompt(ak==='password'?'这本上了密码锁，请输入密码：':((b.question||cur.question)?'问题：'+(b.question||cur.question)+'\n请输入答案：':'这本上了问题锁，请输入答案：'));
               if(pass==null) return;
             }
             const uc=await unlockContent(pass, b.lock_salt, b.lock_nonce, b.lock_verifier, b.content);
@@ -845,10 +849,10 @@ html{overflow-anchor:none}
     list.forEach(it=>{
       const k=lockedOf(it);
       const inherited=isInherited(it);
-      const e=h('button','it '+it.kind+((k && !inherited)?' locked':''));
+      const e=h('button','it '+it.kind+((k && (!inherited || k==='time'))?' locked':''));
       e.style.setProperty('--r',((it.id*37)%5-2)+'deg');
-      if(!k || inherited) paintNote(e,it);
-      if(k && !inherited){
+      if(!k || (inherited && k!=='time')) paintNote(e,it);
+      if(k && (!inherited || k==='time')){
         e.appendChild(h('i','','🔒'));
         e.appendChild(h('small','',k==='time'?'到点开启 · '+leftTxt(leftMs(it)):LOCK[k]));
       }else if(it.kind==='photo'){
@@ -858,10 +862,12 @@ html{overflow-anchor:none}
       }
 e.onclick=async()=>{
           if(k==='time'){ say('到点开启 · '+leftTxt(leftMs(it))); return; }
-          if(k==='password'||k==='question'){
+          const sealed=(k==='password'||k==='question') || !!(it.lock_salt && it.lock_nonce && it.lock_verifier);
+          if(sealed){
             let pass=(cur._pass && it.lock_salt===cur.lock_salt)?cur._pass:null;
             if(!pass){
-              pass=prompt(k==='password'?'这张纸条上了密码锁，请输入密码：':(it.question?'问题：'+it.question+'\n请输入答案：':'这张纸条上了问题锁，请输入答案：'));
+              const ak=(k==='password'||k==='question')?k:(cur.lock_kind==='question'?'question':'password');
+              pass=prompt(ak==='password'?'这张纸条上了密码锁，请输入密码：':((it.question||cur.question)?'问题：'+(it.question||cur.question)+'\n请输入答案：':'这张纸条上了问题锁，请输入答案：'));
               if(pass==null) return;
             }
             const uc=await unlockContent(pass, it.lock_salt, it.lock_nonce, it.lock_verifier, it.content);
@@ -923,8 +929,10 @@ e.onclick=async()=>{
       Object.assign(editing,{title:t,color:draft.color,pattern:draft.pattern});
       leaveCover(); say('封面换好了'); return;
     }
-    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass && $('cvLock').value==='none';
-    const lk=inherits?cur.lock_kind:$('cvLock').value;
+    const wantTime=$('cvLock').value==='time';
+    const drawerEnc=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
+    const inherits=drawerEnc && ($('cvLock').value==='none'||wantTime);
+    const lk=wantTime?'time':(inherits?cur.lock_kind:$('cvLock').value);
     const unlock_at=lk==='time'?computeUnlockAt('cv'):null;
     if(lk==='time'&&!unlock_at) return;
     let content=JSON.stringify([]), title=t, question=inherits?(cur.question||null):null, salt=null, nonce=null, verifier=null;
@@ -1032,7 +1040,7 @@ e.onclick=async()=>{
     const buf=await src.arrayBuffer();
     const img={path:path, type:src.type||'image/jpeg'};
     let blob;
-    if((book.lock_kind==='password'||book.lock_kind==='question') && book._pass){
+    if(book._pass && book.lock_salt){
       const key=await _photoKey(book);
       const enc=await _sealBytes(buf,key);
       img.iv=enc.iv;
@@ -1214,8 +1222,10 @@ e.onclick=async()=>{
   $('noteOk').onclick=async()=>{
     const t=$('noteTxt').value.trim();
     if(!t){ say('先写点什么再放进去'); return; }
-    const inherits=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass && $('noteLock').value==='none';
-    const lk=inherits?cur.lock_kind:$('noteLock').value;
+    const wantTime=$('noteLock').value==='time';
+    const drawerEnc=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
+    const inherits=drawerEnc && ($('noteLock').value==='none'||wantTime);
+    const lk=wantTime?'time':(inherits?cur.lock_kind:$('noteLock').value);
     const unlock_at=lk==='time'?computeUnlockAt('note'):null;
     if(lk==='time'&&!unlock_at) return;
     let content=t, title=null, question=inherits?(cur.question||null):null, salt=null, nonce=null, verifier=null;
