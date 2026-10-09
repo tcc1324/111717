@@ -1,4 +1,4 @@
-// 游乐园配乐：左上角音乐按钮 + 播放器 + 设置面板
+// 游乐园配乐：右上角音乐按钮 + 播放器 + 设置面板
 (function () {
   // ===== 曲目清单 =====
   const TRACKS = [
@@ -59,6 +59,7 @@
   const audio = new Audio();
   let currentId = null;
   let playing = false;
+  let playToken = 0;   // 防切歌竞态：每次切歌播放递增，过期回调直接忽略
 
   function saveLive() {
     try {
@@ -91,13 +92,23 @@
     const t = track(id);
     if (!t) return;
     currentId = id;
+    const token = ++playToken;
     audio.src = t.file;
     audio.volume = state.volume;
+    // 加载反馈：大文件下载慢，3 秒后还没开播就提示一声"加载中"
+    const loadingTimer = setTimeout(() => {
+      if (token === playToken) toast('加载中，请稍等…');
+    }, 3000);
     audio.play().then(() => {
+      clearTimeout(loadingTimer);
+      if (token !== playToken) return;   // 已切歌，忽略过期回调
       setPlaying(true);
       renderNow();
       renderList();
-    }).catch(() => {
+    }).catch((err) => {
+      clearTimeout(loadingTimer);
+      if (token !== playToken) return;   // 已切歌，忽略过期回调
+      if (err && err.name === 'AbortError') return;  // 正常切歌中断，静默
       toast('这首歌的文件还没放进来哦');
       setPlaying(false);
     });
@@ -115,7 +126,15 @@
       if (!l.length) { toast('还没有可播放的歌'); openPanel(); return; }
       play(l[0].id);
     } else {
-      audio.play().then(() => setPlaying(true)).catch(() => toast('还没准备好，再点一下试试'));
+      const token = playToken;   // 续播不切歌、不递增；之后若切歌，此回调作废
+      audio.play().then(() => {
+        if (token !== playToken) return;
+        setPlaying(true);
+      }).catch((err) => {
+        if (token !== playToken) return;
+        if (err && err.name === 'AbortError') return;
+        toast('还没准备好，再点一下试试');
+      });
     }
   }
 
@@ -123,7 +142,16 @@
     const l = list();
     if (!l.length) { toast('没有可播放的歌'); return; }
     if (state.mode === 'single' && auto) {
-      audio.currentTime = 0; audio.play().catch(() => {});
+      audio.currentTime = 0;
+      const token = playToken;
+      audio.play().then(() => {
+        if (token !== playToken) return;
+        setPlaying(true);
+      }).catch((err) => {
+        if (token !== playToken) return;
+        if (err && err.name === 'AbortError') return;
+        setPlaying(false);
+      });
       return;
     }
     if (state.mode === 'random') { play(l[Math.floor(Math.random() * l.length)].id); return; }
