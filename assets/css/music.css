@@ -38,14 +38,14 @@ body[data-music="hot"] .music-btn__gear { width: 22px; height: 22px; font-size: 
    按钮状态（playing 图标）点了立刻变，呼吸只表示「内容在缓冲」，出声即撤 */
 .music-btn.loading { opacity: 1; }
 .music-btn.loading .music-btn__play {
-  animation: music-breathe 1.2s ease-in-out infinite;
+  animation: music-breathe 2.2s ease-in-out infinite;
 }
 .music-now__ctrl button.loading {
-  animation: music-breathe 1.2s ease-in-out infinite;
+  animation: music-breathe 2.2s ease-in-out infinite;
 }
 @keyframes music-breathe {
   0%, 100% { opacity: 1; }
-  50% { opacity: .45; }
+  50% { opacity: .78; }
 }
 
 /* ===== 设置面板（底部抽屉） ===== */
