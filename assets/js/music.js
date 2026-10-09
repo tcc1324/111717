@@ -30,7 +30,6 @@
   ];
 
   const LS_KEY = 'park.music';
-  const LIVE_KEY = 'park.music.live';   // 跨页续播：记住正在播哪首、进度、是否在播
 
   const state = {
     volume: 0.7,
@@ -62,13 +61,6 @@
   let loading = false;   // 点了播放但音频还没真正出声（在缓冲）
   let playToken = 0;   // 防切歌竞态：每次切歌播放递增，过期回调直接忽略
 
-  function saveLive() {
-    try {
-      localStorage.setItem(LIVE_KEY, JSON.stringify({ id: currentId, time: audio.currentTime || 0, playing }));
-    } catch {}
-  }
-  function clearLive() { try { localStorage.removeItem(LIVE_KEY); } catch {} }
-
   function mark(id) { return state.marks[id] || (state.marks[id] = { heart: false, fav: false }); }
   function list() { return TRACKS.filter(t => !state.heartOnly || mark(t.id).heart); }
   function track(id) { return TRACKS.find(t => t.id === id); }
@@ -79,10 +71,8 @@
     const snap = { playing, loading, currentId, title: currentId && track(currentId) ? track(currentId).title : null };
     listeners.forEach(f => { try { f(snap); } catch {} });
   }
-  function setPlaying(v, skipSave) {
+  function setPlaying(v) {
     playing = v;
-    // skipSave：续播乐观亮灯/被拦截回退时用，不覆写 live 存档（保住跨页续播火种）
-    if (!skipSave) saveLive();
     const wrap = document.getElementById('musicBtn');
     if (wrap) wrap.classList.toggle('playing', v);
     const p2 = document.getElementById('musicPlay2');
@@ -137,7 +127,7 @@
       if (!l.length) { toast('还没有可播放的歌'); openPanel(); return; }
       play(l[0].id);
     } else {
-      const token = playToken;   // 续播不切歌、不递增；之后若切歌，此回调作废
+      const token = playToken;   // 恢复播放不切歌、不递增；之后若切歌，此回调作废
       setPlaying(true);   // 乐观亮灯
       setLoading(true);
       audio.play().then(() => {
@@ -188,12 +178,6 @@
   // 加载态兜底：真正出声时撤「加载中」；播放中网络卡住（重新缓冲）时再挂上
   audio.addEventListener('playing', () => { if (loading) setLoading(false); });
   audio.addEventListener('waiting', () => { if (playing && !audio.paused) setLoading(true); });
-  // 每秒把播放进度写进 live，换页后从这接着播
-  let lastSave = 0;
-  audio.addEventListener('timeupdate', () => {
-    const now = Date.now();
-    if (now - lastSave > 1000) { lastSave = now; saveLive(); }
-  });
 
   // ===== 渲染 =====
   function renderNow() {
@@ -301,53 +285,6 @@
     panel.addEventListener('click', (e) => { if (e.target === panel) closePanel(); });
 
     renderAll();
-    restore();
-  }
-
-  // 跨页续播：上次正在播放的话，页面加载后自动接着同一首、同一进度继续
-  function restore() {
-    try {
-      const l = JSON.parse(localStorage.getItem(LIVE_KEY));
-      if (!l || !l.playing || !l.id || !track(l.id)) return;
-      currentId = l.id;
-      // 乐观同步 + 加载态：一进门立刻亮灯、挂「加载中…」，不等元数据不等出声
-      // （以前按钮要等 loadedmetadata / play() 成功才亮，歌和界面脱节好几秒）
-      setPlaying(true, true);   // 先亮灯，不动存档（保住跨页续播火种）
-      setLoading(true);         // 内部已 renderNow()，曲名挂「（加载中…）」
-      renderList();
-      const t = track(l.id);
-      audio.src = t.file;
-      audio.volume = state.volume;
-      const seek = typeof l.time === 'number' ? l.time : 0;
-      const start = () => {
-        try { audio.currentTime = seek; } catch {}
-        audio.play().then(() => {
-          setLoading(false);    // 出声了撤加载态（'playing' 事件也会兜底收尾）
-          setPlaying(true);     // 确认开播，正常存档（此时已是 seek 后的进度）
-        }).catch((err) => {
-          if (err && err.name === 'AbortError') return;  // 用户自己按了暂停/切歌，别管
-          setLoading(false);
-          setPlaying(false, true); // 回退界面，但 live 里保留 playing:true，跳页还能续
-          if (err && err.name === 'NotAllowedError') {
-            // 浏览器自动播放限制：提示点一下，点了立刻补播
-            toast('点一下页面，歌就继续～');
-            const resume = () => {
-              setLoading(true);   // 补播期间同样挂加载态，出声再撤
-              audio.play().then(() => {
-                setLoading(false);
-                setPlaying(true);
-              }).catch(() => { setLoading(false); });
-            };
-            document.addEventListener('click', resume, { once: true });
-            document.addEventListener('touchstart', resume, { once: true });
-          } else {
-            toast('这首歌的文件还没放进来哦');
-          }
-        });
-      };
-      if (audio.readyState >= 1) start();
-      else audio.addEventListener('loadedmetadata', start, { once: true });
-    } catch {}
   }
 
   function init() {
