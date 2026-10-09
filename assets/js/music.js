@@ -78,9 +78,10 @@
     const snap = { playing, currentId, title: currentId && track(currentId) ? track(currentId).title : null };
     listeners.forEach(f => { try { f(snap); } catch {} });
   }
-  function setPlaying(v) {
+  function setPlaying(v, skipSave) {
     playing = v;
-    saveLive();
+    // skipSave：续播乐观亮灯/被拦截回退时用，不覆写 live 存档（保住跨页续播火种）
+    if (!skipSave) saveLive();
     const wrap = document.getElementById('musicBtn');
     if (wrap) wrap.classList.toggle('playing', v);
     const p2 = document.getElementById('musicPlay2');
@@ -290,13 +291,34 @@
       const l = JSON.parse(localStorage.getItem(LIVE_KEY));
       if (!l || !l.playing || !l.id || !track(l.id)) return;
       currentId = l.id;
+      // 乐观同步：立刻显示曲名、高亮列表、点亮按钮，歌加载完就跟上
+      // （以前是等 play() 成功才更新界面，大文件慢时歌和界面脱节好几秒）
+      renderNow();
+      renderList();
       const t = track(l.id);
       audio.src = t.file;
       audio.volume = state.volume;
       const seek = typeof l.time === 'number' ? l.time : 0;
       const start = () => {
         try { audio.currentTime = seek; } catch {}
-        audio.play().then(() => { setPlaying(true); renderNow(); renderList(); }).catch(() => {});
+        setPlaying(true, true);   // 先亮灯，不动存档（currentTime 还没稳定）
+        audio.play().then(() => {
+          setPlaying(true);       // 确认开播，正常存档（此时已是 seek 后的进度）
+        }).catch((err) => {
+          if (err && err.name === 'AbortError') return;  // 用户自己按了暂停/切歌，别管
+          setPlaying(false, true); // 回退界面，但 live 里保留 playing:true，跳页还能续
+          if (err && err.name === 'NotAllowedError') {
+            // 浏览器自动播放限制：提示点一下，点了立刻补播
+            toast('点一下页面，歌就继续～');
+            const resume = () => {
+              audio.play().then(() => setPlaying(true)).catch(() => {});
+            };
+            document.addEventListener('click', resume, { once: true });
+            document.addEventListener('touchstart', resume, { once: true });
+          } else {
+            toast('这首歌的文件还没放进来哦');
+          }
+        });
       };
       if (audio.readyState >= 1) start();
       else audio.addEventListener('loadedmetadata', start, { once: true });
