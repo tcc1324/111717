@@ -59,6 +59,7 @@
   const audio = new Audio();
   let currentId = null;
   let playing = false;
+  let loading = false;   // 点了播放但音频还没真正出声（在缓冲）
   let playToken = 0;   // 防切歌竞态：每次切歌播放递增，过期回调直接忽略
 
   function saveLive() {
@@ -75,7 +76,7 @@
   // 状态变更订阅：供「音乐小屋」等页面实时同步播放状态/曲名
   const listeners = [];
   function emit() {
-    const snap = { playing, currentId, title: currentId && track(currentId) ? track(currentId).title : null };
+    const snap = { playing, loading, currentId, title: currentId && track(currentId) ? track(currentId).title : null };
     listeners.forEach(f => { try { f(snap); } catch {} });
   }
   function setPlaying(v, skipSave) {
@@ -89,6 +90,17 @@
     emit();
   }
 
+  // 加载态：点了播放但音频还没出声。按钮呼吸 + 曲名挂「（加载中…）」，出声后撤掉
+  function setLoading(v) {
+    loading = v;
+    const wrap = document.getElementById('musicBtn');
+    if (wrap) wrap.classList.toggle('loading', v);
+    const p2 = document.getElementById('musicPlay2');
+    if (p2) p2.classList.toggle('loading', v);
+    renderNow();   // 曲名后缀跟着 loading 变
+    emit();
+  }
+
   function play(id) {
     const t = track(id);
     if (!t) return;
@@ -96,27 +108,25 @@
     const token = ++playToken;
     audio.src = t.file;
     audio.volume = state.volume;
-    // 加载反馈：大文件下载慢，3 秒后还没开播就提示一声"加载中"
-    const loadingTimer = setTimeout(() => {
-      if (token === playToken) toast('加载中，请稍等…');
-    }, 3000);
+    // 乐观亮灯：按钮点了立刻变，不等音乐；加载期间挂「加载中…」直到出声
+    setPlaying(true);
+    setLoading(true);
+    renderList();
     audio.play().then(() => {
-      clearTimeout(loadingTimer);
-      if (token !== playToken) return;   // 已切歌，忽略过期回调
-      setPlaying(true);
-      renderNow();
-      renderList();
+      if (token !== playToken) return;   // 已切歌，忽略过期回调（新歌自己管状态）
+      setLoading(false);   // 兜底；'playing' 事件也会收尾
     }).catch((err) => {
-      clearTimeout(loadingTimer);
       if (token !== playToken) return;   // 已切歌，忽略过期回调
-      if (err && err.name === 'AbortError') return;  // 正常切歌中断，静默
-      toast('这首歌的文件还没放进来哦');
+      if (err && err.name === 'AbortError') return;  // 用户自己按了暂停/被打断，pause 已处理
+      setLoading(false);
       setPlaying(false);
+      toast('这首歌的文件还没放进来哦');
     });
   }
 
   function pause() {
     audio.pause();
+    setLoading(false);
     setPlaying(false);
   }
 
@@ -128,12 +138,16 @@
       play(l[0].id);
     } else {
       const token = playToken;   // 续播不切歌、不递增；之后若切歌，此回调作废
+      setPlaying(true);   // 乐观亮灯
+      setLoading(true);
       audio.play().then(() => {
         if (token !== playToken) return;
-        setPlaying(true);
+        setLoading(false);
       }).catch((err) => {
         if (token !== playToken) return;
         if (err && err.name === 'AbortError') return;
+        setLoading(false);
+        setPlaying(false);
         toast('还没准备好，再点一下试试');
       });
     }
@@ -145,12 +159,14 @@
     if (state.mode === 'single' && auto) {
       audio.currentTime = 0;
       const token = playToken;
+      setLoading(true);   // 重新缓冲，挂加载态直到出声
       audio.play().then(() => {
         if (token !== playToken) return;
-        setPlaying(true);
+        setLoading(false);
       }).catch((err) => {
         if (token !== playToken) return;
         if (err && err.name === 'AbortError') return;
+        setLoading(false);
         setPlaying(false);
       });
       return;
@@ -169,6 +185,9 @@
   }
 
   audio.addEventListener('ended', () => next(true));
+  // 加载态兜底：真正出声时撤「加载中」；播放中网络卡住（重新缓冲）时再挂上
+  audio.addEventListener('playing', () => { if (loading) setLoading(false); });
+  audio.addEventListener('waiting', () => { if (playing && !audio.paused) setLoading(true); });
   // 每秒把播放进度写进 live，换页后从这接着播
   let lastSave = 0;
   audio.addEventListener('timeupdate', () => {
@@ -180,7 +199,7 @@
   function renderNow() {
     const el = document.getElementById('musicNowTitle');
     const t = currentId && track(currentId);
-    if (el) el.textContent = t ? t.title : '还没有播放';
+    if (el) el.textContent = t ? (loading ? t.title + '（加载中…）' : t.title) : '还没有播放';
   }
   function renderMode() {
     document.querySelectorAll('#musicMode button').forEach(b =>
@@ -291,9 +310,10 @@
       const l = JSON.parse(localStorage.getItem(LIVE_KEY));
       if (!l || !l.playing || !l.id || !track(l.id)) return;
       currentId = l.id;
-      // 乐观同步：立刻显示曲名、高亮列表、点亮按钮，歌加载完就跟上
-      // （以前是等 play() 成功才更新界面，大文件慢时歌和界面脱节好几秒）
-      renderNow();
+      // 乐观同步 + 加载态：一进门立刻亮灯、挂「加载中…」，不等元数据不等出声
+      // （以前按钮要等 loadedmetadata / play() 成功才亮，歌和界面脱节好几秒）
+      setPlaying(true, true);   // 先亮灯，不动存档（保住跨页续播火种）
+      setLoading(true);         // 内部已 renderNow()，曲名挂「（加载中…）」
       renderList();
       const t = track(l.id);
       audio.src = t.file;
@@ -301,17 +321,22 @@
       const seek = typeof l.time === 'number' ? l.time : 0;
       const start = () => {
         try { audio.currentTime = seek; } catch {}
-        setPlaying(true, true);   // 先亮灯，不动存档（currentTime 还没稳定）
         audio.play().then(() => {
-          setPlaying(true);       // 确认开播，正常存档（此时已是 seek 后的进度）
+          setLoading(false);    // 出声了撤加载态（'playing' 事件也会兜底收尾）
+          setPlaying(true);     // 确认开播，正常存档（此时已是 seek 后的进度）
         }).catch((err) => {
           if (err && err.name === 'AbortError') return;  // 用户自己按了暂停/切歌，别管
+          setLoading(false);
           setPlaying(false, true); // 回退界面，但 live 里保留 playing:true，跳页还能续
           if (err && err.name === 'NotAllowedError') {
             // 浏览器自动播放限制：提示点一下，点了立刻补播
             toast('点一下页面，歌就继续～');
             const resume = () => {
-              audio.play().then(() => setPlaying(true)).catch(() => {});
+              setLoading(true);   // 补播期间同样挂加载态，出声再撤
+              audio.play().then(() => {
+                setLoading(false);
+                setPlaying(true);
+              }).catch(() => { setLoading(false); });
             };
             document.addEventListener('click', resume, { once: true });
             document.addEventListener('touchstart', resume, { once: true });
