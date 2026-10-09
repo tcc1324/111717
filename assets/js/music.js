@@ -119,8 +119,16 @@
       if (token !== playToken) return;   // 已切歌，忽略过期回调
       if (err && err.name === 'AbortError') return;  // 用户自己按了暂停/被打断，pause 已处理
       setLoading(false);
-      setPlaying(false);
-      toast('这首歌的文件还没放进来哦');
+      if (err && err.name === 'NotSupportedError') {
+        // 文件真的没有/坏掉：才真正灭掉火种，避免每次进站都空重试
+        setPlaying(false);
+        toast('这首歌的文件还没放进来哦');
+      } else {
+        // 自动播放被拦、网络抖动、切页被打断等临时情况：保火种，别覆写 live 存档
+        setPlaying(false, true);
+        if (err && err.name === 'NotAllowedError') toast('点一下页面，歌就继续～');
+        else toast('还没准备好，再点一下试试');
+      }
     });
   }
 
@@ -147,7 +155,7 @@
         if (token !== playToken) return;
         if (err && err.name === 'AbortError') return;
         setLoading(false);
-        setPlaying(false);
+        setPlaying(false, true);   // 临时失败：保火种，别把跨页续播的存档抹掉
         toast('还没准备好，再点一下试试');
       });
     }
@@ -167,7 +175,7 @@
         if (token !== playToken) return;
         if (err && err.name === 'AbortError') return;
         setLoading(false);
-        setPlaying(false);
+        setPlaying(false, true);   // 单曲循环重新缓冲失败：临时，保火种
       });
       return;
     }
@@ -264,7 +272,7 @@
       '<div class="music-panel__sheet">' +
         '<div class="music-panel__head"><span>音乐</span><button id="musicClose" aria-label="关闭">×</button></div>' +
         '<div class="music-hush">静静聆听</div>' +
-        '<div class="music-note">注意：由于浏览器限制，您更换页面时，音乐会断掉，须再次手动开启。音乐陪伴您在某一页安心浏览；您也可到「音乐小屋」中去聆听音乐。</div>' +
+        '<div class="music-note">提示：换页时音乐会尽量接着放；个别浏览器或网络不稳时可能短暂暂停，点一下页面即可继续。也可以到「音乐小屋」安心聆听。</div>' +
         '<a class="music-house-link" href="music-house.html">🏡 进入音乐小屋</a>' +
         '<div class="music-now">' +
           '<div class="music-now__title" id="musicNowTitle">还没有播放</div>' +
