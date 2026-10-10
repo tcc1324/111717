@@ -129,16 +129,27 @@
   async function cacheTrack(file) {
     if (!hasCache() || cacheTried.has(file)) return;
     cacheTried.add(file);
+    const key = absUrl(file);
     try {
       const c = await caches.open(CACHE_NAME);
-      const key = absUrl(file);
       if (await c.match(key)) return;
+      const keys = await c.keys();   // 只留最近几首
+      for (let i = 0; i < keys.length - CACHE_MAX + 1; i++) await c.delete(keys[i]);
+    } catch { return; }
+    // 优先交给 Service Worker 在后台下载，换页也不会被打断
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 1500))]);
+        if (reg && reg.active) { reg.active.postMessage({ type: 'cache-track', url: key }); dbg('sw download ' + file); return; }
+      }
+    } catch {}
+    // 退路：页面自己下载（换页会被打断）
+    try {
       const res = await fetch(key);
       if (res.status !== 200) { cacheTried.delete(file); return; }
+      const c = await caches.open(CACHE_NAME);
       await c.put(key, res);
       dbg('cached ' + file);
-      const keys = await c.keys();
-      for (let i = 0; i < keys.length - CACHE_MAX; i++) await c.delete(keys[i]);
     } catch (e) { cacheTried.delete(file); dbg('cache fail ' + (e && e.name)); }
   }
 
@@ -533,6 +544,14 @@
         if (m[1] !== '1') localStorage.removeItem('park.music.log');
       }
       DEBUG = localStorage.getItem('park.music.debug') === '1';
+    } catch {}
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch((e) => dbg('sw register fail ' + (e && e.name)));
+        navigator.serviceWorker.addEventListener('message', (e) => {
+          if (e.data && e.data.type === 'cached') dbg('cached ok ' + e.data.url.split('/').pop());
+        });
+      }
     } catch {}
     restore();   // 不等 DOM 和后面的大脚本，音频先接上
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
