@@ -30,7 +30,9 @@
   ];
 
   const LS_KEY = 'park.music';
-  const LIVE_KEY = 'park.music.live';   // 跨页续播：记住正在播哪首、进度、是否在播（存 sessionStorage：同标签页内切页照续；关掉标签页=新会话，进站不自动播）
+  const LIVE_KEY = 'park.music.live';
+  const OWNER_KEY = 'park.music.owner';
+  const HANDOFF_MS = 8000;
 
   const state = {
     volume: 0.7,
@@ -62,12 +64,44 @@
   let loading = false;   // 点了播放但音频还没真正出声（在缓冲）
   let playToken = 0;   // 防切歌竞态：每次切歌播放递增，过期回调直接忽略
 
+  const say = (m) => { try { if (typeof toast === 'function') toast(m); } catch {} };
+  const PAGE_ID = Math.random().toString(36).slice(2);
+  let iAmOwner = false;   // 本页是不是当前"出声者"
+  let leaving = false;    // 页面正在离开
+
+  function claim() {
+    iAmOwner = true;
+    try { localStorage.setItem(OWNER_KEY, PAGE_ID + ':' + Date.now()); } catch {}
+  }
   function saveLive() {
+    if (!iAmOwner) return;   // 被缓存或已让位的旧页，不许覆写存档
     try {
-      sessionStorage.setItem(LIVE_KEY, JSON.stringify({ id: currentId, time: audio.currentTime || 0, playing }));
+      localStorage.setItem(LIVE_KEY, JSON.stringify({
+        id: currentId, time: audio.currentTime || 0, playing, ts: Date.now(),
+      }));
     } catch {}
   }
-  function clearLive() { try { sessionStorage.removeItem(LIVE_KEY); } catch {} }
+
+  // 调试日志：地址栏加 ?musicdebug=1 打开，?musicdebug=0 关闭
+  let DEBUG = false, dbgBox = null, dbgLines = [];
+  function dbg(msg) {
+    if (!DEBUG) return;
+    const line = new Date().toISOString().slice(14, 22) + ' [' + PAGE_ID.slice(0, 3) + '] ' + msg;
+    try {
+      dbgLines = JSON.parse(localStorage.getItem('park.music.log')) || [];
+      dbgLines.push(line);
+      dbgLines = dbgLines.slice(-60);
+      localStorage.setItem('park.music.log', JSON.stringify(dbgLines));
+    } catch { dbgLines.push(line); }
+    if (!document.body) return;
+    if (!dbgBox) {
+      dbgBox = document.createElement('pre');
+      dbgBox.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:38vh;overflow:auto;margin:0;padding:6px;font:10px/1.4 monospace;background:rgba(0,0,0,.78);color:#9f9;z-index:9999;pointer-events:none;white-space:pre-wrap';
+      document.body.appendChild(dbgBox);
+    }
+    dbgBox.textContent = dbgLines.join('\n');
+    dbgBox.scrollTop = dbgBox.scrollHeight;
+  }
 
   function mark(id) { return state.marks[id] || (state.marks[id] = { heart: false, fav: false }); }
   function list() { return TRACKS.filter(t => !state.heartOnly || mark(t.id).heart); }
@@ -81,7 +115,7 @@
   }
   function setPlaying(v, skipSave) {
     playing = v;
-    // skipSave：续播乐观亮灯/被拦截回退时用，不覆写 live 存档（保住跨页续播火种）
+    if (v && !skipSave) claim();
     if (!skipSave) saveLive();
     const wrap = document.getElementById('musicBtn');
     if (wrap) wrap.classList.toggle('playing', v);
@@ -133,6 +167,7 @@
   }
 
   function pause() {
+    playToken++;   // 让还在等待的播放/续播回调作废，避免暂停后又被拉起来
     audio.pause();
     setLoading(false);
     setPlaying(false);
@@ -309,65 +344,146 @@
     panel.addEventListener('click', (e) => { if (e.target === panel) closePanel(); });
 
     renderAll();
-    restore();
+    syncUI();
   }
 
-  // 跨页续播：上次正在播放的话，页面加载后自动接着同一首、同一进度继续
+  function syncUI() {
+    ['musicBtn', 'musicPlay2'].forEach(id => {
+      const e = document.getElementById(id);
+      if (!e) return;
+      e.classList.toggle('playing', playing);
+      e.classList.toggle('loading', loading);
+    });
+    renderNow();
+  }
+
+  // ===== 界面与真实音频保持同步 =====
+  audio.addEventListener('pause', () => {
+    // 系统打断（拔耳机、来电、锁屏键）时界面跟着变；自己主动暂停、播完、换页不算
+    if (leaving || audio.ended || !playing || loading) return;
+    dbg('system pause');
+    setPlaying(false, true);
+  });
+  audio.addEventListener('play', () => {
+    if (leaving || playing) return;
+    dbg('system play');
+    setPlaying(true);   // 系统恢复播放时界面跟着亮，并接管出声权
+  });
+  audio.addEventListener('error', () => {
+    const e = audio.error;
+    if (!currentId || !e || e.code === 4) return;   // 4=文件不存在，play() 的 catch 里已处理
+    dbg('audio error code=' + e.code);
+    setLoading(false);
+    setPlaying(false, true);
+    say('网络不太稳，这首没加载出来，点一下再试试');
+  });
+  ['play','playing','pause','waiting','stalled','error','loadedmetadata','canplay','ended','emptied','abort']
+    .forEach(n => audio.addEventListener(n, () =>
+      dbg('audio:' + n + ' rs=' + audio.readyState + ' t=' + (audio.currentTime || 0).toFixed(1))));
+
+  // ===== 页面生命周期 =====
+  window.addEventListener('pagehide', () => {
+    dbg('pagehide');
+    leaving = true;
+    saveLive();   // 此刻仍是 playing:true，下一页据此续播
+    // 把音频和网络连接一起交还，免得被缓存的旧页继续出声、或占着同一个 mp3
+    try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch {}
+  });
+  window.addEventListener('pageshow', (e) => {
+    dbg('pageshow persisted=' + e.persisted);
+    leaving = false;
+    if (e.persisted) restore();   // 从前进后退缓存回来：按存档重新接上
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveLive();
+  });
+  // 别的页面接手出声时，这一页安静让位
+  window.addEventListener('storage', (e) => {
+    if (e.key !== OWNER_KEY || !e.newValue) return;
+    if (e.newValue.split(':')[0] === PAGE_ID) return;
+    dbg('yield to other page');
+    iAmOwner = false;
+    if (playing || loading) {
+      playToken++;
+      audio.pause();
+      setLoading(false);
+      setPlaying(false, true);
+    }
+  });
+
+  // ===== 续播 =====
   function restore() {
-    try {
-      const l = JSON.parse(sessionStorage.getItem(LIVE_KEY));
-      if (!l || !l.playing || !l.id || !track(l.id)) return;
-      currentId = l.id;
-      // 乐观同步 + 加载态：一进门立刻亮灯、挂「加载中…」，不等元数据不等出声
-      // （以前按钮要等 loadedmetadata / play() 成功才亮，歌和界面脱节好几秒）
-      setPlaying(true, true);   // 先亮灯，不动存档（保住跨页续播火种）
-      setLoading(true);         // 内部已 renderNow()，曲名挂「（加载中…）」
-      renderList();
-      const t = track(l.id);
-      audio.preload = 'auto';   // 强制预加载元数据，iPhone 上避免 loadedmetadata 迟迟不来导致续播卡住
-      audio.src = t.file;
-      audio.volume = state.volume;
-      const seek = typeof l.time === 'number' ? l.time : 0;
-      const start = () => {
-        try { audio.currentTime = seek; } catch {}
-        audio.play().then(() => {
-          setLoading(false);    // 出声了撤加载态（'playing' 事件也会兜底收尾）
-          setPlaying(true);     // 确认开播，正常存档（此时已是 seek 后的进度）
-        }).catch((err) => {
-          if (err && err.name === 'AbortError') return;  // 用户自己按了暂停/切歌，别管
-          setLoading(false);
-          setPlaying(false, true); // 回退界面，但 live 里保留 playing:true，跳页还能续
-          if (err && err.name === 'NotAllowedError') {
-            // 浏览器自动播放限制：提示点一下，点了立刻补播
-            toast('点一下页面，歌就继续～');
-            const resume = () => {
-              setLoading(true);   // 补播期间同样挂加载态，出声再撤
-              audio.play().then(() => {
-                setLoading(false);
-                setPlaying(true);
-              }).catch(() => { setLoading(false); });
-            };
-            document.addEventListener('click', resume, { once: true });
-            document.addEventListener('touchstart', resume, { once: true });
-          } else {
-            toast('这首歌的文件还没放进来哦');
-          }
-        });
-      };
-      if (audio.readyState >= 1) {
-        start();
-      } else {
-        // iPhone 上 loadedmetadata 事件偶发不来会导致续播卡死，加超时兜底：事件先到先 start，1.5s 后没到也强制 start
-        let done = false;
-        const go = () => { if (done) return; done = true; start(); };
-        audio.addEventListener('loadedmetadata', go, { once: true });
-        setTimeout(go, 1500);
+    let l = null;
+    try { l = JSON.parse(localStorage.getItem(LIVE_KEY)); } catch {}
+    if (!l || !l.id || !track(l.id)) return;
+    const seek = typeof l.time === 'number' ? l.time : 0;
+    const age = Date.now() - (l.ts || 0);
+    const wantPlay = !!l.playing && age < HANDOFF_MS;
+    const token = ++playToken;
+    dbg('restore id=' + l.id + ' t=' + seek.toFixed(1) + ' wantPlay=' + wantPlay + ' age=' + age);
+
+    currentId = l.id;
+    audio.preload = wantPlay ? 'auto' : 'metadata';
+    audio.src = track(l.id).file;
+    audio.volume = state.volume;
+    renderList();
+    if (wantPlay) { setPlaying(true, true); setLoading(true); claim(); }
+    else { setPlaying(false, true); setLoading(false); }
+
+    let started = false;
+    const begin = () => {
+      if (token !== playToken) { audio.removeEventListener('loadedmetadata', begin); return; }
+      if (started) return;
+      started = true;
+      audio.removeEventListener('loadedmetadata', begin);
+      if (seek > 0) {
+        try { audio.currentTime = isFinite(audio.duration) ? Math.min(seek, Math.max(0, audio.duration - 1)) : seek; } catch {}
       }
-    } catch {}
+      if (!wantPlay) return;
+      audio.play().then(() => {
+        if (token !== playToken) return;
+        setLoading(false);
+        setPlaying(true);
+      }).catch((err) => {
+        if (token !== playToken || (err && err.name === 'AbortError')) return;
+        setLoading(false);
+        setPlaying(false, true);   // 界面回退，存档仍是 playing:true，再跳页还能续
+        if (err && err.name === 'NotAllowedError') {
+          say('点一下页面，歌就继续～');
+          const resume = () => {
+            document.removeEventListener('click', resume);
+            document.removeEventListener('touchstart', resume);
+            if (token !== playToken) return;
+            setLoading(true);
+            claim();
+            audio.play().then(() => {
+              if (token !== playToken) return;
+              setLoading(false);
+              setPlaying(true);
+            }).catch(() => { setLoading(false); });
+          };
+          document.addEventListener('click', resume);
+          document.addEventListener('touchstart', resume);
+        } else {
+          say('这首歌没能接上，点一下播放键试试');
+        }
+      });
+    };
+    audio.addEventListener('loadedmetadata', begin);
+    if (wantPlay) setTimeout(begin, 1500);   // iPhone 上 loadedmetadata 偶发不来，超时兜底
   }
 
   function init() {
     loadState();
+    try {
+      const m = location.search.match(/musicdebug=(\d)/);
+      if (m) {
+        localStorage.setItem('park.music.debug', m[1]);
+        if (m[1] !== '1') localStorage.removeItem('park.music.log');
+      }
+      DEBUG = localStorage.getItem('park.music.debug') === '1';
+    } catch {}
+    restore();   // 不等 DOM 和后面的大脚本，音频先接上
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
     else inject();
   }
