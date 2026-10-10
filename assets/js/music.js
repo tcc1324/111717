@@ -83,26 +83,7 @@
     } catch {}
   }
 
-  // 调试日志：地址栏加 ?musicdebug=1 打开，?musicdebug=0 关闭
-  let DEBUG = false, dbgBox = null, dbgLines = [];
-  function dbg(msg) {
-    if (!DEBUG) return;
-    const line = new Date().toISOString().slice(14, 22) + ' [' + PAGE_ID.slice(0, 3) + '] ' + msg;
-    try {
-      dbgLines = JSON.parse(localStorage.getItem('park.music.log')) || [];
-      dbgLines.push(line);
-      dbgLines = dbgLines.slice(-60);
-      localStorage.setItem('park.music.log', JSON.stringify(dbgLines));
-    } catch { dbgLines.push(line); }
-    if (!document.body) return;
-    if (!dbgBox) {
-      dbgBox = document.createElement('pre');
-      dbgBox.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:38vh;overflow:auto;margin:0;padding:6px;font:10px/1.4 monospace;background:rgba(0,0,0,.78);color:#9f9;z-index:9999;pointer-events:none;white-space:pre-wrap';
-      document.body.appendChild(dbgBox);
-    }
-    dbgBox.textContent = dbgLines.join('\n');
-    dbgBox.scrollTop = dbgBox.scrollHeight;
-  }
+  function dbg() {}
 
   // ===== 本地音频缓存：换页时从本机读取，不再重新下载 =====
   const CACHE_NAME = 'park-music-v1';
@@ -537,14 +518,6 @@
 
   function init() {
     loadState();
-    try {
-      const m = location.search.match(/musicdebug=(\d)/);
-      if (m) {
-        localStorage.setItem('park.music.debug', m[1]);
-        if (m[1] !== '1') localStorage.removeItem('park.music.log');
-      }
-      DEBUG = localStorage.getItem('park.music.debug') === '1';
-    } catch {}
     try {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch((e) => dbg('sw register fail ' + (e && e.name)));
