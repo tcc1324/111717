@@ -68,13 +68,14 @@
   const PAGE_ID = Math.random().toString(36).slice(2);
   let iAmOwner = false;   // 本页是不是当前"出声者"
   let leaving = false;    // 页面正在离开
+  let frozen = false;   // 离开页面后禁止再写存档
 
   function claim() {
     iAmOwner = true;
     try { localStorage.setItem(OWNER_KEY, PAGE_ID + ':' + Date.now()); } catch {}
   }
   function saveLive() {
-    if (!iAmOwner) return;   // 被缓存或已让位的旧页，不许覆写存档
+    if (!iAmOwner || frozen) return;
     try {
       localStorage.setItem(LIVE_KEY, JSON.stringify({
         id: currentId, time: audio.currentTime || 0, playing, ts: Date.now(),
@@ -180,6 +181,7 @@
       if (!l.length) { toast('还没有可播放的歌'); openPanel(); return; }
       play(l[0].id);
     } else {
+      if (!audio.getAttribute('src')) { audio.src = track(currentId).file; audio.volume = state.volume; }
       const token = playToken;   // 续播不切歌、不递增；之后若切歌，此回调作废
       setPlaying(true);   // 乐观亮灯
       setLoading(true);
@@ -383,32 +385,31 @@
 
   // ===== 页面生命周期 =====
   window.addEventListener('pagehide', () => {
-    dbg('pagehide');
     leaving = true;
-    saveLive();   // 此刻仍是 playing:true，下一页据此续播
-    // 把音频和网络连接一起交还，免得被缓存的旧页继续出声、或占着同一个 mp3
+    dbg('pagehide t=' + (audio.currentTime || 0).toFixed(1));
+    saveLive();
+    frozen = true;   // load() 会把进度清零并触发 timeupdate，此后不许再写存档
     try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch {}
   });
   window.addEventListener('pageshow', (e) => {
     dbg('pageshow persisted=' + e.persisted);
     leaving = false;
-    if (e.persisted) restore();   // 从前进后退缓存回来：按存档重新接上
+    frozen = false;
+    if (e.persisted) restore();
   });
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') saveLive();
+    if (document.visibilityState === 'hidden') { saveLive(); return; }
+    // 回到前台时，如果出声权不在本页，就按最新存档对齐（via 里退回旧页面时用得上）
+    if (!iAmOwner) { dbg('visible, sync'); restore(); }
   });
-  // 别的页面接手出声时，这一页安静让位
   window.addEventListener('storage', (e) => {
     if (e.key !== OWNER_KEY || !e.newValue) return;
     if (e.newValue.split(':')[0] === PAGE_ID) return;
     dbg('yield to other page');
     iAmOwner = false;
-    if (playing || loading) {
-      playToken++;
-      audio.pause();
-      setLoading(false);
-      setPlaying(false, true);
-    }
+    playToken++;
+    if (playing || loading) { audio.pause(); setLoading(false); setPlaying(false, true); }
+    try { audio.removeAttribute('src'); audio.load(); } catch {}   // 交出这首歌的网络连接
   });
 
   // ===== 续播 =====
