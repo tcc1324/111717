@@ -324,6 +324,7 @@
       setLoading(true);         // 内部已 renderNow()，曲名挂「（加载中…）」
       renderList();
       const t = track(l.id);
+      audio.preload = 'auto';   // 强制预加载元数据，iPhone 上避免 loadedmetadata 迟迟不来导致续播卡住
       audio.src = t.file;
       audio.volume = state.volume;
       const seek = typeof l.time === 'number' ? l.time : 0;
@@ -353,8 +354,15 @@
           }
         });
       };
-      if (audio.readyState >= 1) start();
-      else audio.addEventListener('loadedmetadata', start, { once: true });
+      if (audio.readyState >= 1) {
+        start();
+      } else {
+        // iPhone 上 loadedmetadata 事件偶发不来会导致续播卡死，加超时兜底：事件先到先 start，1.5s 后没到也强制 start
+        let done = false;
+        const go = () => { if (done) return; done = true; start(); };
+        audio.addEventListener('loadedmetadata', go, { once: true });
+        setTimeout(go, 1500);
+      }
     } catch {}
   }
 
