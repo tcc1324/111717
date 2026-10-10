@@ -104,6 +104,44 @@
     dbgBox.scrollTop = dbgBox.scrollHeight;
   }
 
+  // ===== 本地音频缓存：换页时从本机读取，不再重新下载 =====
+  const CACHE_NAME = 'park-music-v1';
+  const CACHE_MAX = 8;   // 最多留 8 首，超出删最旧的
+  const cacheTried = new Set();
+  let blobUrl = null;
+  const absUrl = (f) => new URL(f, location.href).href;
+  const hasCache = () => { try { return 'caches' in window; } catch { return false; } };
+  function freeBlob() { if (blobUrl) { try { URL.revokeObjectURL(blobUrl); } catch {} blobUrl = null; } }
+
+  async function cachedUrl(file) {
+    if (!hasCache()) return null;
+    try {
+      const c = await caches.open(CACHE_NAME);
+      const res = await c.match(absUrl(file));
+      if (!res) return null;
+      const blob = await res.blob();
+      freeBlob();
+      blobUrl = URL.createObjectURL(blob);
+      return blobUrl;
+    } catch { return null; }
+  }
+
+  async function cacheTrack(file) {
+    if (!hasCache() || cacheTried.has(file)) return;
+    cacheTried.add(file);
+    try {
+      const c = await caches.open(CACHE_NAME);
+      const key = absUrl(file);
+      if (await c.match(key)) return;
+      const res = await fetch(key);
+      if (res.status !== 200) { cacheTried.delete(file); return; }
+      await c.put(key, res);
+      dbg('cached ' + file);
+      const keys = await c.keys();
+      for (let i = 0; i < keys.length - CACHE_MAX; i++) await c.delete(keys[i]);
+    } catch (e) { cacheTried.delete(file); dbg('cache fail ' + (e && e.name)); }
+  }
+
   function mark(id) { return state.marks[id] || (state.marks[id] = { heart: false, fav: false }); }
   function list() { return TRACKS.filter(t => !state.heartOnly || mark(t.id).heart); }
   function track(id) { return TRACKS.find(t => t.id === id); }
@@ -141,6 +179,7 @@
     if (!t) return;
     currentId = id;
     const token = ++playToken;
+    freeBlob();
     audio.src = t.file;
     audio.volume = state.volume;
     // 乐观亮灯：按钮点了立刻变，不等音乐；加载期间挂「加载中…」直到出声
@@ -231,7 +270,11 @@
 
   audio.addEventListener('ended', () => next(true));
   // 加载态兜底：真正出声时撤「加载中」；播放中网络卡住（重新缓冲）时再挂上
-  audio.addEventListener('playing', () => { if (loading) setLoading(false); });
+  audio.addEventListener('playing', () => {
+    if (loading) setLoading(false);
+    const id = currentId;   // 出声 2.5 秒后，在后台把这首歌存进本机
+    setTimeout(() => { if (id && id === currentId && track(id)) cacheTrack(track(id).file); }, 2500);
+  });
   audio.addEventListener('waiting', () => { if (playing && !audio.paused) setLoading(true); });
   // 每秒把播放进度写进 live，换页后从这接着播
   let lastSave = 0;
@@ -417,6 +460,7 @@
     let l = null;
     try { l = JSON.parse(localStorage.getItem(LIVE_KEY)); } catch {}
     if (!l || !l.id || !track(l.id)) return;
+    const t = track(l.id);
     const seek = typeof l.time === 'number' ? l.time : 0;
     const age = Date.now() - (l.ts || 0);
     const wantPlay = !!l.playing && age < HANDOFF_MS;
@@ -424,54 +468,60 @@
     dbg('restore id=' + l.id + ' t=' + seek.toFixed(1) + ' wantPlay=' + wantPlay + ' age=' + age);
 
     currentId = l.id;
-    audio.preload = wantPlay ? 'auto' : 'metadata';
-    audio.src = track(l.id).file;
     audio.volume = state.volume;
     renderList();
     if (wantPlay) { setPlaying(true, true); setLoading(true); claim(); }
     else { setPlaying(false, true); setLoading(false); }
 
-    let started = false;
-    const begin = () => {
-      if (token !== playToken) { audio.removeEventListener('loadedmetadata', begin); return; }
-      if (started) return;
-      started = true;
-      audio.removeEventListener('loadedmetadata', begin);
-      if (seek > 0) {
-        try { audio.currentTime = isFinite(audio.duration) ? Math.min(seek, Math.max(0, audio.duration - 1)) : seek; } catch {}
-      }
-      if (!wantPlay) return;
-      audio.play().then(() => {
-        if (token !== playToken) return;
-        setLoading(false);
-        setPlaying(true);
-      }).catch((err) => {
-        if (token !== playToken || (err && err.name === 'AbortError')) return;
-        setLoading(false);
-        setPlaying(false, true);   // 界面回退，存档仍是 playing:true，再跳页还能续
-        if (err && err.name === 'NotAllowedError') {
-          say('点一下页面，歌就继续～');
-          const resume = () => {
-            document.removeEventListener('click', resume);
-            document.removeEventListener('touchstart', resume);
-            if (token !== playToken) return;
-            setLoading(true);
-            claim();
-            audio.play().then(() => {
-              if (token !== playToken) return;
-              setLoading(false);
-              setPlaying(true);
-            }).catch(() => { setLoading(false); });
-          };
-          document.addEventListener('click', resume);
-          document.addEventListener('touchstart', resume);
-        } else {
-          say('这首歌没能接上，点一下播放键试试');
+    // 先在本机缓存里找，找不到再走网络
+    cachedUrl(t.file).then((url) => {
+      if (token !== playToken) return;
+      dbg('src ' + (url ? 'from cache' : 'from network'));
+      audio.preload = wantPlay ? 'auto' : 'metadata';
+      audio.src = url || t.file;
+
+      let started = false;
+      const begin = () => {
+        if (token !== playToken) { audio.removeEventListener('loadedmetadata', begin); return; }
+        if (started) return;
+        started = true;
+        audio.removeEventListener('loadedmetadata', begin);
+        if (seek > 0) {
+          try { audio.currentTime = isFinite(audio.duration) ? Math.min(seek, Math.max(0, audio.duration - 1)) : seek; } catch {}
         }
-      });
-    };
-    audio.addEventListener('loadedmetadata', begin);
-    if (wantPlay) setTimeout(begin, 1500);   // iPhone 上 loadedmetadata 偶发不来，超时兜底
+        if (!wantPlay) return;
+        audio.play().then(() => {
+          if (token !== playToken) return;
+          setLoading(false);
+          setPlaying(true);
+        }).catch((err) => {
+          if (token !== playToken || (err && err.name === 'AbortError')) return;
+          setLoading(false);
+          setPlaying(false, true);
+          if (err && err.name === 'NotAllowedError') {
+            say('点一下页面，歌就继续～');
+            const resume = () => {
+              document.removeEventListener('click', resume);
+              document.removeEventListener('touchstart', resume);
+              if (token !== playToken) return;
+              setLoading(true);
+              claim();
+              audio.play().then(() => {
+                if (token !== playToken) return;
+                setLoading(false);
+                setPlaying(true);
+              }).catch(() => { setLoading(false); });
+            };
+            document.addEventListener('click', resume);
+            document.addEventListener('touchstart', resume);
+          } else {
+            say('这首歌没能接上，点一下播放键试试');
+          }
+        });
+      };
+      audio.addEventListener('loadedmetadata', begin);
+      if (wantPlay) setTimeout(begin, 1500);
+    });
   }
 
   function init() {
