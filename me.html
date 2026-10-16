@@ -48,6 +48,7 @@
     <div class="edit" id="editBox"><input id="nickInput" maxlength="16" placeholder="新昵称"><button id="saveBtn">保存</button></div>
     <div class="row"><span class="label">我的 ID</span><span class="id" id="uid5">·····</span></div>
     <div class="row"><span class="label">密码</span><span>······<button class="link" id="pwBtn">修改</button></span></div>
+    <div class="row"><span class="label">月光币</span><span id="coins">0</span></div>
     <div class="row" style="border-bottom:none"><span class="label">收信邮件提醒</span><span><span id="ntf">…</span><button class="link" id="ntfBtn"></button></span></div>
     <div class="edit" id="pwBox" style="flex-wrap:wrap"><input id="oldPw" type="password" inputmode="numeric" maxlength="6" placeholder="原密码"><input id="newPw" type="password" inputmode="numeric" maxlength="6" placeholder="新密码（六位数）"><button id="pwSave">保存</button></div>
   </div>
@@ -74,7 +75,7 @@
       const s = await Park.session();
       if (!s) return location.replace('login.html');
       const uid = JSON.parse(atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).sub;
-      const r = await Park.api('profiles?select=nickname,uid5,joined_at&id=eq.' + uid);
+      const r = await Park.api('profiles?select=nickname,uid5,joined_at,moon_coins&id=eq.' + uid);
       const me = r.ok ? (await r.json())[0] : null;
       if (!me) { toast('读取资料失败，稍后再试'); return; }
       $('nick').textContent = me.nickname;
@@ -88,6 +89,7 @@
       };
       tick(); setInterval(tick, 1000);
       $('uid5').textContent = me.uid5 || '-----';
+      $('coins').textContent = (me.moon_coins ?? 0);
       const d = new Date(me.joined_at);
       const p = n => String(n).padStart(2, '0');
       $('joined').textContent = '入住时间 · ' + d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
