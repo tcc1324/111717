@@ -36,6 +36,8 @@
     .gift-t { font-size: 14.5px; line-height: 1.65; letter-spacing: .06em; text-align: left; }
     .gift-t b { font-weight: normal; color: #d2648f; }
     @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    /* hidden 必须真的隐藏：作者样式的 display 会盖掉浏览器默认的 [hidden] */
+    .gift[hidden], .menu[hidden] { display: none !important; }
     .menu { display: flex; flex-direction: row; justify-content: center; gap: 16px; width: calc(100% - 56px); max-width: 520px; margin: 7vh 0 auto; padding-bottom: 8vh; }
     .menu a {
       flex: 1; display: block; text-align: center; text-decoration: none; color: #2b2b2b;
