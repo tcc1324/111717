@@ -235,6 +235,10 @@ html{overflow-anchor:none}
 .pno{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12px;color:var(--soft);letter-spacing:.3em}
 .rdnav{display:flex;align-items:center;justify-content:space-between;margin:12px 4px 4px;font-size:12px;color:var(--soft);letter-spacing:.14em}
 .rdnav .back[disabled]{opacity:.3;cursor:default}
+.rdnav .pinfo{display:inline-flex;align-items:center;gap:8px}
+.rdnav .jump{font-size:12px;letter-spacing:.06em;padding:1px 8px;border:1px solid currentColor;border-radius:999px;opacity:.7;white-space:nowrap}
+.rdnav .jump:hover{opacity:1}
+@media (max-width:420px){.rdnav{letter-spacing:.06em}.rdnav .jump{padding:1px 6px;letter-spacing:0}.rdnav .pinfo{gap:5px}}
 .rdact{margin-top:14px}
 .rdact .btn{padding:7px 14px;font-size:13px;letter-spacing:.1em}
 .btn.del{color:#b06a5a;box-shadow:inset 0 0 0 1.5px #cf9c8b;margin-right:auto}
@@ -503,6 +507,46 @@ html{overflow-anchor:none}
     if(!r.ok) return null;
     return await r.arrayBuffer();
   }
+  /* 列出某个前缀下的照片文件名（前缀 = 本子 id + '_'，相册没打开过也能列到） */
+  async function storageList(prefix){
+    const s=await Park.session(); if(!s) return null;
+    try{
+      const r=await fetch(SB_URL+'/storage/v1/object/list/drawer-photos?apikey='+encodeURIComponent(SB_ANON),{
+        method:'POST', headers:{Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'},
+        body:JSON.stringify({prefix:prefix,limit:1000,offset:0,sortBy:{column:'name',order:'asc'}})
+      });
+      if(!r.ok) return null;
+      const j=await r.json();
+      if(!Array.isArray(j)) return null;
+      return j.filter(x=>x&&x.name&&String(x.name).indexOf(prefix)===0).map(x=>x.name);
+    }catch(e){ return null; }
+  }
+  /* 批量删；接口不支持批量就一张一张删（失败只是留下无用文件，不报错） */
+  async function storageDeleteMany(paths){
+    if(!paths||!paths.length) return true;
+    const s=await Park.session(); if(!s) return false;
+    try{
+      const r=await fetch(SB_URL+'/storage/v1/object/drawer-photos?apikey='+encodeURIComponent(SB_ANON),{
+        method:'DELETE', headers:{Authorization:'Bearer '+s.access_token,'Content-Type':'application/json'},
+        body:JSON.stringify({prefixes:paths})
+      });
+      if(r.ok) return true;
+    }catch(e){}
+    for(const p of paths){ try{ await storageDelete(p); }catch(e){} }
+    return true;
+  }
+  /* 清掉一个抽屉里所有本子的照片文件：按「本子 id + _」前缀列，不用解密内容 */
+  async function purgeDrawerPhotos(itemIds, known){
+    const paths=[];
+    (known||[]).forEach(p=>{ if(p) paths.push(p); });
+    for(const id of (itemIds||[])){
+      const names=await storageList(String(id)+'_');
+      if(names) names.forEach(n=>paths.push(n));
+    }
+    const uniq=paths.filter((x,i)=>paths.indexOf(x)===i);
+    if(uniq.length) await storageDeleteMany(uniq);
+  }
+
   /* 删除 Storage 里的单个照片文件（bucket 私有，DELETE 仅限 owner） */
   async function storageDelete(path){
     const s=await Park.session(); if(!s) return false;
@@ -573,7 +617,7 @@ html{overflow-anchor:none}
     <textarea id="wr" maxlength="2000" placeholder="写下今天的事……" hidden></textarea>
     <div class="pno" id="pno"></div>
   </div>
-  <div class="rdnav" id="rdnav"><button class="back" id="pPrev">‹ 上一页</button><span id="pOf"></span><button class="back" id="pNext">下一页 ›</button></div>
+  <div class="rdnav" id="rdnav"><button class="back" id="pPrev">‹ 上一页</button><span class="pinfo"><span id="pOf"></span><button class="back jump" id="pJump">跳至最后</button></span><button class="back" id="pNext">下一页 ›</button></div>
   <div class="acts rdact" id="rdActs"><button class="btn line del" id="pDel">撕掉这页</button><button class="btn line" id="pEdit">改这页</button><button class="btn" id="pNew">＋ 写新的一页</button></div>
   <div class="acts rdact" id="wrActs" hidden><button class="btn line" id="wrCancel">先不写了</button><button class="btn" id="wrOk">写好了</button></div>
   <input type="file" id="phFile" accept="image/*" hidden>
@@ -589,6 +633,45 @@ html{overflow-anchor:none}
     VIEWS.forEach(v=>{ $(v).hidden=(v!==id); });
     document.body.classList.toggle('newing',id==='vNew'||id==='vCover'||id==='vRead');
   }
+
+  /* ---------- 返回键分层 ----------
+     每打开一层（抽屉 / 本子 / 改封面 / 弹层）就往浏览器历史里压一条，
+     手机上的返回键就是「一层一层退」，不会一下子退出整个页面。
+     NAV 每层存一个「关掉我自己」的函数；这里只做界面层，绝不碰加密和数据。 */
+  const NAV=[];
+  let navSelf=0;    /* 我们自己按的返回：这一下 popstate 不再重复出层 */
+  let navLock=false;
+  function navOpen(closeFn){
+    if(typeof closeFn!=='function') return;
+    NAV.push(closeFn);
+    try{ history.pushState({lv:NAV.length},''); }catch(e){}
+  }
+  function navReopen(closeFn){    /* 退了一层但决定留在原地：把这一层重新放回去 */
+    NAV.push(closeFn);
+    try{ history.pushState({lv:NAV.length},''); }catch(e){}
+  }
+  function navClose(){            /* 画面里的「返回 / 合上 / 取消」按钮走这里 */
+    if(!NAV.length) return false;
+    navSelf++;
+    try{ history.back(); }catch(e){ navSelf=Math.max(0,navSelf-1); }
+    const fn=NAV.pop();
+    try{ fn(); }catch(e){}
+    return true;
+  }
+  window.addEventListener('popstate',function(e){
+    if(navSelf>0){ navSelf--; return; }
+    if(navLock) return;
+    navLock=true;
+    try{
+      /* 用 state 里的层号对齐：长按连退也不会退错层 */
+      const lv=(e.state && typeof e.state.lv==='number')?e.state.lv:0;
+      /*先把要退的层全部摘下来，再逐个关：关的过程里可能又压回一层（比如在写的时候按返回只取消写），
+        不能一边关一边数，否则会多关一层 */
+      const drop=[];
+      while(NAV.length>lv) drop.push(NAV.pop());
+      drop.forEach(fn=>{ try{ fn(); }catch(err){} });
+    }finally{ navLock=false; }
+  });
   function freeze(on){ // 进入有输入框的页面时，把页面高度锁成固定像素，键盘缩放窗口时不重算
     clearTimeout(window._fz);
     if(on){
@@ -643,7 +726,14 @@ html{overflow-anchor:none}
       title:it.title||'', question:it.question||'', color:it.color, pattern:it.pattern, unlock_at:it.unlock_at||null,
       lock_salt:it.lock_salt||null, lock_nonce:it.lock_nonce||null, lock_verifier:it.lock_verifier||null };
     if(it.kind==='note'){ b.content=it.content||''; }
-    else{ b.content=it.content||''; try{ b.pages=it.content?JSON.parse(it.content):[]; }catch(e){ b.pages=[]; } }
+    else{
+      b.content=it.content||'';
+      b.pages=[];
+      if(it.content){
+        try{ const arr=JSON.parse(it.content); if(Array.isArray(arr))b.pages=arr; else b._bad=true; }
+        catch(e){ b._bad=true; }   /* 解不开（多半是上了锁的密文，或内容真的坏了）——不能当「空本子」对待 */
+      }
+    }
     return b;
   }
 
@@ -686,6 +776,7 @@ html{overflow-anchor:none}
   async function openDrawer(d,i){
     cur=d; curIdx=i; tab='note';
     resetArm($('dDel'),'删掉这个抽屉');
+    navOpen(()=>shut());   /* 返回键先回抽屉列表 */
     show('vIn');
     $('tray').className='tray'; $('tray').style.setProperty('--tone',colorOf(d,i));
     $('lip').className='lip';
@@ -711,6 +802,8 @@ html{overflow-anchor:none}
     for(const it of targets){
       try{
         if(it.lock_kind==='time' && !it.content) continue; /* 时间锁未到点：服务端还没返回内容，等它到点再迁 */
+        /* 已经是「iv.密文」形态的，说明早就加过密了，再套一层就永远解不开了 */
+        if(it.kind!=='note' && /^[A-Za-z0-9+/=]{10,24}\.[A-Za-z0-9+/=]{16,}$/.test(String(it.content||''))) continue;
         const keepTime=it.lock_kind==='time';
         const enc=await _seal(it.content||'', key);
         const content=enc.iv+'.'+enc.data;
@@ -732,10 +825,21 @@ html{overflow-anchor:none}
     setTimeout(()=>{ show('vList'); cur=null; renderList(); },720);
   }
   $('dDel').onclick=()=>armRun($('dDel'),'删掉这个抽屉',async()=>{
+    /* 先把已经解开过的相册里的照片路径记下来，删完抽屉再把文件清掉，不留占空间的无用文件 */
+    const photoPaths=[];
+    try{
+      (cur.items||[]).forEach(it=>{
+        if(it.kind!=='photo'||!Array.isArray(it.pages)) return;
+        it.pages.forEach(p=>{ if(p&&p.img&&p.img.path) photoPaths.push(p.img.path); });
+      });
+    }catch(e){}
+    /* 只有相册才可能有照片文件，别为每本日记白跑一次列表 */
+    const itemIds=(cur.items||[]).filter(it=>it.kind==='photo').map(it=>it.id);
     const r=await rpc('drawer_delete',{p_id:cur.id}); if(r.err){ say(r.err); return; }
     drawers=drawers.filter(d=>d.id!==cur.id);
-    $('tray').classList.remove('opened');
-    show('vList'); cur=null; renderList(); say('抽屉删掉了');
+    navClose(); say('抽屉删掉了');
+    /* 照片文件不归数据库管，删抽屉不会连带删：按「本子 id + _」前缀清干净（没打开过的相册也能清） */
+    purgeDrawerPhotos(itemIds, photoPaths).catch(()=>{});
   });
 
   /* 抽屉内部 */
@@ -837,10 +941,15 @@ html{overflow-anchor:none}
             }
             const uc=await unlockContent(pass, b.lock_salt, b.lock_nonce, b.lock_verifier, b.content);
             if(uc.err){ say(uc.err); return; }
-            try{ b.pages=JSON.parse(uc.data); }catch(e){ b.pages=[]; }
+            let arr=null;
+            try{ arr=JSON.parse(uc.data); }catch(e){ arr=null; }
+            if(!Array.isArray(arr)){ say('这本的内容读不出来，先别动它；稍后再试，或换台设备看看'); return; }
+            b.pages=arr;
             b._pass=pass; openRead(b);
             return;
           }
+          if(b._bad){ say('这本的内容读不出来，先别动它；稍后再试，或换台设备看看'); return; }
+          if(b.content===''){ say('这本的内容还没下来，稍等一下再点开'); return; }
           openRead(b);
         };
         W.appendChild(e);
@@ -879,14 +988,14 @@ e.onclick=async()=>{
             if(uc.err){ say(uc.err); return; }
             curNote=it; resetArm($('vDel'),'删掉');
             $('vTitle').textContent=KIND[it.kind]; $('vTxt').textContent=uc.data;
-            paintNote($('vTxt'),it); $('mView').classList.add('on');
+            paintNote($('vTxt'),it); openNoteView();
             return;
           }
           curNote=it;
           resetArm($('vDel'),'删掉');
           $('vTitle').textContent=KIND[it.kind]; $('vTxt').textContent=it.content||'';
           paintNote($('vTxt'),it);
-          $('mView').classList.add('on');
+          openNoteView();
         };
       W.appendChild(e);
     });
@@ -915,16 +1024,17 @@ e.onclick=async()=>{
     paintPreview(); renderPats();
     palette($('cvPal'),()=>draft.color,c=>{ draft.color=c; paintPreview(); renderPats(); },()=>{},COVERS);
     freeze(true); show('vCover'); window.scrollTo(0,0);
+    navOpen(leaveCover);   /* 返回键先回上一层（正在看本子就回本子） */
   }
   function leaveCover(){
     if(document.activeElement===$('cvTitle')) $('cvTitle').blur();
     freeze(false);
-    if(editing) openRead(editing); else { show('vIn'); renderItems(); $('inSub').textContent=sub(cur); }
+    if(editing) openRead(editing,true); else { show('vIn'); renderItems(); $('inSub').textContent=sub(cur); }
   }
   $('cvTitle').addEventListener('input',()=>{
     const t=$('cvPrev').querySelector('.tg b'); if(t) t.textContent=$('cvTitle').value.trim()||'未命名';
   });
-  $('cvCancel').onclick=leaveCover;
+  $('cvCancel').onclick=()=>{ if(!navClose()) leaveCover(); };
   $('cvOk').onclick=async()=>{
     const t=$('cvTitle').value.trim();
     if(!t){ say('先给它起个名字吧'); return; }
@@ -932,7 +1042,7 @@ e.onclick=async()=>{
       const r=await rpc('drawer_item_update',{p_id:editing.id,p_title:t,p_color:draft.color,p_pattern:draft.pattern});
       if(r.err){ say(r.err); return; }
       Object.assign(editing,{title:t,color:draft.color,pattern:draft.pattern});
-      leaveCover(); say('封面换好了'); return;
+      if(!navClose()) leaveCover(); say('封面换好了'); return;
     }
     const wantTime=$('cvLock').value==='time';
     const drawerEnc=(cur.lock_kind==='password'||cur.lock_kind==='question') && cur._pass;
@@ -961,7 +1071,7 @@ e.onclick=async()=>{
     if(r.data==null){ say('没放好，稍后再试'); return; }
     cur.items.push({id:Number(r.data),kind:coverKind,lock_kind:lk,title:title,question:question,color:draft.color,pattern:draft.pattern,pages:[],content:content,
       unlock_at:unlock_at,lock_salt:salt,lock_nonce:nonce,lock_verifier:verifier});
-    leaveCover(); say(coverKind==='photo'?'新相册放好了':'新日记本放好了');
+    if(!navClose()) leaveCover(); say(coverKind==='photo'?'新相册放好了':'新日记本放好了');
   };
 
   /* 翻页阅读 */
@@ -982,43 +1092,61 @@ e.onclick=async()=>{
     $('pdate').textContent=p?fmtDate(p.at):'';
     $('pno').textContent=p?'— '+(pi+1)+' —':'';
     $('pOf').textContent=n?'第 '+(pi+1)+' / '+n+(isPhoto?' 张':' 页'):'0 '+(isPhoto?'张':'页');
-    $('pPrev').disabled=pi<=0; $('pNext').disabled=pi>=n-1; $('pEdit').hidden=!p; $('rdActs').classList.toggle('center',!p);
+    $('pPrev').disabled=pi<=0; $('pNext').disabled=pi>=n-1;
+    $('pJump').hidden=!(n>1&&pi<n-1); $('pEdit').hidden=!p; $('rdActs').classList.toggle('center',!p);
     $('pNew').textContent=isPhoto?'＋ 放一张照片':'＋ 写新的一页';
     $('pEdit').textContent=isPhoto?'改这张':'改这页';
     $('pDel').hidden=!p; delArm=false; clearTimeout(delTimer); $('pDel').classList.remove('arm');
     $('pDel').textContent=isPhoto?'删掉这张':'撕掉这页';
     if(anim){ const l=$('leaf'); l.classList.remove('turn'); void l.offsetWidth; l.classList.add('turn'); }
   }
+  let photoSeq=0, photoURL=null, prevURL=null, savingNow=false;
+  function dropPhotoURL(){ if(photoURL){ try{ URL.revokeObjectURL(photoURL); }catch(e){} photoURL=null; } }
   function setWrite(on,mode){
     wmode=on?mode:null;
+    /* 右上角的日期：写新的一页就是今天，改旧页就是那一页的日子（以前写的时候不改，会停在上一次看的那页） */
+    if(on){
+      const pg=(mode==='edit'&&book&&book.pages)?book.pages[pi]:null;
+      $('pdate').textContent=fmtDate(pg&&pg.at?pg.at:new Date().toISOString());
+    }
+    $('rdCover').disabled=on; $('bDel').disabled=on;   /* 正在写的时候，别让人误点删本子/改封面把没写完的字带走 */
     $('ptxt').hidden=on; $('wr').hidden=!on; $('wrActs').hidden=!on; $('rdActs').hidden=on; $('rdnav').hidden=on;
     if(book && book.kind==='photo') $('albph').hidden=on;
-    if(!on){ $('phPrev').hidden=true; $('phPrev').src=''; }
+    if(!on){
+      $('phPrev').hidden=true; $('phPrev').removeAttribute('src');
+      if(prevURL){ try{ URL.revokeObjectURL(prevURL); }catch(e){} prevURL=null; }
+    }
   }
   /* 显示相册照片：下载（+解密）后用 img 完整呈现，可点开看大图 */
   async function loadPhoto(p){
     const el=$('albph');
+    const seq=++photoSeq;      /* 快速翻页时，晚到的那张不许盖掉现在这张 */
     el.innerHTML='';
+    dropPhotoURL();
     if(!p || !p.img || !p.img.path) return;
     try{
       let data=await storageDownload(p.img.path);
-      if(!data) return;
+      if(seq!==photoSeq || !data) return;
       if(p.img.iv){
         const key=await _photoKey(book);
         data=await _openBytes(data, p.img.iv, key);
       }
+      if(seq!==photoSeq) return;
       const blob=new Blob([data],{type:p.img.type||'image/jpeg'});
       const url=URL.createObjectURL(blob);
+      if(seq!==photoSeq){ try{ URL.revokeObjectURL(url); }catch(e){} return; }
+      photoURL=url;
       const img=document.createElement('img');
       img.src=url; img.className='albimg'; img.alt=p.cap||'';
       img.onclick=()=>openLightbox(url);
-      el.appendChild(img);
+      el.innerHTML=''; el.appendChild(img);
     }catch(e){}
   }
   function openLightbox(url){
-    $('lbImg').src=url; $('mLb').classList.add('on');
+    $('lbImg').src=url; $('mLb').classList.add('on'); navOpen(closeLb);
   }
-  $('mLb').onclick=()=>{ $('mLb').classList.remove('on'); $('lbImg').src=''; };
+  function closeLb(){ $('mLb').classList.remove('on'); $('lbImg').src=''; }
+  $('mLb').onclick=()=>{ if(!navClose()) closeLb(); };
   /* 等比压缩：最长边压到 maxDim、质量 quality、转 jpeg；gif 动图或压缩反而变大时保留原图 */
   async function _compressImage(file, maxDim=1600, quality=0.8){
     if(file.type==='image/gif') return file;
@@ -1056,24 +1184,33 @@ e.onclick=async()=>{
     const ok=await storageUpload(path,blob);
     return ok?img:null;
   }
-  function openRead(b){
-    book=b; pi=Math.max(0,b.pages.length-1);
+  function openRead(b, restore){
+    book=b; pi=0;   /* 打开时总从第一页看起，想跳到末尾有「跳至最后」 */
     resetArm($('bDel'),b.kind==='photo'?'删掉相册':'删掉日记本');
     $('rdTitle').textContent=b.title; $('wr').placeholder=b.kind==='photo'?'给这张照片写句说明……':'写下今天的事……';
     setWrite(false); renderPage(false);
     show('vRead'); window.scrollTo(0,0);
+    if(!restore) navOpen(readClose);   /* 从抽屉里点开本子：压一层，返回键先回抽屉 */
+  }
+  /* 返回键停在「本子」这一层：正在写就先取消写（不带走整页），否则回抽屉 */
+  function readClose(){
+    if(wmode){ $('wrCancel').click(); navReopen(readClose); return; }
+    if(document.activeElement===$('wr')) $('wr').blur();
+    dropPhotoURL();
+    show('vIn'); renderItems(); $('inSub').textContent=sub(cur);
   }
   $('bDel').onclick=()=>armRun($('bDel'),book.kind==='photo'?'删掉相册':'删掉日记本',async()=>{
     const k=book.kind;
     const photoPaths = k==='photo' ? (book.pages||[]).map(p=>p.img&&p.img.path).filter(Boolean) : [];
     const r=await rpc('drawer_item_remove',{p_id:book.id}); if(r.err){ say(r.err); return; }
     cur.items=cur.items.filter(x=>x.id!==book.id);
-    book=null; show('vIn'); renderItems(); $('inSub').textContent=sub(cur); say(k==='photo'?'相册删掉了':'日记本删掉了');
+    book=null; dropPhotoURL(); navClose(); say(k==='photo'?'相册删掉了':'日记本删掉了');
     // 数据库记录已删，再清 Storage 里的照片文件（失败仅留下无害孤儿文件，不阻断）
     photoPaths.forEach(p=>storageDelete(p).catch(()=>{}));
   });
   $('pPrev').onclick=()=>{ if(pi>0){ pi--; renderPage(true); } };
   $('pNext').onclick=()=>{ if(pi<book.pages.length-1){ pi++; renderPage(true); } };
+  $('pJump').onclick=()=>{ if(book&&book.pages.length&&pi<book.pages.length-1){ pi=book.pages.length-1; renderPage(true); } };
   let sx=null;
   $('leaf').addEventListener('touchstart',e=>{ sx=e.touches[0].clientX; },{passive:true});
   $('leaf').addEventListener('touchend',e=>{
@@ -1095,7 +1232,9 @@ e.onclick=async()=>{
     if(!f) return;
     if(!f.type || f.type.indexOf('image/')!==0){ say('选一张图片吧'); return; }
     pendingImg=f;
-    $('phPrev').src=URL.createObjectURL(f); $('phPrev').hidden=false;
+    if(prevURL){ try{ URL.revokeObjectURL(prevURL); }catch(e){} }
+    prevURL=URL.createObjectURL(f);
+    $('phPrev').src=prevURL; $('phPrev').hidden=false;
     $('wr').value=''; setWrite(true,'new');
     if(!coarse()) $('wr').focus({preventScroll:true});
   };
@@ -1109,20 +1248,26 @@ e.onclick=async()=>{
     delTimer=setTimeout(()=>{ delArm=false; $('pDel').classList.remove('arm'); $('pDel').textContent=book.kind==='photo'?'删掉这张':'撕掉这页'; },5000);
   };
   async function doDel(){
+    if(savingNow) return; savingNow=true;
+    try{
     clearTimeout(delTimer); delArm=false;
     const isPhoto=book.kind==='photo';
     const gone=isPhoto?book.pages[pi]:null;
     const pages=book.pages.slice(); pages.splice(pi,1);
-    const r=await rpc('drawer_item_update',{p_id:book.id,p_content:await reenc(book,JSON.stringify(pages))});
+    const content=await reenc(book,JSON.stringify(pages));
+    const r=await rpc('drawer_item_update',{p_id:book.id,p_content:content});
     if(r.err){ say(r.err); $('pDel').classList.remove('arm'); $('pDel').textContent=isPhoto?'删掉这张':'撕掉这页'; return; }
-    book.pages=pages;
+    book.content=content; book.pages=pages;
     if(gone && gone.img && gone.img.path) storageDelete(gone.img.path).catch(()=>{});
     if(pi>=pages.length) pi=Math.max(0,pages.length-1);
     renderPage(true);
     say(isPhoto?'这张照片删掉了':'这一页撕掉了');
+    }finally{ savingNow=false; }
   }
-  $('wrCancel').onclick=()=>{ if(document.activeElement===$('wr')) $('wr').blur(); setWrite(false); };
+  $('wrCancel').onclick=()=>{ if(document.activeElement===$('wr')) $('wr').blur(); setWrite(false); renderPage(false); };
   $('wrOk').onclick=async()=>{
+    if(savingNow) return; savingNow=true;      /* 连点两下不要写进去两页 */
+    try{
     const t=$('wr').value.trim();
     const pages=book.pages.slice();
     if(book.kind==='photo'){
@@ -1138,14 +1283,17 @@ e.onclick=async()=>{
       if(!t){ say('还没写什么呢'); return; }
       if(wmode==='new') pages.push({id:now(),text:t,at:new Date().toISOString()}); else pages[pi]=Object.assign({},pages[pi],{text:t});
     }
-    const r=await rpc('drawer_item_update',{p_id:book.id,p_content:await reenc(book,JSON.stringify(pages))});
+    const content=await reenc(book,JSON.stringify(pages));
+    const r=await rpc('drawer_item_update',{p_id:book.id,p_content:content});
     if(r.err){ say(r.err); return; }
+    book.content=content;   /* 本地这份也跟着换掉：下次点开就不用再从抽屉外面重新拉一遍了 */
     book.pages=pages; if(wmode==='new') pi=pages.length-1;
     if(document.activeElement===$('wr')) $('wr').blur();
     pendingImg=null; $('phPrev').hidden=true; $('phPrev').src='';
     setWrite(false); renderPage(true); say('记好了');
+    }finally{ savingNow=false; }
   };
-  $('rdBack').onclick=()=>{ show('vIn'); renderItems(); $('inSub').textContent=sub(cur); };
+  $('rdBack').onclick=()=>{ if(!navClose()) readClose(); };
   $('rdCover').onclick=()=>openCover(book);
 
   /* 新开抽屉：页面里的一个视图，没有浮层 */
@@ -1157,6 +1305,7 @@ e.onclick=async()=>{
     $('pv').style.setProperty('--tone',newColor);
     palette($('nPal'),()=>newColor,c=>{ newColor=c; $('pv').style.setProperty('--tone',c); },()=>{});
     freeze(true); show('vNew'); window.scrollTo(0,0);
+    navOpen(closeNew);   /* 返回键先回抽屉列表 */
     // 手机上不自动聚焦：等你自己点输入框再弹键盘，避免和页面变化撞车
     if(!coarse()) $('nTitle').focus({preventScroll:true});
   }
@@ -1191,11 +1340,13 @@ e.onclick=async()=>{
     if(r.data==null){ say('抽屉没放好，稍后再试'); return; }
     drawers.push({id:Number(r.data),title:title,question:question,visible:vis,lock_kind:lk,color:newColor,
       unlock_at:unlock_at,items:[],lock_salt:salt,lock_nonce:nonce,lock_verifier:verifier});
-    closeNew(); renderList(); say('新抽屉放好了');
+    if(!navClose()) closeNew(); renderList(); say('新抽屉放好了');
   };
-  $('nCancel').onclick=closeNew;
-  $('vClose').onclick=()=>$('mView').classList.remove('on');
-  $('mView').addEventListener('click',e=>{ if(e.target===$('mView')) $('mView').classList.remove('on'); });
+  $('nCancel').onclick=()=>{ if(!navClose()) closeNew(); };
+  function openNoteView(){ $('mView').classList.add('on'); navOpen(closeNoteView); }
+  function closeNoteView(){ $('mView').classList.remove('on'); }
+  $('vClose').onclick=()=>{ if(!navClose()) closeNoteView(); };
+  $('mView').addEventListener('click',e=>{ if(e.target===$('mView')){ if(!navClose()) closeNoteView(); } });
   /* 二次确认删除：第一次点变「再点一下删除」，第二次点才真正删 */
   function resetArm(btn,label){ btn.dataset.arm=''; btn.classList.remove('arm'); btn.textContent=label; }
   function armRun(btn,label,run){
@@ -1207,9 +1358,9 @@ e.onclick=async()=>{
     const it=curNote; if(!it) return;
     const r=await rpc('drawer_item_remove',{p_id:it.id}); if(r.err){ say(r.err); return; }
     cur.items=cur.items.filter(x=>x.id!==it.id);
-    $('mView').classList.remove('on'); renderItems(); say('纸条删掉了');
+    if(!navClose()) closeNoteView(); renderItems(); say('纸条删掉了');
   });
-  $('shut').onclick=shut;
+  $('shut').onclick=()=>{ if(!navClose()) shut(); };
   /* 新建纸条：颜色 + 纹路 */
   function openNote(){
     $('noteTxt').value='';
@@ -1219,11 +1370,12 @@ e.onclick=async()=>{
     const refresh=()=>patSwatches($('notePats'),()=>noteColor,()=>notePattern,k=>notePattern=k);
     palette($('notePal'),()=>noteColor,c=>{ noteColor=c; refresh(); },()=>{});
     refresh();
-    $('mNote').classList.add('on');
+    $('mNote').classList.add('on'); navOpen(closeNoteBox);   /* 返回键先关弹层 */
     if(!coarse()) $('noteTxt').focus({preventScroll:true});
   }
-  $('noteCancel').onclick=()=>$('mNote').classList.remove('on');
-  $('mNote').addEventListener('click',e=>{ if(e.target===$('mNote')) $('mNote').classList.remove('on'); });
+  function closeNoteBox(){ $('mNote').classList.remove('on'); }
+  $('noteCancel').onclick=()=>{ if(!navClose()) closeNoteBox(); };
+  $('mNote').addEventListener('click',e=>{ if(e.target===$('mNote')){ if(!navClose()) closeNoteBox(); } });
   $('noteOk').onclick=async()=>{
     const t=$('noteTxt').value.trim();
     if(!t){ say('先写点什么再放进去'); return; }
@@ -1254,16 +1406,16 @@ e.onclick=async()=>{
     if(r.data==null){ say('纸条没放进去，稍后再试'); return; }
     const it={id:Number(r.data),kind:'note',content:content,lock_kind:lk,color:noteColor,pattern:notePattern,unlock_at:unlock_at,title:title,question:question,lock_salt:salt,lock_nonce:nonce,lock_verifier:verifier};
     cur.items.push(it);
-    $('mNote').classList.remove('on');
+    if(!navClose()) closeNoteBox();
     renderItems(); say('纸条放进去了');
   };
   $('addItem').onclick=openNote;
   $('back').onclick=()=>{ location.href='play.html'; };
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape') return;
-    $('mView').classList.remove('on');
-    $('mNote').classList.remove('on');
-    if(!$('vNew').hidden) closeNew(); else if(!$('vCover').hidden) $('cvCancel').click();
+    if(NAV.length){ navClose(); return; }        /* 键盘 Esc 与返回键同一套：一层一层退 */
+    if(wmode && !$('vRead').hidden){ $('wrCancel').click(); return; }
+    if(!$('vNew').hidden) closeNew(); else if(!$('vCover').hidden) leaveCover();
   });
 
   loadDrawers();
