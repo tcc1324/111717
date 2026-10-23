@@ -6,11 +6,12 @@
   <title>唐甜甜 · 样式预览</title>
   <link rel="stylesheet" href="assets/css/butler.css">
   <style>
+@font-face{font-family:'WeiDu';src:url('assets/fonts/weidu-read.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
     html, body { min-height: 100%; margin: 0; }
     body {
       background: linear-gradient(170deg, #fff6c9 0%, #ffe3ea 55%, #dff3ff 100%) no-repeat fixed;
       background-color: #fff3d6;
-      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-family: "WeiDu", -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; min-height: 100dvh;
     }
@@ -21,7 +22,10 @@
     }
     .tip b { color: #2b2b2b; }
     .tip .hint { font-size: 13px; color: #999; margin-top: 8px; }
-  </style>
+  
+/* 2026-10-24 铃儿：手写体不加粗，大字号合成粗会糊 */
+h1,h2,h3,h4,h5,h6{font-weight:400!important}
+</style>
 </head>
 <body>
   <div class="tip">

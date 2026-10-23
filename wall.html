@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>留言墙 · 聆遇游乐园</title>
-<link rel="stylesheet" href="assets/css/base.css?v=2026100802">
+<link rel="stylesheet" href="assets/css/base.css?v=2026102410">
 <link rel="stylesheet" href="assets/css/music.css?v=2026100903">
 <link rel="stylesheet" href="assets/css/butler.css?v=2026100802">
 <script src="assets/js/common.js?v=2026100802"></script>
@@ -16,8 +16,8 @@
 <style>
 :root{
   --ink:#5b4036; --soft:#b0836d; --wall:#fdeee2;
-  --serif:"Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC",serif;
-  --ui:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  --serif:"WeiDu","WDYNYJQX","Songti SC","STSong","Noto Serif CJK SC","Source Han Serif SC",serif;
+  --ui:"WeiDu","WDYNYJQX",-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -34,7 +34,7 @@ body{
 .page{max-width:1000px;margin:0 auto;padding:0 18px;position:relative}
 .top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;position:relative;z-index:3}
 .back{display:inline-block;font-size:13px;color:var(--soft);text-decoration:none;margin-bottom:10px}
-h1{margin:0;font-family:var(--serif);font-weight:600;font-size:34px;letter-spacing:.22em}
+h1{margin:0;font-family:var(--serif);font-weight:400;color:var(--ink);color:color-mix(in srgb,var(--ink) 86%, transparent);font-size:34px;letter-spacing:.22em}
 .sub{margin:6px 0 0;font-size:13px;color:var(--soft);letter-spacing:.06em}
 .title-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .en{margin:0;font-size:12px;color:var(--soft);letter-spacing:.32em;opacity:.72}
@@ -73,7 +73,7 @@ button:focus-visible,.note:focus-visible,.swatch:focus-visible,.lid:focus-visibl
 .paper{aspect-ratio:1/1.06;padding:18px 12px 12px;border-radius:2px;
   background:linear-gradient(170deg,rgba(255,255,255,.45),rgba(255,255,255,0) 55%),var(--paper);
   font-family:var(--serif);font-size:12px;line-height:1.6;color:#5b4036;overflow:hidden;word-break:break-all}
-.paper span{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
+.paper span{font-family:var(--font-read);display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap}
 .note::before{content:"";position:absolute;left:50%;top:-8px;width:44px;height:16px;margin-left:-22px;z-index:2;
   background:var(--tape);backdrop-filter:blur(1px);box-shadow:0 1px 2px rgba(176,104,78,.14);
   transform:rotate(calc(var(--rot) * -1.4 + 3deg))}
@@ -134,7 +134,7 @@ html.composing .page{visibility:hidden}
   box-shadow:0 20px 50px rgba(150,80,55,.3);
   transform:translateY(16px);transition:transform .22s cubic-bezier(.22,.8,.3,1)}
 .mask.on .sheet{transform:none}
-.sheet h3{margin:0 0 14px;font-family:var(--serif);font-weight:600;font-size:19px;letter-spacing:.16em}
+.sheet h3{margin:0 0 14px;font-family:var(--serif);font-weight:400;font-size:19px;letter-spacing:.16em}
 textarea{width:100%;height:150px;resize:none;border:0;border-radius:6px;padding:16px;font-family:var(--serif);font-size:16px;
   line-height:1.8;color:#5b4036;background:var(--paper,#ffe9a8);transition:background .25s}
 textarea:focus{outline:2px solid rgba(224,138,118,.5)}
@@ -151,6 +151,9 @@ textarea:focus{outline:2px solid rgba(224,138,118,.5)}
 .big.old{filter:saturate(.7) sepia(.2) drop-shadow(0 6px 10px rgba(176,104,78,.2))}
 .meta{font-size:12px;color:var(--soft);line-height:1.8;margin:0 4px;white-space:pre-line}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* 2026-10-24 铃儿：手写体不加粗，大字号合成粗会糊 */
+h1,h2,h3,h4,h5,h6{font-weight:400!important}
 </style>
 </head>
 <body>

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>个人 · 给聆遇的游乐园</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="assets/css/base.css?v=2026100802">
+  <link rel="stylesheet" href="assets/css/base.css?v=2026102410">
   <link rel="stylesheet" href="assets/css/music.css?v=2026100903">
   <link rel="stylesheet" href="assets/css/butler.css?v=2026100802">
   <style>
@@ -49,6 +49,7 @@
     <div class="row"><span class="label">我的 ID</span><span class="id" id="uid5">·····</span></div>
     <div class="row"><span class="label">密码</span><span>······<button class="link" id="pwBtn">修改</button></span></div>
     <div class="row"><span class="label">月光币</span><span id="coins">0</span></div>
+    <div class="row" id="bankRow" style="cursor:pointer"><span class="label">银行</span><span style="color:#e0679a">›</span></div>
     <div class="row" style="border-bottom:none"><span class="label">收信邮件提醒</span><span><span id="ntf">…</span><button class="link" id="ntfBtn"></button></span></div>
     <div class="edit" id="pwBox" style="flex-wrap:wrap"><input id="oldPw" type="password" inputmode="numeric" maxlength="6" placeholder="原密码"><input id="newPw" type="password" inputmode="numeric" maxlength="6" placeholder="新密码（六位数）"><button id="pwSave">保存</button></div>
   </div>
@@ -90,6 +91,7 @@
       tick(); setInterval(tick, 1000);
       $('uid5').textContent = me.uid5 || '-----';
       $('coins').textContent = (me.moon_coins ?? 0);
+      $('bankRow').onclick = () => location.href = 'bank.html';
       const d = new Date(me.joined_at);
       const p = n => String(n).padStart(2, '0');
       $('joined').textContent = '入住时间 · ' + d.getFullYear() + '.' + p(d.getMonth() + 1) + '.' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());

@@ -51,3 +51,7 @@ secrets*
 # 本地备份与后台函数源码不上传
 .backup/
 supabase/
+
+# 字体源文件（3MB，仅本地子集化用，不上传）
+assets/fonts/hanyi-youyuan-src.ttf
+assets/fonts/*-src.ttf

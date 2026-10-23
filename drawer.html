@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
 <title>秘密抽屉 · 聆遇游乐园</title>
-<link rel="stylesheet" href="assets/css/base.css?v=2026100802">
+<link rel="stylesheet" href="assets/css/base.css?v=2026102410">
 <link rel="stylesheet" href="assets/css/music.css?v=2026100903">
 <link rel="stylesheet" href="assets/css/butler.css?v=2026100802">
 <script src="assets/js/common.js?v=2026100802"></script>
@@ -16,8 +16,8 @@
 :root{
   --paper:#f9f3e8;--cream:#fdf9f1;--line:rgba(122,92,72,.62);--ink:#5a463b;--soft:#a58d7d;
   --oat:#eadcc4;--blush:#f1d8cf;--butter:#f4e8c1;--in:#e3d2b8;
-  --kai:var(--font-body,"LXGW WenKai","霞鹜文楷","Kaiti SC","KaiTi",serif);
-  --ttl:"Smiley Sans","得意黑",var(--kai);
+  --kai:var(--font-body,"Kaiti SC","KaiTi",serif);
+  --ttl:"WeiDu","WDYNYJQX","Smiley Sans","得意黑",var(--kai);
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -142,7 +142,7 @@ html{overflow-anchor:none}
 .card{width:100%;max-width:340px;background:var(--cream);border:1.5px solid var(--line);
   border-radius:6px 8px 7px 6px;padding:20px 18px 16px;box-shadow:0 24px 50px rgba(122,92,72,.3);animation:pop .25s ease-out}
 @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.card .txt{white-space:pre-wrap;line-height:1.9;font-size:15px;max-height:46vh;overflow-y:auto;overflow-x:hidden;margin-bottom:12px;
+.card .txt{font-family:var(--font-read);white-space:pre-wrap;line-height:1.9;font-size:15px;max-height:46vh;overflow-y:auto;overflow-x:hidden;margin-bottom:12px;
   min-height:170px;padding:16px 15px;border-radius:3px;overflow-wrap:break-word;word-break:break-word}
 .card textarea{width:100%;font:inherit;font-size:15px;line-height:1.7;padding:10px 12px;margin-bottom:4px;
   border:1.5px solid rgba(122,92,72,.45);border-radius:4px;background:#fff9ee;color:var(--ink);resize:vertical;min-height:96px}
@@ -222,7 +222,7 @@ html{overflow-anchor:none}
 .leaf.turn{animation:turn .25s ease-out}
 @keyframes turn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 .pdate{font-size:11px;color:var(--soft);text-align:right;letter-spacing:.1em;margin:-14px 0 6px;min-height:14px}
-.ptxt,.leaf textarea{display:block;width:100%;min-height:252px;font:inherit;font-size:15px;line-height:28px;color:var(--ink);white-space:pre-wrap;word-break:break-all;background:repeating-linear-gradient(transparent 0 27px,rgba(122,92,72,.16) 27px 28px);background-attachment:local}
+.ptxt,.leaf textarea{font-family:var(--font-read);display:block;width:100%;min-height:252px;font:inherit;font-size:15px;line-height:28px;color:var(--ink);white-space:pre-wrap;word-break:break-all;background:repeating-linear-gradient(transparent 0 27px,rgba(122,92,72,.16) 27px 28px);background-attachment:local}
 .leaf textarea{border:0;outline:none;resize:none;padding:0;height:252px;background-color:transparent}
 .ptxt.blank{color:var(--soft)}
 .ptxt.cap{background:none;min-height:0;font-size:14px;line-height:1.8}

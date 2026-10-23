@@ -1,5 +1,5 @@
 /* 寄：米白信纸风，和游玩目录页同一套 */
-body { min-height: 100vh; margin: 0; background: #fbf7ee; color: #2b2b2b; display: flex; flex-direction: column; align-items: center; font-family: Georgia, "Songti SC", "STSong", serif; }
+body { min-height: 100vh; margin: 0; background: #fbf7ee; color: #2b2b2b; display: flex; flex-direction: column; align-items: center; font-family: "WeiDu", "WDYNYJQX", Georgia, "Songti SC", "STSong", serif; }
 .top { width: calc(100% - 32px); max-width: 520px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
 .top a { color: #2b2b2b; text-decoration: none; font-size: 16px; }
 .page { width: calc(100% - 48px); max-width: 480px; margin-top: 36px; padding-bottom: 60px; }
@@ -8,7 +8,7 @@ h1 { text-align: center; font-weight: normal; font-size: 26px; letter-spacing: .
 h2 { font-weight: normal; font-size: 16px; letter-spacing: .3em; color: #8a7a60; margin: 34px 0 12px; padding-bottom: 6px; border-bottom: 1px solid rgba(0,0,0,.1); }
 .hint { color: #aaa; font-size: 13px; line-height: 1.7; }
 .empty { color: #bbb; font-size: 14px; text-align: center; padding: 26px 0; letter-spacing: .2em; }
-input, textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
+input, textarea { font-family: var(--font-read); width: 100%; box-sizing: border-box; font: inherit; font-size: 16px; color: inherit; background: transparent; border: none; border-bottom: 1px solid rgba(0,0,0,.18); padding: 8px 2px; outline: none; }
 input:focus, textarea:focus { border-bottom-color: #b9a78a; }
 textarea { min-height: 260px; resize: vertical; line-height: 2; border: none; background-image: repeating-linear-gradient(transparent 0 31px, rgba(0,0,0,.08) 31px 32px); background-attachment: local; }
 .btn { display: inline-block; font: inherit; font-size: 15px; letter-spacing: .2em; color: #fbf7ee; background: #2b2b2b; border: none; border-radius: 999px; padding: 10px 26px; cursor: pointer; }
@@ -38,7 +38,7 @@ textarea { min-height: 260px; resize: vertical; line-height: 2; border: none; ba
 .list .who { font-size: 17px; letter-spacing: .1em; }
 .list .when { margin-left: auto; font-size: 12px; color: #aaa; white-space: nowrap; }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #c0573e; flex: none !important; transform: translateY(-2px); }
-.letter { white-space: pre-wrap; line-height: 2; font-size: 16px; margin-top: 20px; }
+.letter { font-family: var(--font-read); white-space: pre-wrap; line-height: 2; font-size: 16px; margin-top: 20px; }
 .mask { position: fixed; inset: 0; background: rgba(251,247,238,.96); display: none; overflow-y: auto; z-index: 10; }
 .mask.on { display: block; }
 .mask .page { margin: 0 auto; padding-top: 30px; }

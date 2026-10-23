@@ -1,9 +1,14 @@
-/* ===== 全站基础样式 ===== */
+/* ===== 汉仪游园体（自托管，子集化 woff2，2026-10-24）===== */
+@font-face{font-family:'HanyiYouYuan';src:url('../fonts/hanyi-youyuan.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}/* ===== 全站基础样式 ===== */
+/* ===== 唯独与你一见倾心（正文字体，自托管 woff2）===== */
+@font-face{font-family:'WeiDu';src:url('../fonts/weidu-read.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+
 :root {
   /* 字体集中在这里，以后换字体只改这一处 */
-  --font-body: "LXGW WenKai", "霞鹜文楷", "PingFang SC", "HarmonyOS Sans SC",
-    "MiSans", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
+  --font-body: "WeiDu", "WDYNYJQX", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
   --font-title: var(--font-body);
+  /* 正文：信件/文章/留言这些“写字”的地方 */
+  --font-read: "WeiDu", "WDYNYJQX", "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Noto Sans CJK SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
 
   --ease-soft: cubic-bezier(.22, .8, .3, 1);
 }
@@ -25,6 +30,10 @@ body {
 
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+/* ===== 新页面即插即用：表单控件跟随正文字体、标题不合成加粗（2026-10-24）===== */
+input, textarea, select { font-family: inherit; font-size: inherit; color: inherit; }
+h1, h2, h3, h4, h5, h6 { font-weight: 400; }
+
 
 /* 页面进入时轻轻浮现 */
 .page { animation: page-in .9s var(--ease-soft) both; }

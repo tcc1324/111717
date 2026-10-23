@@ -42,7 +42,7 @@
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
 </script>
-<link rel="stylesheet" href="assets/css/base.css?v=2026100802">
+<link rel="stylesheet" href="assets/css/base.css?v=2026102410">
 <link rel="stylesheet" href="assets/css/music.css?v=2026100903">
 <link rel="stylesheet" href="assets/css/butler.css?v=2026100802">
 <style>
@@ -60,7 +60,7 @@ html[data-theme="cream"]{--wall:linear-gradient(180deg,#f3e7c8 0%,#eadcb6 100%);
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{overflow:hidden;color:var(--ink);background:#e8d4c6;
-  font-family:var(--font-body,"LXGW WenKai","霞鹜文楷","Songti SC",serif)}
+  font-family:var(--font-body,"Songti SC",serif)}
 .wallbg{position:fixed;left:0;top:0;right:0;bottom:0;background:var(--wall);background-size:cover}
 /* 氛围滤镜：罩在房间上，让整幅画随主题一起染上色调 */
 .hs-tint{position:fixed;left:0;top:0;right:0;bottom:0;pointer-events:none;z-index:10;
@@ -119,6 +119,9 @@ body[data-music="none"] .music-house-link, body[data-music="none"] .music-note {
 .theme-card:active{transform:scale(.97)}
 .theme-card__sw{height:56px;border-radius:9px;margin-bottom:8px}
 .theme-card__name{font-size:14px;color:var(--ink);letter-spacing:.08em;text-align:center}
+
+/* 2026-10-24 铃儿：手写体不加粗，大字号合成粗会糊 */
+h1,h2,h3,h4,h5,h6{font-weight:400!important}
 </style>
 </head>
 
@@ -216,7 +219,7 @@ body[data-music="none"] .music-house-link, body[data-music="none"] .music-note {
   <path d="M197 623c6-1 11-3 16-5"/>
   <path d="M205 630c4 1 7 0 10-2"/>
 </g>
-<text x="184" y="644" font-family="'LXGW WenKai','霞鹜文楷','Kaiti SC','STKaiti','Songti SC',serif" font-size="9" fill="#6a4636" fill-opacity="0.9" transform="rotate(7 184 644)">藏在这里，慢慢听</text>
+<text x="184" y="644" font-family="'WeiDu','WDYNYJQX','Kaiti SC','STKaiti',serif" font-size="9" fill="#6a4636" fill-opacity="0.9" transform="rotate(7 184 644)">藏在这里，慢慢听</text>
 <polygon points="210,606 316,586 318,592 212,612" fill="#e3b8a5"/><polygon points="316,586 330,584 318,592" fill="#f3d9c4"/><polygon points="208,606 212,612 204,612" fill="#d98f78"/>
 <polygon points="-12,652 100,640 104,674 -12,688" fill="#a9b8c6"/><polygon points="-8,622 96,614 98,642 -8,652" fill="#e3b8a5"/><polygon points="4,598 88,592 92,616 4,624" fill="#f0dfba"/>
 <polygon points="296,652 352,642 360,716 302,726" fill="#3a3d45"/><polygon points="301,658 347,650 354,708 307,716" fill="#5f6776"/>
