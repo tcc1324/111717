@@ -7,6 +7,8 @@
   <title>给聆遇的游乐园</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
   <link rel="stylesheet" href="assets/css/base.css?v=2026102410">
+  <link rel="preload" href="assets/fonts/hanyi-youyuan.woff2" as="font" type="font/woff2" crossorigin>
+
   <link rel="stylesheet" href="assets/css/music.css?v=2026100903">
   <link rel="stylesheet" href="assets/css/butler.css?v=2026100802">
   <style>
@@ -34,6 +36,8 @@
       background: rgba(255,255,255,.72); border: 2px solid #222; border-radius: 28px;
       box-shadow: 3px 4px 0 #222; transition: transform .15s, box-shadow .15s;
     }
+    /* 字体没到位就先不显示字：避免先闪一下系统字体（铃儿 2026-10-24） */
+    .menu.font-wait a { opacity: 0; }
     .menu a:active { transform: translate(3px,4px); box-shadow: 0 0 0 #222; }
     @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
   </style>
@@ -59,7 +63,7 @@
     </svg>
   </header>
   <p class="hi" id="hi"></p>
-  <nav class="menu" hidden>
+  <nav class="menu font-wait" hidden>
     <a href="play.html">游玩</a>
     <a href="shop.html">书店</a>
     <a href="me.html">个人</a>
@@ -77,7 +81,18 @@
       const r = await Park.api('profiles?select=nickname&id=eq.' + uid);
       const me = r.ok ? (await r.json())[0] : null;
       if (me) document.getElementById('hi').textContent = me.nickname + '，今天想去哪儿玩？';
-      document.querySelector('.menu').hidden = false;
+      const nav = document.querySelector('.menu');
+      // 游园体到位再显示字，避免先闪一下系统字体
+      try {
+        const probe = '22px "HanyiYouYuan"';
+        await Promise.race([document.fonts.load(probe, '游玩书店个人'), new Promise(r => setTimeout(r, 3000))]);
+        // 还没到就继续等（最多再 4 秒），绝不在字体缺席时把系统字体亮出来
+        if (document.fonts.check && !document.fonts.check(probe)) {
+          await Promise.race([document.fonts.load(probe, '游玩书店个人'), new Promise(r => setTimeout(r, 4000))]);
+        }
+      } catch (e) {}
+      nav.classList.remove('font-wait');
+      nav.hidden = false;
     })();
   </script>
 </body>
