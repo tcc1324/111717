@@ -222,8 +222,8 @@ html{overflow-anchor:none}
 .leaf.turn{animation:turn .25s ease-out}
 @keyframes turn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
 .pdate{font-size:11px;color:var(--soft);text-align:right;letter-spacing:.1em;margin:-14px 0 6px;min-height:14px}
-.ptxt,.leaf textarea{font-family:var(--font-read);display:block;width:100%;min-height:252px;font:inherit;font-size:15px;line-height:28px;color:var(--ink);white-space:pre-wrap;word-break:break-all;background:repeating-linear-gradient(transparent 0 27px,rgba(122,92,72,.16) 27px 28px);background-attachment:local}
-.leaf textarea{border:0;outline:none;resize:none;padding:0;height:252px;background-color:transparent}
+.ptxt,.leaf textarea{font-family:var(--font-read);display:block;width:100%;min-height:252px;font:inherit;font-size:15px;line-height:28px;color:var(--ink);white-space:pre-wrap;word-break:break-all;background:repeating-linear-gradient(transparent 0 calc(var(--lh,28px) - 1px),rgba(122,92,72,.16) calc(var(--lh,28px) - 1px) var(--lh,28px));background-attachment:local}
+.leaf textarea{border:0;outline:none;resize:none;padding:0;height:auto;min-height:252px;overflow:hidden;background-color:transparent}
 .ptxt.blank{color:var(--soft)}
 .ptxt.cap{background:none;min-height:0;font-size:14px;line-height:1.8}
 .albph{display:block;width:100%;margin:0 0 10px}
@@ -1102,6 +1102,27 @@ e.onclick=async()=>{
   }
   let photoSeq=0, photoURL=null, prevURL=null, savingNow=false;
   function dropPhotoURL(){ if(photoURL){ try{ URL.revokeObjectURL(photoURL); }catch(e){} photoURL=null; } }
+  /* 纸上横线按「真实行高」画：有的手机浏览器会把 15px 的小字放大（实测 18.3px / 行高 34.16px），
+     写死 28px 的横线就会和字越往下越错位（铃儿 2026-10-24） */
+  function syncLh(){
+    try{
+      const lh=getComputedStyle($('wr')).lineHeight;
+      if(lh && lh!=='normal') document.documentElement.style.setProperty('--lh', lh);
+    }catch(e){}
+  }
+  syncLh();
+  /* 写作区自动增高：让纸上的横线跟着字一起往下长（铃儿 2026-10-24 反馈：多出的行下方没横线，要点「写好了」才有） */
+  function growWr(){
+    const t=$('wr');
+    if(!t || t.hidden) return;
+    const st=t.scrollTop;
+    t.style.height='auto';
+    t.style.height=Math.max(252, t.scrollHeight)+'px';
+    t.scrollTop=st;
+  }
+  $('wr').addEventListener('input', growWr);
+  /* 字体（一见倾心）晚到时会重排行高，到位后再量一次 */
+  try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(()=>{ syncLh(); growWr(); }); }catch(e){}
   function setWrite(on,mode){
     wmode=on?mode:null;
     /* 右上角的日期：写新的一页就是今天，改旧页就是那一页的日子（以前写的时候不改，会停在上一次看的那页） */
@@ -1118,6 +1139,7 @@ e.onclick=async()=>{
     }
     $('rdCover').disabled=on; $('bDel').disabled=on;   /* 正在写的时候，别让人误点删本子/改封面把没写完的字带走 */
     $('ptxt').hidden=on; $('wr').hidden=!on; $('wrActs').hidden=!on; $('rdActs').hidden=on; $('rdnav').hidden=on;
+    if(on){ syncLh(); growWr(); } else $('wr').style.height='';   /* 进写作就按内容撑开；退出时恢复默认高度 */
     if(book && book.kind==='photo') $('albph').hidden=on;
     if(!on){
       $('phPrev').hidden=true; $('phPrev').removeAttribute('src');
