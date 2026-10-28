@@ -1,7 +1,7 @@
 /* ===== 汉仪游园体（自托管，子集化 woff2，2026-10-24）===== */
 @font-face{font-family:'HanyiYouYuan';src:url('https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/fonts/hanyi-youyuan.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}/* ===== 全站基础样式 ===== */
 /* ===== 唯独与你一见倾心（正文字体，自托管 woff2）===== */
-@font-face{font-family:'WeiDu';src:url('../fonts/weidu-read.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'WeiDu';src:url('https://tcc1324.github.io/111717/assets/fonts/weidu-read.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
 
 :root {
   /* 字体集中在这里，以后换字体只改这一处 */

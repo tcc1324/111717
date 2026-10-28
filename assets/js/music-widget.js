@@ -490,7 +490,7 @@
 
   /* ───────────────────────── 播放核心 ───────────────────────── */
   var audio = new Audio();
-  audio.preload = 'auto';
+  audio.preload = 'metadata';   // 不预吞整首歌，点播时才全量下
   audio.setAttribute('playsinline', '');
   // 挂进页面里（隐藏）：比游离的 Audio 更容易被浏览器认作「正在播放的媒体」，通知栏 / 锁屏卡片和后台保活都更稳
   (function () {
