@@ -5,10 +5,11 @@
   const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA';
   const withKey = url => url + (url.includes('?') ? '&' : '?') + 'apikey=' + encodeURIComponent(SB_ANON);
 
-  // 内测白名单：与后端 butler 函数的 OWNERS 保持一致（只有铃心能看到唐甜甜）
-  const OWNER = '5e6d4bcf-7f6d-442e-b2a8-d72e29339f75';
-  const LISTENING = '9e48693c-a8fb-42d8-8929-917bb7c18223'; // 聆遇（调满意后放开）
-  let who = ''; // 当前用户的名字（铃心 / 聆遇），登录后确定
+  // 白名单：与后端 butler 函数的 OWNERS 保持一致（铃心 / 聆遇 / 阿猫）
+  const OWNER = '5e6d4bcf-7f6d-442e-b2a8-d72e29339f75'; // 铃心（t心心）
+  const LISTENING = '9e48693c-a8fb-42d8-8929-917bb7c18223'; // 聆遇
+  const MAO = 'e896e0b0-e5db-4fb7-9761-73555ad28dfb'; // 阿猫
+  let who = ''; // 当前用户的名字（铃心 / 聆遇 / 阿猫），登录后确定
 
   const LS_HIST = 'park.butler.history';
   let history = [];
@@ -344,8 +345,8 @@
     const s = await Park.session();
     if (!s) return;                       // 未登录不显示
     const uid = uidOf(s.access_token);
-    if (uid !== OWNER && uid !== LISTENING) return;  // 铃心 + 聆遇都能看到
-    who = uid === LISTENING ? '聆遇' : '铃心';
+    if (uid !== OWNER && uid !== LISTENING && uid !== MAO) return;  // 铃心 + 聆遇 + 阿猫
+    who = uid === LISTENING ? '聆遇' : (uid === MAO ? '阿猫' : '铃心');
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
     else inject();
   }
