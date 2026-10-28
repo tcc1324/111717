@@ -505,7 +505,7 @@
   var loadedKey = '';          // 当前 audio 里装的是哪首
   var loadToken = 0;           // 防止旧请求回来覆盖新选择
   var resumePos = 0;           // 还没加载好时的目标进度
-  var failStreak = 0, recoverN = 0, lastDir = 1, curAuto = false;
+  var failStreak = 0, recoverN = 0, lastDir = 1, curAuto = false, retryT = 0;
   var silent = false;          // 解锁用的静音片段在播，忽略其事件
   var stallFlag = false, stallSince = 0, lastAdvance = 0, lastT = -1;   // 播放进度不走了（断网 / 卡住）：界面要如实显示「在缓冲」，不能还显示在播
   var unlocked = false;
@@ -665,7 +665,7 @@
     wantPlay = opt.autoplay !== false;
     resumePos = opt.startAt || 0;
     loadedKey = ''; loading = true; buffering = false; stallFlag = false; lastT = -1; gesturePending = false; curBr = 0;
-    clearTimeout(stallTimer);
+    clearTimeout(stallTimer); clearTimeout(retryT);
     // 点了新的一首，旧的立刻停下，不等新地址回来（避免新旧叠在一起）
     try { if (!audio.paused) audio.pause(); } catch (e) { }
     if (wantPlay && !opt.restore) claim();
@@ -720,7 +720,13 @@
         if (!err) return;
         if (err.name === 'NotAllowedError') needGesture();
         else if (err.name === 'AbortError') { /* 被新的加载打断，正常 */ }
-        else if (!recover()) { loading = false; buffering = false; wantPlay = false; toast(err.name === 'NotSupportedError' ? '这首的音源打不开，可能是 VIP 或地址失效，换一首试试吧' : '这首暂时放不出来（' + (err.message || err.name) + '）'); render(); }
+        // 地址过期 / 网络抖动：等一小会儿重新取地址再试（退避：300ms、600ms、900ms…）
+      if (recover(300 * recoverN) ) return;
+      loading = false; buffering = false; wantPlay = false;
+      toast(err.name === 'NotSupportedError'
+        ? '音源暂时没连上哦，可能是网络问题'
+        : '这首暂时放不出来（' + (err.message || err.name) + '）');
+      render();
       });
     }
   }
@@ -762,14 +768,25 @@
   }
 
   // 地址过期 / 网络中断：重新取地址，从当前进度接着播
-  function recover() {
+  // delay>0：先等一会儿再试。音源那边偶发 1~2 秒抖动，立刻连试会几毫秒内把重试次数耗光，
+  // 结果就是「点了报错、再点又好了」。留着间隔重试，才等于替用户多点几次。
+  function recover(delay) {
     var s = cur();
-    if (!s || recoverN >= 4 || loadedKey !== s.id) return false;
+    if (!s || recoverN >= 5 || loadedKey !== s.id) return false;
     recoverN++;
     var at = audio.currentTime || resumePos, w = wantPlay;
-    if (st.solo) playSolo(s, { startAt: at, autoplay: w, recover: true, force: true });
-    else playIndex(st.idx, { startAt: at, autoplay: w, recover: true, noHist: true, force: true });
-    return true;
+    var go = function () {
+      if (!cur() || cur().id !== s.id) return;      // 期间用户已经换了别的歌
+      if (st.solo) playSolo(s, { startAt: at, autoplay: w, recover: true, force: true });
+      else playIndex(st.idx, { startAt: at, autoplay: w, recover: true, noHist: true, force: true });
+    };
+    if (delay > 0) {
+      loading = true; render();
+      clearTimeout(retryT);
+      retryT = setTimeout(go, delay);
+      return true;
+    }
+    go(); return true;
   }
 
   function play() {
@@ -1001,16 +1018,17 @@
   audio.addEventListener('error', function () {
     if (silent) { silent = false; return; }
     if (!loadedKey) return;
-    if (!recover()) {
-      var code = audio.error && audio.error.code;
-      loading = false; buffering = false; stallFlag = false; wantPlay = false;
-      try { audio.pause(); } catch (e) { }
-      if (navigator.onLine === false) toast('当前没有网络，音乐停下了，连上网后点播放继续');
-      else if (code === 2) toast('网络中断了，音乐停下了，网络好些后点播放继续');
-      else if (code === 3) toast('这首的音频文件有问题，换一首吧');
-      else toast('这首的音源打不开，可能是 VIP 或地址失效，换一首试试吧');
-      render(); save();
-    }
+    var code = audio.error && audio.error.code;
+    // 音频文件本身坏了（code 3）没救；其它多是音源那边一时没接上（连接抖动 / 地址过期）。
+    // 先安静地等一会儿重新取地址重试，别急着告诉用户「打不开、可能是 VIP」。
+    if (code !== 3 && recover(400 * recoverN)) return;
+    loading = false; buffering = false; stallFlag = false; wantPlay = false;
+    try { audio.pause(); } catch (e) { }
+    if (navigator.onLine === false) toast('当前没有网络，音乐停下了，连上网后点播放继续');
+    else if (code === 2) toast('网络中断了，音乐停下了，网络好些后点播放继续');
+    else if (code === 3) toast('这首的音频文件有问题，换一首吧');
+    else toast('音源暂时没连上哦，可能是网络问题');
+    render(); save();
   });
 
   function onEnded() {
