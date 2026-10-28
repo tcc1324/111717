@@ -5,13 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-visual">
 <title>秘密抽屉 · 聆遇游乐园</title>
 <link rel="stylesheet" href="assets/css/base.css?v=2026102410">
-<link rel="stylesheet" href="assets/css/music.css?v=2026100903">
-<link rel="stylesheet" href="assets/css/butler.css?v=2026100802">
+<link rel="stylesheet" href="assets/css/butler.css?v=2026102801">
 <script src="assets/js/common.js?v=2026100802"></script>
 <script src="assets/js/auth.js?v=2026100802"></script>
-<script src="assets/js/music.js?v=2026101011"></script>
 <script src="assets/js/html2canvas.min.js"></script>
-<script src="assets/js/butler.js?v=2026100802"></script>
+<script src="assets/js/butler.js?v=2026102801"></script>
 <style>
 :root{
   --paper:#f9f3e8;--cream:#fdf9f1;--line:rgba(122,92,72,.62);--ink:#5a463b;--soft:#a58d7d;
@@ -321,6 +319,8 @@ html{overflow-anchor:none}
 .npgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;justify-items:center;margin:2px 0 10px}
 .nps{width:46px;height:46px;padding:0;border-radius:6px;border:1.5px solid var(--line);cursor:pointer}
 .nps[aria-checked="true"]{box-shadow:0 0 0 2px var(--cream),0 0 0 3.5px var(--ink)}
+/* 右上角音乐球：抽屉打开后的界面不显示 */
+body.mw-deep #mw-host{display:none!important}
 </style>
 </head>
 <body>
@@ -632,6 +632,8 @@ html{overflow-anchor:none}
   function show(id){
     VIEWS.forEach(v=>{ $(v).hidden=(v!==id); });
     document.body.classList.toggle('newing',id==='vNew'||id==='vCover'||id==='vRead');
+    /* 右上角音乐球：只在抽屉列表显示，进了某个抽屉（含写/读/改封面）就藏起来 */
+    document.body.classList.toggle('mw-deep', id!=='vList');
   }
 
   /* ---------- 返回键分层 ----------
@@ -1450,5 +1452,6 @@ e.onclick=async()=>{
   loadDrawers();
 })();
 </script>
+  <script src="assets/js/music-widget.js?v=2026102801"></script>
 </body>
 </html>

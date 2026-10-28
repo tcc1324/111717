@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>旧音馆 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎠%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/base.css?v=2026102410">
+  <link rel="stylesheet" href="assets/css/butler.css?v=2026102801">
+  <style>
+    body { min-height: 100vh; margin: 0; background: linear-gradient(180deg, #fff6d8 0%, #ffe3ea 55%, #dcefff 100%); color: #222; display: flex; flex-direction: column; align-items: center; }
+    .top { width: calc(100% - 32px); max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+    .top a { color: #222; text-decoration: none; font-size: 16px; }
+    h1 { font-size: 22px; font-weight: normal; letter-spacing: .2em; margin: 0; }
+    .note { width: calc(100% - 64px); max-width: 430px; margin: 22px 0 0; font-size: 14px; line-height: 1.95; color: #6f6259; letter-spacing: .04em; }
+    .card { width: calc(100% - 48px); max-width: 460px; margin: 14px 0 0; background: rgba(255,255,255,.74); border: 2px solid #222; border-radius: 22px; box-shadow: 3px 4px 0 #222; padding: 6px 16px; box-sizing: border-box; }
+    ol.songs { list-style: none; margin: 0; padding: 0; }
+    ol.songs li { position: relative; display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px dashed rgba(0,0,0,.13); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    ol.songs li:last-child { border-bottom: none; }
+    .no { flex: none; width: 20px; text-align: right; font-family: monospace; font-size: 12px; color: #b19c88; }
+    .t { flex: 1; min-width: 0; font-size: 15px; line-height: 1.55; word-break: break-word; }
+    .pb { flex: none; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid #222; background: #fff3b0; color: #2b2b2b; display: flex; align-items: center; justify-content: center; pointer-events: none; transition: background .15s, color .15s, border-color .15s; }
+    .pb .ico-pause { display: none; }
+    li.playing .pb { background: #e0679a; border-color: #e0679a; color: #fff; }
+    li.playing .ico-play { display: none; }
+    li.playing .ico-pause { display: inline; }
+    li.playing .t { color: #c8578c; }
+    li::after { content: ''; position: absolute; left: 30px; right: 0; bottom: 0; height: 2px; border-radius: 2px; background: #e0679a; transform: scaleX(0); transform-origin: left; opacity: 0; transition: transform .2s linear, opacity .2s; }
+    li.playing::after { opacity: 1; }
+    .house { margin: 22px 0 0; padding: 12px 26px; border: 2px solid #222; border-radius: 999px; background: #fff3b0; color: #2b2b2b; text-decoration: none; font-size: 16px; letter-spacing: .1em; box-shadow: 3px 4px 0 #222; transition: transform .15s, box-shadow .15s; }
+    .house:active { transform: translate(3px,4px); box-shadow: 0 0 0 #222; }
+    .foot { margin: auto 0 26px; padding-top: 26px; color: #8b8378; font-size: 13px; letter-spacing: .1em; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="me.html">‹ 回去</a><h1>旧音馆</h1><span style="width:48px"></span></div>
+
+  <p class="note">留作纪念。这些曲目的音频源仍为原来的自托管，不删除。<br>纪念着曾经…</p>
+
+  <div class="card">
+    <ol class="songs">
+<li data-src="assets/music/aerie.mp3"><span class="no">1</span><span class="t">Aerie - Lena Raine &amp; Minecraft</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/incomparable-beauty-sodagreen.mp3"><span class="no">2</span><span class="t">无与伦比的美丽 - 苏打绿</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/rainy-night-sodagreen.mp3"><span class="no">3</span><span class="t">下雨的夜晚 - 苏打绿</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/believe-sodagreen.mp3"><span class="no">4</span><span class="t">相信 - 苏打绿</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/kanade-music-box.mp3"><span class="no">5</span><span class="t">奏(かなで) (スキマスイッチ) - Vega☆オルゴール</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/angel-libera.mp3"><span class="no">6</span><span class="t">Angel - Libera</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/concertino-bianco.mp3"><span class="no">7</span><span class="t">Concertino bianco for Piano in C major_I Con intenerimento - Alexei Lubimov</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/dauw.mp3"><span class="no">8</span><span class="t">Dauw - Nils Frahm</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/firebugs.mp3"><span class="no">9</span><span class="t">Firebugs - Lena Raine、Minecraft</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/hidden-sanctuary.mp3"><span class="no">10</span><span class="t">Hidden Sanctuary - Poemme</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/last-days-yoshida.mp3"><span class="no">11</span><span class="t">Last Days - 吉田靖</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/memo-flora-yoshimatsu.mp3"><span class="no">12</span><span class="t">Piano Concerto 'Memo Flora', Op.67_ II. Petals_ Andante - 吉松隆</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/spiegel-im-spiegel.mp3"><span class="no">13</span><span class="t">Spiegel im Spiegel - Arvo Pärt</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/still-life-sakamoto.mp3"><span class="no">14</span><span class="t">still life - 坂本龍一</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/subwoofer-lullaby.mp3"><span class="no">15</span><span class="t">Subwoofer Lullaby - C418</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/suite-for-toy-piano.mp3"><span class="no">16</span><span class="t">Suite For Toy Piano (1948) - John Cage</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/to-sun.mp3"><span class="no">17</span><span class="t">To Sun - 可可說</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/white-landscapes-2.mp3"><span class="no">18</span><span class="t">White Landscapes Op. 47a_ 2. Stillness In Snow_ Moderato - 吉松隆</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/white-landscapes-3.mp3"><span class="no">19</span><span class="t">White Landscapes Op. 47a_ 3. Disappearance Of Snow_ Largo - 吉松隆</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/kinema-betsuno.mp3"><span class="no">20</span><span class="t">キネマ - 別野加奈</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/why-does-life-betsuno.mp3"><span class="no">21</span><span class="t">どうして生命は、こんな美しい夜にも涙を流すのだろう - 別野加奈</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/piano-folio-yoshimatsu.mp3"><span class="no">22</span><span class="t">ピアノ・フォリオ…消えたプレイアードに寄せて - 吉松隆</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/dots-neil-jones.mp3"><span class="no">23</span><span class="t">点点点（・・・） - Neil Jones</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/tapiola-vision-yoshimatsu.mp3"><span class="no">24</span><span class="t">塔皮奥拉幻象（タピオラ幻景）-吉松隆</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+<li data-src="assets/music/birthday-romance-yoshimatsu.mp3"><span class="no">25</span><span class="t">2つのロマンス　诞生日のロマンス - 吉松隆</span><span class="pb" aria-hidden="true"><svg viewBox="0 0 24 24" width="11" height="11"><path class="ico-play" d="M8 5l12 7-12 7z" fill="currentColor"/><g class="ico-pause" fill="currentColor"><rect x="7" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></g></svg></span></li>
+    </ol>
+  </div>
+
+  <a class="house" href="music-house.html">🏡 音乐小屋</a>
+  <div class="foot">共 25 首 · 旧音馆</div>
+
+  <script src="assets/js/common.js?v=2026100802"></script>
+  <script src="assets/js/auth.js?v=2026100802"></script>
+  <script src="assets/js/butler.js?v=2026102801"></script>
+  <script>
+    (function () {
+      var audio = new Audio();
+      audio.preload = 'none';
+      var cur = null;
+      function reset() {
+        if (!cur) return;
+        cur.classList.remove('playing');
+        cur.style.removeProperty('--p');
+        cur = null;
+      }
+      function stop() { audio.pause(); audio.currentTime = 0; reset(); }
+      Array.prototype.forEach.call(document.querySelectorAll('ol.songs li'), function (li) {
+        li.addEventListener('click', function () {
+          if (li === cur) { stop(); return; }
+          reset();
+          audio.src = li.getAttribute('data-src');
+          var p = audio.play();
+          if (p && p.catch) p.catch(function () {});
+          cur = li;
+          li.classList.add('playing');
+          li.style.setProperty('--p', '0');
+        });
+      });
+      audio.addEventListener('timeupdate', function () {
+        if (!cur || !audio.duration) return;
+        cur.style.setProperty('--p', (audio.currentTime / audio.duration).toFixed(4));
+      });
+      audio.addEventListener('ended', function () { reset(); });
+    })();
+  </script>
+</body>
+</html>

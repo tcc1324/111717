@@ -3,20 +3,25 @@
 /* 气泡按钮：右下角，与左上角音乐按钮对角呼应 */
 .butler-fab {
   position: fixed; bottom: 16px; right: 14px; z-index: 160;
-  opacity: .6; transition: opacity .3s ease, transform .15s;
+  opacity: .6; transition: opacity .3s ease, transform .15s, left .22s ease, top .22s ease;
+  touch-action: none; cursor: grab;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
 }
+.butler-fab.dragging { transition: none; cursor: grabbing; opacity: 1; }
+.butler-fab:not(.dragging) { transition: opacity .3s ease, left .22s ease, top .22s ease; }
 body[data-music="hot"] .butler-fab { opacity: 1; }
 .butler-fab:hover, .butler-fab:active { opacity: 1; }
 .butler-fab__btn {
-  width: 52px; height: 52px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
   background: rgba(255, 255, 255, .94); border: 2px solid #222;
-  box-shadow: 3px 4px 0 #222; font-size: 24px; line-height: 1;
+  font-size: 20px; line-height: 1;
   display: flex; align-items: center; justify-content: center;
-  transition: transform .12s, box-shadow .12s;
+  transition: transform .12s;
 }
-.butler-fab__btn:active { transform: translate(3px, 4px); box-shadow: 0 0 0 #222; }
+.butler-fab__btn:active { transform: scale(.94); }
 .butler-fab .butler-fab__dot {
-  position: absolute; right: -2px; top: -2px; width: 14px; height: 14px;
+  position: absolute; right: -2px; top: -2px; width: 12px; height: 12px;
   border-radius: 50%; background: #e0679a; border: 2px solid #fff;
 }
 

@@ -138,50 +138,6 @@
     }
   }
 
-  // 联系总后台 AI：把诉求写进诉求表，总后台 AI 每天早上九点自检处理
-  async function contactBackend(text) {
-    const s = await Park.session();
-    if (!s) return { ok: false, msg: '要先登录哦' };
-    const uid = uidOf(s.access_token);
-    if (!uid) return { ok: false, msg: '登录状态有点怪，重登试试' };
-    try {
-      const r = await fetch(withKey(SB_URL + '/rest/v1/butler_requests'), {
-        method: 'POST',
-        headers: {
-          apikey: SB_ANON,
-          Authorization: 'Bearer ' + s.access_token,
-          'Content-Type': 'application/json',
-          Prefer: 'return=minimal',
-        },
-        body: JSON.stringify({ from_uid: uid, content: text, status: 'pending' }),
-      });
-      return r.ok ? { ok: true } : { ok: false, msg: '没送出去，稍后再试' };
-    } catch {
-      return { ok: false, msg: '没送出去，稍后再试' };
-    }
-  }
-
-  function openBackend() {
-    if (!modal) return;
-    modal.classList.add('on');
-    backendTextarea.value = '';
-    backendHint.textContent = '';
-    setTimeout(() => backendTextarea.focus(), 60);
-  }
-
-  async function submitBackend() {
-    const text = backendTextarea.value.trim();
-    if (!text) { backendHint.textContent = '先写点什么再发送吧～'; return; }
-    backendHint.textContent = '正在转告总后台 AI…';
-    const j = await contactBackend(text);
-    if (j.ok) {
-      modal.classList.remove('on');
-      toast('已经转告总后台 AI 啦，它会定期处理');
-    } else {
-      backendHint.textContent = j.msg || '没送出去，稍后再试';
-    }
-  }
-
   // ===== DOM =====
   function el(tag, cls, html) {
     const e = document.createElement(tag);
@@ -190,7 +146,7 @@
     return e;
   }
 
-  let body = null, input = null, win = null, modal = null, backendTextarea = null, backendHint = null;
+  let body = null, input = null, win = null;
 
   function addMsg(role, text) {
     if (!body) return;
@@ -254,7 +210,6 @@
         '<button id="butlerClose" class="close" aria-label="关闭">×</button>' +
       '</div>' +
       '<div class="butler-win__body" id="butlerBody"></div>' +
-      '<div class="butler-win__backend" style="text-align:center;padding:6px 12px;background:#fff;border-top:1px dashed rgba(0,0,0,.08);"><button id="butlerBackend" style="border:none;background:none;color:#b9a78a;font-size:12px;letter-spacing:.05em;cursor:pointer;">📮 联系总后台 AI</button></div>' +
       '<div class="butler-win__foot">' +
         '<textarea id="butlerInput" placeholder="想和甜甜说什么呀？" maxlength="500" rows="1"></textarea>' +
         '<button id="butlerSend">发送</button>' +
@@ -263,28 +218,87 @@
     document.body.appendChild(fab);
     document.body.appendChild(win);
 
-    // 联系总后台 AI 弹窗（替代原生 prompt，输入框清楚、反馈明确）
-    modal = el('div', 'butler-modal', '');
-    modal.id = 'butlerModal';
-    modal.innerHTML =
-      '<div class="butler-modal__box">' +
-        '<div class="butler-modal__title">📮 联系总后台 AI</div>' +
-        '<div class="butler-modal__desc">您可以使用此选项让甜甜帮忙联系到有乐园管理权限的总后台AI，甜甜作为中间人帮你们传话，您可以询问后台数据情况、提出乐园的修建请求或建议等，不需要通过其他人。但请注意后台AI每天早上九点（您可提出修改）自检一次，需要时间才能给出答复，您需要等请求发出后，等后台过了第一次自检时间后，您再回来询问甜甜后台AI的回话。<br>您也可直接跟甜甜说，让其帮忙复述传达。但注意那最好问甜甜「请求发出去了吗？」以及同样需要等过了自检时间再回来问它后台AI的回话。</div>' +
-        '<textarea id="butlerBackendText" placeholder="想对总后台 AI 说什么？"></textarea>' +
-        '<div class="butler-modal__btns">' +
-          '<button class="cancel" id="butlerBackendCancel">取消</button>' +
-          '<button class="send" id="butlerBackendSend">发送</button>' +
-        '</div>' +
-        '<div class="butler-modal__hint" id="butlerBackendHint"></div>' +
-      '</div>';
-    document.body.appendChild(modal);
-    backendTextarea = document.getElementById('butlerBackendText');
-    backendHint = document.getElementById('butlerBackendHint');
-
     body = document.getElementById('butlerBody');
     input = document.getElementById('butlerInput');
 
+    // ===== 悬浮球：可拖到任意位置，松手吸附到左右两侧（铃儿 2026-10-28） =====
+    const LS_POS = 'park.butler.pos';
+    const FAB = 44;
+    const PAD = 8;
+    const SIDE_GAP = 14;
+    let fabSide = 'right';
+    let fabY = window.innerHeight - FAB - 16;
+    let posCustom = false;   // 没拖过之前，完全交给 CSS 的右下角默认位置
+
+    function clampY(y) {
+      const max = Math.max(PAD, window.innerHeight - FAB - PAD);
+      return Math.min(Math.max(PAD, y), max);
+    }
+    function syncWin(side) {
+      if (!win) return;
+      if (side === 'left') { win.style.left = PAD + 'px'; win.style.right = 'auto'; }
+      else { win.style.right = SIDE_GAP + 'px'; win.style.left = 'auto'; }
+    }
+    function placeFab(side, y) {
+      fab.style.left = 'auto'; fab.style.right = 'auto'; fab.style.bottom = 'auto';
+      fab.style.top = clampY(y) + 'px';
+      if (side === 'left') fab.style.left = PAD + 'px';
+      else fab.style.right = SIDE_GAP + 'px';
+      syncWin(side);
+    }
+    function savePos() {
+      try { localStorage.setItem(LS_POS, JSON.stringify({ side: fabSide, y: fabY })); } catch (e) {}
+    }
+    (function restorePos() {
+      try {
+        const p = JSON.parse(localStorage.getItem(LS_POS) || 'null');
+        if (p && (p.side === 'left' || p.side === 'right') && typeof p.y === 'number') {
+          fabSide = p.side; fabY = p.y; posCustom = true;
+        }
+      } catch (e) {}
+      if (posCustom) placeFab(fabSide, fabY);
+      else syncWin('right');
+    })();
+
+    let dragId = null, dragX = 0, dragY0 = 0, dragL = 0, dragT = 0, dragMoved = false, suppressClick = false;
+    fab.addEventListener('pointerdown', (e) => {
+      if (e.button !== undefined && e.button !== 0) return;
+      const r = fab.getBoundingClientRect();
+      dragId = e.pointerId; dragX = e.clientX; dragY0 = e.clientY;
+      dragL = r.left; dragT = r.top; dragMoved = false;
+      fab.classList.add('dragging');
+      try { fab.setPointerCapture(dragId); } catch (err) {}
+    });
+    fab.addEventListener('pointermove', (e) => {
+      if (dragId === null || e.pointerId !== dragId) return;
+      const dx = e.clientX - dragX, dy = e.clientY - dragY0;
+      if (!dragMoved && Math.abs(dx) + Math.abs(dy) < 6) return;  // 手指几乎没动，就当是点击
+      dragMoved = true;
+      const maxX = Math.max(PAD, window.innerWidth - FAB - PAD);
+      const x = Math.min(Math.max(PAD, dragL + dx), maxX);
+      const y = clampY(dragT + dy);
+      fab.style.right = 'auto'; fab.style.bottom = 'auto';
+      fab.style.left = x + 'px'; fab.style.top = y + 'px';
+      syncWin(x + FAB / 2 < window.innerWidth / 2 ? 'left' : 'right');
+    });
+    function endDrag() {
+      if (dragId === null) return;
+      dragId = null;
+      fab.classList.remove('dragging');
+      const r = fab.getBoundingClientRect();
+      fabSide = (r.left + FAB / 2 < window.innerWidth / 2) ? 'left' : 'right';
+      fabY = clampY(r.top);
+      posCustom = true;
+      placeFab(fabSide, fabY);   // 吸附到最近的一侧
+      savePos();
+      if (dragMoved) { suppressClick = true; setTimeout(() => { suppressClick = false; }, 320); }
+    }
+    fab.addEventListener('pointerup', endDrag);
+    fab.addEventListener('pointercancel', endDrag);
+    window.addEventListener('resize', () => { if (!posCustom) return; fabY = clampY(fabY); placeFab(fabSide, fabY); });
+
     btn.onclick = () => {
+      if (suppressClick) return;            // 刚拖完松手，不要顺手打开聊天窗
       win.classList.toggle('on');
       if (win.classList.contains('on')) { input.focus(); }
     };
@@ -293,10 +307,6 @@
       clearHist(); body.innerHTML = ''; addWelcome(); toast('对话清空啦');
     };
     document.getElementById('butlerSend').onclick = () => send(input.value);
-    document.getElementById('butlerBackend').onclick = () => openBackend();
-    document.getElementById('butlerBackendSend').onclick = () => submitBackend();
-    document.getElementById('butlerBackendCancel').onclick = () => { modal.classList.remove('on'); };
-    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('on'); });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); }
     });

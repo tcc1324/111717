@@ -74,6 +74,16 @@
     });
   }
 
+  // 带登录身份直连 Supabase 的任意接口（存储上传/删除用；/rest/v1 的读写请用 api）
+  async function sbFetch(path, opts = {}) {
+    const s = await session();
+    if (!s) throw new Error('need-login');
+    return fetch(withKey(SB_URL + path), {
+      ...opts,
+      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token, ...(opts.headers || {}) },
+    });
+  }
+
   async function logout() {
     const s = load();
     clear();
@@ -81,5 +91,6 @@
     if (s) fetch(withKey(SB_URL + '/auth/v1/logout'), { method: 'POST', headers: { apikey: SB_ANON, Authorization: 'Bearer ' + s.access_token } }).catch(() => {});
   }
 
-  window.Park = { gate, save, session, api, logout };
+  // sb：给需要直连存储（上传图片）的地方用；url 与 anon key 本来就是公开的
+  window.Park = { gate, save, session, api, sbFetch, logout, sb: { url: SB_URL, key: SB_ANON } };
 })();
