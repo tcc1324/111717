@@ -712,10 +712,7 @@ body.mw-deep #mw-host{display:none!important}
     /* 抽屉里到底有没有东西：打开过的看实际条数，没打开过的用后端给的 n_items
        （以前只看本地 items.length，而列表接口不返回内容，于是未上锁的抽屉总显示「还是空的」） */
     const n=d._loaded ? (d.items||[]).length : Number(d.n_items||0);
-    if(d.mine){                                  /* 件数只给自己的抽屉看，别人的锁抽屉不泄露数量 */
-      if(n>0) s+=(s?' · ':'')+n+' 件';
-      else if(!s) s='还是空的';
-    }
+    if(!s && n===0) s='还是空的';      /* 只有真的空了才这么说；有内容就不显示任何数量 */
     return s;
   }
 
