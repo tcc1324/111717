@@ -709,7 +709,13 @@ body.mw-deep #mw-host{display:none!important}
     const timeUnlocked = d.lock_kind==='time' && d.unlock_at && new Date(d.unlock_at).getTime()<=now();
     if(d.lock_kind!=='none' && !timeUnlocked) s='🔒 '+LOCK[d.lock_kind];
     if(!d.visible) s+=(s?' · ':'')+'仅自己可见';
-    if(!s && !d.items.length) s='还是空的';
+    /* 抽屉里到底有没有东西：打开过的看实际条数，没打开过的用后端给的 n_items
+       （以前只看本地 items.length，而列表接口不返回内容，于是未上锁的抽屉总显示「还是空的」） */
+    const n=d._loaded ? (d.items||[]).length : Number(d.n_items||0);
+    if(d.mine){                                  /* 件数只给自己的抽屉看，别人的锁抽屉不泄露数量 */
+      if(n>0) s+=(s?' · ':'')+n+' 件';
+      else if(!s) s='还是空的';
+    }
     return s;
   }
 
@@ -719,7 +725,7 @@ body.mw-deep #mw-host{display:none!important}
     if(r.err){ say(r.err); renderList(); return; }
     drawers=(Array.isArray(r.data)?r.data:[]).map(d=>({
       id:Number(d.id), title:d.title, question:d.question||'', visible:!!d.visible, lock_kind:d.lock_kind||'none',
-      color:d.color, unlock_at:d.unlock_at||null, items:[],
+      color:d.color, unlock_at:d.unlock_at||null, items:[], mine:!!d.mine, n_items:Number(d.n_items||0), _loaded:false,
       lock_salt:d.lock_salt||null, lock_nonce:d.lock_nonce||null, lock_verifier:d.lock_verifier||null
     }));
     renderList();
@@ -789,6 +795,7 @@ body.mw-deep #mw-host{display:none!important}
     const r=await rpc('drawer_item_list',{p_drawer_id:d.id});
     if(r.err){ say(r.err); return; }
     cur.items=(Array.isArray(r.data)?r.data:[]).map(parseItem);
+    cur._loaded=true; cur.n_items=cur.items.length; $('inSub').textContent=sub(cur);
     await migrateInherit();
     renderItems();
     palette($('dPal'),()=>colorOf(cur,curIdx),
@@ -1372,7 +1379,7 @@ e.onclick=async()=>{
     if(r.err){ say(r.err); return; }
     if(r.data==null){ say('抽屉没放好，稍后再试'); return; }
     drawers.push({id:Number(r.data),title:title,question:question,visible:vis,lock_kind:lk,color:newColor,
-      unlock_at:unlock_at,items:[],lock_salt:salt,lock_nonce:nonce,lock_verifier:verifier});
+      unlock_at:unlock_at,items:[],mine:true,n_items:0,_loaded:false,lock_salt:salt,lock_nonce:nonce,lock_verifier:verifier});
     if(!navClose()) closeNew(); renderList(); say('新抽屉放好了');
   };
   $('nCancel').onclick=()=>{ if(!navClose()) closeNew(); };
