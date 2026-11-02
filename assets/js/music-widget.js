@@ -2576,7 +2576,7 @@ function bindEvents() {
      每天一份（歌 + 封面 + 推荐语 + 介绍），存进后端 mw_rec_plan。
      mw_rec_get 取数时会自动挑「最近一份 day <= 今天」的排期盖在日推上，跨天自动生效。
      有排期的日子，站长在日推界面里编辑并保存，改的是「当天那一格」，默认日推不受影响。 */
-  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [] };
+  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [], pick: false, kw: '' };
   var PLBTN = 'display:inline-block;border:1px solid #cfc7b4;background:#fff;color:#3c3a33;border-radius:10px;padding:7px 12px;font:inherit;margin:8px 6px 0 0;cursor:pointer';
   function plPad(n) { return (n < 10 ? '0' : '') + n; }
   function plYmd(d) { return d.getFullYear() + '-' + plPad(d.getMonth() + 1) + '-' + plPad(d.getDate()); }
@@ -2596,15 +2596,18 @@ function bindEvents() {
       PL.el.addEventListener('click', function (e) { if (e.target === PL.el) recPlanClose(); });
       PL.el.addEventListener('click', plClick);
       PL.el.addEventListener('input', plInput);
+      PL.el.addEventListener('change', plChange);
+      PL.el.addEventListener('keydown', plKey);
       root.appendChild(PL.el);
     }
     PL.el.style.display = 'flex';
     plLoad();
   }
   function recPlanClose() { PL.on = false; if (PL.el) PL.el.style.display = 'none'; }
-  function plClickCard(e) { e.stopPropagation(); }
+  function plClickCard(e) { /* 不能 stopPropagation：会把所有点击截断，plClick 收不到 */ }
   function plInput(e) {
     var t = e.target; if (!t || !t.getAttribute || !PL.cur) return;
+    if (t.hasAttribute && t.hasAttribute('data-plkw')) { PL.kw = t.value; return; }
     var k = t.getAttribute('data-k'); if (!k) return;
     PL.cur[k] = t.value;
   }
@@ -2651,7 +2654,9 @@ function bindEvents() {
       '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">详情介绍</div>' +
       '<textarea data-k="intro" rows="2" placeholder="可空" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:8px;resize:vertical;color:#3c3a33">' + plEsc(c.intro) + '</textarea>' +
       '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">封面图片地址</div>' +
-      '<input data-k="cover" value="' + plEsc(c.cover) + '" placeholder="https://…（可空）" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:12px;color:#3c3a33">';
+      '<input data-k="cover" value="' + plEsc(c.cover) + '" placeholder="https://…（可空）" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:8px;color:#3c3a33">' +
+      '<div style="margin-bottom:12px"><button data-pl="pickcover" style="border:1px solid #cfc7b4;background:#fff;border-radius:10px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;color:#3c3a33">上传图片</button><input type="file" accept="image/*" data-coverfile style="display:none"></div>';
+    if (PL.pick) h += plPickHTML();
     h += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px"><span style="font-size:12px;color:#8a8472">歌</span><span style="font-size:12px;color:#a49d8a">' + c.songs.length + ' 首</span></div>';
     if (!c.songs.length) {
       h += '<p style="margin:6px 0 2px;font-size:13px;color:#a49d8a">这天还没排歌。可以点下面的「从当前日推复制」，再删改。</p>';
@@ -2665,6 +2670,7 @@ function bindEvents() {
     });
     h += '<div style="margin-top:2px">' +
       '<button data-pl="save" style="' + PLBTN + ';background:#7f8c6b;border-color:#7f8c6b;color:#fff;font-weight:600">存下这一天</button>' +
+      '<button data-pl="addopen" style="' + PLBTN + '">＋ 加歌</button>' +
       '<button data-pl="copy" style="' + PLBTN + '">从当前日推复制</button>' +
       '<button data-pl="clear" style="' + PLBTN + '">清空歌</button>' +
       (PL.items[PL.day] ? '<button data-pl="delday" style="' + PLBTN + ';color:#b25a4a;border-color:#e6cdc6">删掉这天的排期</button>' : '') +
@@ -2672,6 +2678,68 @@ function bindEvents() {
       '<p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#a49d8a">没排期的日子，显示默认那份日推。改完记得点「存下这一天」。</p>';
     PL.el.querySelector('.pl-card').innerHTML = h;
   }
+
+  function plPickHTML() {
+    var kw = String(PL.kw || '').toLowerCase(), fav = lib.fav || [], h = '';
+    var shown = fav.filter(function (s) {
+      return !kw || String(s.name || '').toLowerCase().indexOf(kw) >= 0 || String(s.artist || '').toLowerCase().indexOf(kw) >= 0;
+    });
+    h += '<div style="border:1px solid #ddd6c5;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+      '<b style="font-size:13px">加歌</b>' +
+      '<button data-pl="addclose" style="border:0;background:transparent;color:#8a8472;font:inherit;font-size:13px;cursor:pointer">收起</button></div>' +
+      '<input data-plkw value="' + plEsc(PL.kw || '') + '" placeholder="在「我喜欢」里找歌，回车筛选" style="width:100%;box-sizing:border-box;border:1px solid #e0d9c8;border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;margin-bottom:8px;color:#3c3a33">' +
+      '<div style="font-size:12px;color:#8a8472;margin-bottom:2px">我喜欢的音乐（' + fav.length + ' 首）</div>';
+    if (!shown.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">' + (kw ? '没找到' : '收藏还是空的，先去音乐里标心') + '</p>';
+    shown.slice(0, 60).forEach(function (s) {
+      h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f4efe4">' +
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' +
+        plEsc(s.name) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(s.artist || '') + '</i></span>' +
+        '<button data-pl="addfav" data-i="' + fav.indexOf(s) + '" style="border:0;background:transparent;color:#7f8c6b;font-size:18px;line-height:1;cursor:pointer;padding:0 6px">＋</button></div>';
+    });
+    h += '<div style="font-size:12px;color:#8a8472;margin:10px 0 2px">我的歌单</div>';
+    if (!(lib.lists || []).length) h += '<p style="margin:2px 0;font-size:12px;color:#a49d8a">还没有歌单</p>';
+    (lib.lists || []).forEach(function (l) {
+      h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0">' +
+        '<span style="flex:1;font-size:13px">' + plEsc(l.name) +
+        ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + (l.songs || []).length + ' 首</i></span>' +
+        '<button data-pl="addlist" data-lid="' + plEsc(l.id) + '" style="border:1px solid #cfc7b4;background:#fff;border-radius:8px;padding:4px 9px;font:inherit;font-size:12px;cursor:pointer;color:#3c3a33">整份加入</button></div>';
+    });
+    h += '</div>';
+    return h;
+  }
+  function plAddSongs(arr) {
+    if (!PL.cur) return;
+    var n = 0;
+    (arr || []).forEach(function (s) {
+      if (!s || !s.id) return;
+      if (PL.cur.songs.some(function (x) { return x && x.id === s.id; })) return;
+      PL.cur.songs.push({ id: s.id, name: s.name, artist: s.artist || '', cover: s.cover || '' });
+      n++;
+    });
+    plRender();
+    toast(n ? ('加了 ' + n + ' 首，记得点「存下这一天」') : '这些都已经在里面了');
+  }
+  function plChange(e) {
+    var t = e.target;
+    if (!t || !t.hasAttribute || !t.hasAttribute('data-coverfile')) return;
+    var f = t.files && t.files[0];
+    if (!f) return;
+    toast('正在上传封面…');
+    var done = function (u) {
+      if (!u) { toast('这张图没能读出来，换一张'); return; }
+      PL.cur.cover = u; plRender(); toast('封面好了，记得点「存下这一天」');
+    };
+    try {
+      clUpload(f, 'rec-plan').then(function (o) { done(o && o.url); }, function () { shrinkImg(f, done); });
+    } catch (er) { shrinkImg(f, done); }
+  }
+  function plKey(e) {
+    var t = e.target;
+    if (!t || !t.hasAttribute || !t.hasAttribute('data-plkw')) return;
+    if (e.key === 'Enter') { PL.kw = t.value; plRender(); }
+  }
+
   function plSave() {
     var c = PL.cur || {};
     if (!c.songs || !c.songs.length) { toast('这天还没有歌，先复制或从别处加上'); return; }
@@ -2705,6 +2773,16 @@ function bindEvents() {
       if (!PL.cur.cover && PL.base.cover) PL.cur.cover = PL.base.cover;
       plRender();
       toast('已复制 ' + b.length + ' 首，点「存下这一天」生效');
+      return;
+    }
+    if (a === 'addopen') { PL.pick = true; plRender(); return; }
+    if (a === 'addclose') { PL.pick = false; plRender(); return; }
+    if (a === 'pickcover') { var fi = PL.el.querySelector('[data-coverfile]'); if (fi) fi.click(); return; }
+    if (a === 'addfav') { var fs = lib.fav[+t.getAttribute('data-i')]; plAddSongs(fs ? [fs] : []); return; }
+    if (a === 'addlist') {
+      var lid = t.getAttribute('data-lid'), LL = null;
+      for (var q = 0; q < (lib.lists || []).length; q++) { if (lib.lists[q].id === lid) LL = lib.lists[q]; }
+      plAddSongs(LL ? LL.songs : []);
       return;
     }
     if (a === 'save') { plSave(); return; }
