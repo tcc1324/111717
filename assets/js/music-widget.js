@@ -2576,7 +2576,8 @@ function bindEvents() {
      每天一份（歌 + 封面 + 推荐语 + 介绍），存进后端 mw_rec_plan。
      mw_rec_get 取数时会自动挑「最近一份 day <= 今天」的排期盖在日推上，跨天自动生效。
      有排期的日子，站长在日推界面里编辑并保存，改的是「当天那一格」，默认日推不受影响。 */
-  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [], pick: false, kw: '', res: [], state: '', msg: '' };
+  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [], pick: false, kw: '', res: [], state: '', msg: '', pv: '' };
+  var PVA = null;   // 试听用的独立 audio，不动主播放器
   var PLBTN = 'display:inline-block;border:1px solid #cfc7b4;background:#fff;color:#3c3a33;border-radius:10px;padding:7px 12px;font:inherit;margin:8px 6px 0 0;cursor:pointer';
   function plPad(n) { return (n < 10 ? '0' : '') + n; }
   function plHm(m) { m = +m || 0; if (m < 0) m = 0; return plPad(Math.floor(m / 60)) + ':' + plPad(m % 60); }
@@ -2605,7 +2606,7 @@ function bindEvents() {
     PL.el.style.display = 'flex';
     plLoad();
   }
-  function recPlanClose() { PL.on = false; if (PL.el) PL.el.style.display = 'none'; }
+  function recPlanClose() { PL.on = false; plPvStop(); if (PL.el) PL.el.style.display = 'none'; }
   function plClickCard(e) { /* 不能 stopPropagation：会把所有点击截断，plClick 收不到 */ }
   function plInput(e) {
     var t = e.target; if (!t || !t.getAttribute || !PL.cur) return;
@@ -2679,8 +2680,10 @@ function bindEvents() {
     }
     c.songs.forEach(function (s, i) {
       var nm = s && s.name ? s.name : '（未命名）', ar = s && s.artist ? s.artist : '';
-      h += '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f0ebdf">' +
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f0ebdf">' +
+        plCov(s, 38) +
         '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' + (i + 1) + '. ' + plEsc(nm) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(ar) + '</i></span>' +
+        plPvBtn(s) +
         '<button data-pl="sdown" data-i="' + i + '" title="下移" style="border:0;background:transparent;color:#8a8472;font-size:14px;cursor:pointer;padding:2px 5px">↓</button>' +
         '<button data-pl="sdel" data-i="' + i + '" title="去掉" style="border:0;background:transparent;color:#b25a4a;font-size:14px;cursor:pointer;padding:2px 5px">✕</button></div>';
     });
@@ -2709,15 +2712,19 @@ function bindEvents() {
     else if (PL.state === 'ok') {
       if (!PL.res.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">没有找到相关的歌，换个词试试</p>';
       PL.res.forEach(function (sg, i) {
-        h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f4efe4"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' + plEsc(sg.name) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(sg.artist || '') + (sg.album ? ' · ' + plEsc(sg.album) : '') + '</i></span><button data-pl="addres" data-i="' + i + '" style="border:0;background:transparent;color:#7f8c6b;font-size:18px;line-height:1;cursor:pointer;padding:0 6px">＋</button></div>';
+        h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f4efe4">' + plCov(sg, 28) +
+          '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' + plEsc(sg.name) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(sg.artist || '') + (sg.album ? ' · ' + plEsc(sg.album) : '') + '</i></span>' + plPvBtn(sg) +
+          '<button data-pl="addres" data-i="' + i + '" style="border:0;background:transparent;color:#7f8c6b;font-size:18px;line-height:1;cursor:pointer;padding:0 6px">＋</button></div>';
       });
     }
     h += '<div style="font-size:12px;color:#8a8472;margin:10px 0 2px">我喜欢的音乐（' + fav.length + ' 首）</div>';
     if (!shown.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">' + (kw ? '没找到' : '收藏还是空的，先去音乐里标心') + '</p>';
     shown.slice(0, 60).forEach(function (s) {
-      h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f4efe4">' +
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f4efe4">' +
+        plCov(s, 28) +
         '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' +
         plEsc(s.name) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(s.artist || '') + '</i></span>' +
+        plPvBtn(s) +
         '<button data-pl="addfav" data-i="' + fav.indexOf(s) + '" style="border:0;background:transparent;color:#7f8c6b;font-size:18px;line-height:1;cursor:pointer;padding:0 6px">＋</button></div>';
     });
     h += '<div style="font-size:12px;color:#8a8472;margin:10px 0 2px">我的歌单</div>';
@@ -2744,6 +2751,41 @@ function bindEvents() {
       if (PL.tk !== tk) return;
       PL.state = 'err'; PL.msg = (e && e.message) || '搜索没成功，再试一次'; plRender();
     });
+  }
+  function plCov(s, sz) {
+    var n = sz || 34, u = s && s.cover ? String(s.cover) : '';
+    var base = 'width:' + n + 'px;height:' + n + 'px;border-radius:8px;flex:0 0 auto;box-sizing:border-box;background:#eae3d2;';
+    if (u) return '<img src="' + plEsc(u) + '" loading="lazy" style="' + base + 'object-fit:cover;display:block">';
+    return '<span style="' + base + 'display:inline-flex;align-items:center;justify-content:center;font-size:' + Math.round(n * 0.42) + 'px;color:#b3ab97">♪</span>';
+  }
+  function plPvBtn(s) {
+    var on = !!(PL.pv && s && PL.pv === s.id);
+    return '<button data-pl="pv" data-id="' + plEsc(s && s.id) + '" title="' + (on ? '停止试听' : '试听') + '" style="border:0;background:transparent;color:' + (on ? '#7f8c6b' : '#8a8472') + ';font-size:14px;line-height:1;cursor:pointer;padding:3px 5px;flex:0 0 auto">' + (on ? '⏸' : '▶') + '</button>';
+  }
+  function plPvStop() {
+    if (PVA) { try { PVA.pause(); PVA.removeAttribute('src'); } catch (e) { } }
+    PL.pv = '';
+  }
+  function plPreview(id) {
+    id = String(id || '');
+    if (!id) return;
+    var wasOn = PL.pv === id;
+    plPvStop();
+    if (wasOn) { plRender(); return; }
+    PL.pv = id; plRender();
+    try { pause(); } catch (e) { }   // 试听时先让主播放器停下，别两个声音打架
+    api('/api/url', { id: id, level: 'standard' }).then(function (j) {
+      if (PL.pv !== id) return;
+      if (!j || !j.url) { PL.pv = ''; plRender(); toast('这首取不到试听'); return; }
+      if (!PVA) {
+        PVA = new Audio();
+        PVA.addEventListener('ended', function () { PL.pv = ''; try { plRender(); } catch (e) { } });
+        PVA.addEventListener('error', function () { PL.pv = ''; try { plRender(); } catch (e) { } toast('试听没放出来，换一首试试'); });
+      }
+      try { PVA.src = j.url; PVA.volume = 0.9; PVA.currentTime = 0; } catch (e) { }
+      var pr = PVA.play();
+      if (pr && pr.catch) pr.catch(function () { PL.pv = ''; try { plRender(); } catch (e) { } toast('浏览器拦了试听，再点一次'); });
+    }, function () { PL.pv = ''; plRender(); toast('取试听失败，稍后再试'); });
   }
   function plAddSongs(arr) {
     if (!PL.cur) return;
@@ -2829,6 +2871,7 @@ function bindEvents() {
       plAddSongs(LL ? LL.songs : []);
       return;
     }
+    if (a === 'pv') { plPreview(t.getAttribute('data-id')); return; }
     if (a === 'save') { plSave(); return; }
     if (a === 'delday') {
       clRpc('mw_rec_plan_del', { p_day: PL.day }).then(function () {
