@@ -2628,8 +2628,13 @@ function bindEvents() {
       plPick(PL.day);
     }, function (e) { toast('读排期失败：' + ((e && e.message) || '稍后再试')); });
   }
+  function plEnsureDay(day) {
+    if (!day) return;
+    if (PL.days.indexOf(day) < 0) { PL.days.push(day); PL.days.sort(); }
+  }
   function plPick(day) {
     PL.day = day;
+    plEnsureDay(day);
     clRpc('mw_rec_plan_get', { p_day: day }).then(function (j) {
       PL.cur = { songs: (j && j.songs) || [], blurb: (j && j.blurb) || '', intro: (j && j.intro) || '', cover: (j && j.cover) || '', at_min: (j && j.at_min) || 0 };
       plRender();
@@ -2650,7 +2655,11 @@ function bindEvents() {
         '<i style="display:block;font-style:normal;color:' + (it ? '#7f8c6b' : '#b3ab97') + ';font-size:11px">' + (it ? (it.n + ' 首' + (it.at > 0 ? '·' + it.at2 : '')) : '未排') + '</i></button>';
     });
     h += '</div>';
-    h += '<div style="border-top:1px dashed #ddd6c5;margin:0 0 10px"></div>' +
+    h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="font-size:12px;color:#8a8472">跳到某天</span>' +
+      '<input type="date" data-plday value="' + PL.day + '" style="border:1px solid #dcd5c4;border-radius:10px;padding:5px 9px;font:inherit;font-size:13px;background:#fff;color:#3c3a33">' +
+      '<span style="font-size:12px;color:#a49d8a">多远的日期都能排</span></div>' +
+      '<div style="border-top:1px dashed #ddd6c5;margin:0 0 10px"></div>' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:8px">' + PL.day + ' · ' + plWeek(PL.day) + (PL.day === PL.today ? '（今天）' : '') + '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
       '<span style="font-size:12px;color:#8a8472">这天几点起换</span>' +
@@ -2750,6 +2759,11 @@ function bindEvents() {
   }
   function plChange(e) {
     var t = e.target;
+    if (t && t.hasAttribute && t.hasAttribute('data-plday')) {
+      var dv = t.value;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dv) && dv !== PL.day) plPick(dv);
+      return;
+    }
     if (!t || !t.hasAttribute || !t.hasAttribute('data-coverfile')) return;
     var f = t.files && t.files[0];
     if (!f) return;
