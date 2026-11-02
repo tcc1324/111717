@@ -2606,7 +2606,7 @@ function bindEvents() {
     PL.el.style.display = 'flex';
     plLoad();
   }
-  function recPlanClose() { PL.on = false; plPvStop(); if (PL.el) PL.el.style.display = 'none'; }
+  function recPlanClose() { PL.on = false; plPvDrop(); if (PL.el) PL.el.style.display = 'none'; }
   function plClickCard(e) { /* 不能 stopPropagation：会把所有点击截断，plClick 收不到 */ }
   function plInput(e) {
     var t = e.target; if (!t || !t.getAttribute || !PL.cur) return;
@@ -2634,6 +2634,7 @@ function bindEvents() {
     if (PL.days.indexOf(day) < 0) { PL.days.push(day); PL.days.sort(); }
   }
   function plPick(day) {
+    plPvDrop();   // 换了日期，上一首的试听不该继续放
     PL.day = day;
     plEnsureDay(day);
     clRpc('mw_rec_plan_get', { p_day: day }).then(function (j) {
@@ -2763,28 +2764,49 @@ function bindEvents() {
     return '<button data-pl="pv" data-id="' + plEsc(s && s.id) + '" title="' + (on ? '停止试听' : '试听') + '" style="border:0;background:transparent;color:' + (on ? '#7f8c6b' : '#8a8472') + ';font-size:14px;line-height:1;cursor:pointer;padding:3px 5px;flex:0 0 auto">' + (on ? '⏸' : '▶') + '</button>';
   }
   function plPvStop() {
-    if (PVA) { try { PVA.pause(); PVA.removeAttribute('src'); } catch (e) { } }
+    // 只停，不清 src：留着地址，同一首再点就能立刻放（避开浏览器「手势已过期」的拦截）
+    if (PVA) { try { PVA.pause(); PVA.currentTime = 0; } catch (e) { } }
     PL.pv = '';
+  }
+  function plPvDrop() {
+    if (PVA) { try { PVA.pause(); PVA.removeAttribute('src'); PVA.load(); } catch (e) { } try { delete PVA.dataset.sid; } catch (e2) { } }
+    PL.pv = '';
+  }
+  function plPvInit() {
+    if (PVA) return;
+    PVA = new Audio();
+    PVA.volume = 0.9;
+    PVA.addEventListener('ended', function () { PL.pv = ''; try { plRender(); } catch (e) { } });
+    PVA.addEventListener('error', function () {
+      plPvDrop();
+      try { plRender(); } catch (e) { }
+      toast('试听没放出来，换一首试试');
+    });
   }
   function plPreview(id) {
     id = String(id || '');
     if (!id) return;
     var wasOn = PL.pv === id;
+    var cached = !!(PVA && PVA.dataset && PVA.dataset.sid === id && PVA.getAttribute('src'));
     plPvStop();
     if (wasOn) { plRender(); return; }
-    PL.pv = id; plRender();
     try { pause(); } catch (e) { }   // 试听时先让主播放器停下，别两个声音打架
+    PL.pv = id; plRender();
+    var fire = function () {
+      try { PVA.currentTime = 0; } catch (e) { }
+      var pr = PVA.play();
+      if (pr && pr.catch) pr.catch(function () {
+        PL.pv = ''; try { plRender(); } catch (e) { }
+        toast('再点一下 ▶ 就能听了');
+      });
+    };
+    plPvInit();
+    if (cached) { fire(); return; }   // 地址还在，同步开播，不用再等网络
     api('/api/url', { id: id, level: 'standard' }).then(function (j) {
       if (PL.pv !== id) return;
       if (!j || !j.url) { PL.pv = ''; plRender(); toast('这首取不到试听'); return; }
-      if (!PVA) {
-        PVA = new Audio();
-        PVA.addEventListener('ended', function () { PL.pv = ''; try { plRender(); } catch (e) { } });
-        PVA.addEventListener('error', function () { PL.pv = ''; try { plRender(); } catch (e) { } toast('试听没放出来，换一首试试'); });
-      }
-      try { PVA.src = j.url; PVA.volume = 0.9; PVA.currentTime = 0; } catch (e) { }
-      var pr = PVA.play();
-      if (pr && pr.catch) pr.catch(function () { PL.pv = ''; try { plRender(); } catch (e) { } toast('浏览器拦了试听，再点一次'); });
+      try { PVA.src = j.url; PVA.dataset.sid = id; } catch (e) { }
+      fire();
     }, function () { PL.pv = ''; plRender(); toast('取试听失败，稍后再试'); });
   }
   function plAddSongs(arr) {
