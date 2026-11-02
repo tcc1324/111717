@@ -1741,7 +1741,7 @@ function bindEvents() {
       case 'radd': recAddOpen(); break;
       case 'rintro': R.open = !R.open; renderRec(); break;
       case 'rplay': e.stopPropagation(); recPlay(b.dataset.rid || R.id); break;
-      case 'rnew': case 'rcnew': case 'rcedit': case 'redit': case 'rpub': case 'rjson': case 'rdiscard': case 'rexit':
+      case 'rplan': case 'rnew': case 'rcnew': case 'rcedit': case 'redit': case 'rpub': case 'rjson': case 'rdiscard': case 'rexit':
         if (!staff()) break;
         recOwnerAct(a, b); break;
     }
@@ -2500,7 +2500,7 @@ function bindEvents() {
         h += '<div class="obar"><div class="ot"><b>设置权</b><span>只有你看得见 · ' + (dirty ? '有改动还没发布' : '内容已是最新') + '</span></div>' +
           (draftStale() ? '<div class="ow">推荐内容在你开始编辑之后又被更新过（可能是别人发布的），现在发布会覆盖他们的改动。</div>' : '') + '<div class="ob">' +
           '<button class="pri' + (dirty ? '' : ' dis') + '" data-act="rpub">发布</button>' +
-          '<button data-act="rjson">导出 JSON</button>' +
+          '<button data-act="rplan">日推排期</button><button data-act="rjson">导出 JSON</button>' +
           '<button class="' + (dirty ? '' : 'dis') + '" data-act="rdiscard">放弃改动</button>' +
           (lock ? '' : '<button data-act="rexit">退出设置权</button>') + '</div></div>';
       }
@@ -2572,8 +2572,156 @@ function bindEvents() {
 
   /* —— 站长专用：编辑 / 发布 / 导出 —— */
   function recJSON() { var c = recCur(); return JSON.stringify({ v: 1, daily: { cover: c.daily.cover, blurb: c.daily.blurb, intro: c.daily.intro, songs: c.daily.songs }, cats: c.cats, lists: c.lists }, null, 1); }
+  /* ───────── 日推排期：提前把未来几天的日推做好，到那天自动换 ─────────
+     每天一份（歌 + 封面 + 推荐语 + 介绍），存进后端 mw_rec_plan。
+     mw_rec_get 取数时会自动挑「最近一份 day <= 今天」的排期盖在日推上，跨天自动生效。
+     有排期的日子，站长在日推界面里编辑并保存，改的是「当天那一格」，默认日推不受影响。 */
+  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [] };
+  var PLBTN = 'display:inline-block;border:1px solid #cfc7b4;background:#fff;color:#3c3a33;border-radius:10px;padding:7px 12px;font:inherit;margin:8px 6px 0 0;cursor:pointer';
+  function plPad(n) { return (n < 10 ? '0' : '') + n; }
+  function plYmd(d) { return d.getFullYear() + '-' + plPad(d.getMonth() + 1) + '-' + plPad(d.getDate()); }
+  function plEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': String.fromCharCode(38) + 'quot;' }[c]; }); }
+  function plWeek(s) { var w = ['日', '一', '二', '三', '四', '五', '六']; var d = new Date(String(s) + 'T00:00:00'); return '周' + w[d.getDay()]; }
+  function plShort(s) { var p = String(s).split('-'); return (+p[1]) + '/' + (+p[2]); }
+
+  function recPlanOpen() {
+    if (!staff()) { toast('只有站长能排期'); return; }
+    if (!CL.on) { toast('还没连上后端，稍后再试'); return; }
+    PL.on = true;
+    if (!PL.el) {
+      PL.el = document.createElement('div');
+      PL.el.style.cssText = 'position:fixed;left:0;right:0;top:0;bottom:0;z-index:2147483000;background:rgba(28,26,22,.42);display:flex;align-items:flex-end;justify-content:center';
+      PL.el.innerHTML = '<div class="pl-card" style="width:100%;max-width:520px;max-height:88vh;overflow:auto;-webkit-overflow-scrolling:touch;background:#fbf8f1;color:#3c3a33;border-radius:18px 18px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.24);font-family:inherit;font-size:14px;line-height:1.5;padding:16px 16px 24px;box-sizing:border-box"></div>';
+      PL.el.querySelector('.pl-card').addEventListener('click', plClickCard);
+      PL.el.addEventListener('click', function (e) { if (e.target === PL.el) recPlanClose(); });
+      PL.el.addEventListener('click', plClick);
+      PL.el.addEventListener('input', plInput);
+      root.appendChild(PL.el);
+    }
+    PL.el.style.display = 'flex';
+    plLoad();
+  }
+  function recPlanClose() { PL.on = false; if (PL.el) PL.el.style.display = 'none'; }
+  function plClickCard(e) { e.stopPropagation(); }
+  function plInput(e) {
+    var t = e.target; if (!t || !t.getAttribute || !PL.cur) return;
+    var k = t.getAttribute('data-k'); if (!k) return;
+    PL.cur[k] = t.value;
+  }
+  function plLoad() {
+    var d = new Date(), arr = [];
+    for (var i = 0; i < 14; i++) { arr.push(plYmd(new Date(d.getFullYear(), d.getMonth(), d.getDate() + i))); }
+    PL.days = arr;
+    Promise.all([clRpc('mw_rec_plan_list', {}), clRpc('mw_rec_get', {})]).then(function (r) {
+      var l = r[0] || {}, g = r[1] || {};
+      PL.today = l.today || plYmd(new Date());
+      PL.items = {};
+      (l.items || []).forEach(function (x) { if (x && x.day) PL.items[x.day] = x; });
+      PL.base = (g && g.daily) || null;
+      if (!PL.day) PL.day = PL.items[PL.today] ? PL.today : PL.today;
+      plPick(PL.day);
+    }, function (e) { toast('读排期失败：' + ((e && e.message) || '稍后再试')); });
+  }
+  function plPick(day) {
+    PL.day = day;
+    clRpc('mw_rec_plan_get', { p_day: day }).then(function (j) {
+      PL.cur = { songs: (j && j.songs) || [], blurb: (j && j.blurb) || '', intro: (j && j.intro) || '', cover: (j && j.cover) || '' };
+      plRender();
+    }, function () { PL.cur = { songs: [], blurb: '', intro: '', cover: '' }; plRender(); });
+  }
+  function plRender() {
+    if (!PL.el || !PL.cur) return;
+    var c = PL.cur;
+    var h = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">' +
+      '<b style="font-size:16px">日推排期</b>' +
+      '<button data-pl="close" style="border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:#8a8472;padding:0 4px">×</button></div>' +
+      '<p style="margin:2px 0 10px;font-size:12px;line-height:1.5;color:#8a8472">提前把每天的歌、封面、推荐语做好。到那天自动换，不用你动手。</p>';
+    h += '<div style="display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px">';
+    PL.days.forEach(function (d) {
+      var it = PL.items[d], on = d === PL.day;
+      h += '<button data-pl="pick" data-day="' + d + '" style="flex:0 0 auto;border:1px solid ' + (on ? '#7f8c6b' : '#dcd5c4') + ';background:' + (on ? '#eef1e6' : '#fff') + ';border-radius:12px;padding:6px 10px;font:inherit;font-size:12px;text-align:center;cursor:pointer;color:#3c3a33">' +
+        '<b style="display:block;font-size:13px">' + plShort(d) + '</b>' + plWeek(d) +
+        '<i style="display:block;font-style:normal;color:' + (it ? '#7f8c6b' : '#b3ab97') + ';font-size:11px">' + (it ? (it.n + ' 首') : '未排') + '</i></button>';
+    });
+    h += '</div>';
+    h += '<div style="border-top:1px dashed #ddd6c5;margin:0 0 10px"></div>' +
+      '<div style="font-size:13px;font-weight:600;margin-bottom:8px">' + PL.day + ' · ' + plWeek(PL.day) + (PL.day === PL.today ? '（今天）' : '') + '</div>' +
+      '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">推荐语</div>' +
+      '<input data-k="blurb" value="' + plEsc(c.blurb) + '" placeholder="一句话，显示在日推卡片上" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:8px;color:#3c3a33">' +
+      '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">详情介绍</div>' +
+      '<textarea data-k="intro" rows="2" placeholder="可空" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:8px;resize:vertical;color:#3c3a33">' + plEsc(c.intro) + '</textarea>' +
+      '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">封面图片地址</div>' +
+      '<input data-k="cover" value="' + plEsc(c.cover) + '" placeholder="https://…（可空）" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:12px;color:#3c3a33">';
+    h += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px"><span style="font-size:12px;color:#8a8472">歌</span><span style="font-size:12px;color:#a49d8a">' + c.songs.length + ' 首</span></div>';
+    if (!c.songs.length) {
+      h += '<p style="margin:6px 0 2px;font-size:13px;color:#a49d8a">这天还没排歌。可以点下面的「从当前日推复制」，再删改。</p>';
+    }
+    c.songs.forEach(function (s, i) {
+      var nm = s && s.name ? s.name : '（未命名）', ar = s && s.artist ? s.artist : '';
+      h += '<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f0ebdf">' +
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' + (i + 1) + '. ' + plEsc(nm) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(ar) + '</i></span>' +
+        '<button data-pl="sdown" data-i="' + i + '" title="下移" style="border:0;background:transparent;color:#8a8472;font-size:14px;cursor:pointer;padding:2px 5px">↓</button>' +
+        '<button data-pl="sdel" data-i="' + i + '" title="去掉" style="border:0;background:transparent;color:#b25a4a;font-size:14px;cursor:pointer;padding:2px 5px">✕</button></div>';
+    });
+    h += '<div style="margin-top:2px">' +
+      '<button data-pl="save" style="' + PLBTN + ';background:#7f8c6b;border-color:#7f8c6b;color:#fff;font-weight:600">存下这一天</button>' +
+      '<button data-pl="copy" style="' + PLBTN + '">从当前日推复制</button>' +
+      '<button data-pl="clear" style="' + PLBTN + '">清空歌</button>' +
+      (PL.items[PL.day] ? '<button data-pl="delday" style="' + PLBTN + ';color:#b25a4a;border-color:#e6cdc6">删掉这天的排期</button>' : '') +
+      '</div>' +
+      '<p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#a49d8a">没排期的日子，显示默认那份日推。改完记得点「存下这一天」。</p>';
+    PL.el.querySelector('.pl-card').innerHTML = h;
+  }
+  function plSave() {
+    var c = PL.cur || {};
+    if (!c.songs || !c.songs.length) { toast('这天还没有歌，先复制或从别处加上'); return; }
+    clRpc('mw_rec_plan_put', { p_day: PL.day, p: { songs: c.songs, blurb: c.blurb || '', intro: c.intro || '', cover: c.cover || '' } })
+      .then(function (r) {
+        toast('已排好 ' + PL.day + ' · ' + ((r && r.n) || c.songs.length) + ' 首');
+        plLoad();
+        try { cloudRecPull(); setTimeout(function () { try { renderRec(); } catch (e) { } }, 600); } catch (e) { }
+      }, function (e) { toast('保存失败：' + ((e && e.message) || '稍后再试')); });
+  }
+  function plClick(e) {
+    var t = e.target, n = 0;
+    while (t && n++ < 8) { if (t.getAttribute && t.getAttribute('data-pl')) break; t = t.parentElement; }
+    if (!t || !t.getAttribute) return;
+    var a = t.getAttribute('data-pl');
+    if (a === 'close') { recPlanClose(); return; }
+    if (a === 'pick') { plPick(t.getAttribute('data-day')); return; }
+    if (a === 'sdel') { PL.cur.songs.splice(+t.getAttribute('data-i'), 1); plRender(); return; }
+    if (a === 'sdown') {
+      var i = +t.getAttribute('data-i');
+      if (i >= 0 && i < PL.cur.songs.length - 1) { var x = PL.cur.songs.splice(i, 1)[0]; PL.cur.songs.splice(i + 1, 0, x); plRender(); }
+      return;
+    }
+    if (a === 'clear') { PL.cur.songs = []; plRender(); return; }
+    if (a === 'copy') {
+      var b = (PL.base && PL.base.songs) || [];
+      if (!b.length) { toast('当前日推里还没有歌'); return; }
+      PL.cur.songs = JSON.parse(JSON.stringify(b));
+      if (!PL.cur.blurb && PL.base.blurb) PL.cur.blurb = PL.base.blurb;
+      if (!PL.cur.intro && PL.base.intro) PL.cur.intro = PL.base.intro;
+      if (!PL.cur.cover && PL.base.cover) PL.cur.cover = PL.base.cover;
+      plRender();
+      toast('已复制 ' + b.length + ' 首，点「存下这一天」生效');
+      return;
+    }
+    if (a === 'save') { plSave(); return; }
+    if (a === 'delday') {
+      clRpc('mw_rec_plan_del', { p_day: PL.day }).then(function () {
+        delete PL.items[PL.day];
+        toast('已删掉 ' + PL.day + ' 的排期');
+        plLoad();
+        try { cloudRecPull(); } catch (e) { }
+      }, function (er) { toast('删除失败：' + ((er && er.message) || '稍后再试')); });
+      return;
+    }
+  }
+
   function recOwnerAct(a, b) {
-    if (a === 'rnew') openSheet({ kind: 'redit', rid: '', f: { name: '', cover: '', blurb: '', intro: '', cat: R.view === 'cat' ? R.cat : '' } });
+    if (a === 'rplan') recPlanOpen();
+    else if (a === 'rnew') openSheet({ kind: 'redit', rid: '', f: { name: '', cover: '', blurb: '', intro: '', cat: R.view === 'cat' ? R.cat : '' } });
     else if (a === 'rcnew') openSheet({ kind: 'rcedit', cid: '', f: { name: '' } });
     else if (a === 'rcedit') {
       var ct = recCur().cats.filter(function (x) { return x.id === b.dataset.cid; })[0]; if (!ct || !canMod(ct)) return;
@@ -2859,6 +3007,7 @@ function bindEvents() {
      数据走 Supabase 的 mw_* 函数（security definer + RLS隔离），身份用页面已有的登录状态（Park.session / Park.api）。
      没登录、或页面没接 auth.js 时，安静地退回纯本地模式，一切如旧。 */
   var CL = { on: false, uid: '', role: 'user', name: '', cur: null, pushT: null, pushing: false, snap: null, errN: 0 };
+  var PLAN_DAY = '';   // 今天生效的排期日期（有排时时，编辑日推等于改那一天的排期）
 
   function clUuid(v) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(v || '')); }
   function clRpc(fn, body) {
@@ -2901,6 +3050,7 @@ function bindEvents() {
     if (!CL.on) return;
     clQuiet('mw_rec_get', {}).then(function (j) {
       if (!j || typeof j !== 'object' || !Object.keys(j).length) return;
+      try { PLAN_DAY = (j && j._plan) || ''; } catch (e) { }
       REC = normRec(j); recFetched = true; recVer++; saveRecCache();
       if (uiReady) renderRec();
     });
@@ -3165,6 +3315,11 @@ function bindEvents() {
       hooks.recSave = function (rec) {
         if (!CL.on) return Promise.reject(new Error('还没连上后端'));
         if (CL.role !== 'owner' && CL.role !== 'editor') return Promise.reject(new Error('这个账号没有推荐的编辑权'));
+        if (PLAN_DAY) {
+          var pd0 = (rec && rec.daily) || {};
+          return clRpc('mw_rec_plan_put', { p_day: PLAN_DAY, p: { songs: pd0.songs || [], blurb: pd0.blurb || '', intro: pd0.intro || '', cover: pd0.cover || '' } })
+            .then(function () { coverSweep(); toast('已更新 ' + PLAN_DAY + ' 的排期'); return true; });
+        }
         return clRpc('mw_rec_put', { p: rec }).then(function () { coverSweep(); return true; });
       };
       switchAccount(CL.uid);
