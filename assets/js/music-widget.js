@@ -2576,9 +2576,11 @@ function bindEvents() {
      每天一份（歌 + 封面 + 推荐语 + 介绍），存进后端 mw_rec_plan。
      mw_rec_get 取数时会自动挑「最近一份 day <= 今天」的排期盖在日推上，跨天自动生效。
      有排期的日子，站长在日推界面里编辑并保存，改的是「当天那一格」，默认日推不受影响。 */
-  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [], pick: false, kw: '' };
+  var PL = { on: false, el: null, day: '', today: '', items: {}, base: null, cur: null, days: [], pick: false, kw: '', res: [], state: '', msg: '' };
   var PLBTN = 'display:inline-block;border:1px solid #cfc7b4;background:#fff;color:#3c3a33;border-radius:10px;padding:7px 12px;font:inherit;margin:8px 6px 0 0;cursor:pointer';
   function plPad(n) { return (n < 10 ? '0' : '') + n; }
+  function plHm(m) { m = +m || 0; if (m < 0) m = 0; return plPad(Math.floor(m / 60)) + ':' + plPad(m % 60); }
+  function plMin(v) { var a = String(v || '').split(':'); var h = +a[0] || 0, mi = +a[1] || 0; return Math.max(0, Math.min(1439, h * 60 + mi)); }
   function plYmd(d) { return d.getFullYear() + '-' + plPad(d.getMonth() + 1) + '-' + plPad(d.getDate()); }
   function plEsc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': String.fromCharCode(38) + 'quot;' }[c]; }); }
   function plWeek(s) { var w = ['日', '一', '二', '三', '四', '五', '六']; var d = new Date(String(s) + 'T00:00:00'); return '周' + w[d.getDay()]; }
@@ -2609,6 +2611,7 @@ function bindEvents() {
     var t = e.target; if (!t || !t.getAttribute || !PL.cur) return;
     if (t.hasAttribute && t.hasAttribute('data-plkw')) { PL.kw = t.value; return; }
     var k = t.getAttribute('data-k'); if (!k) return;
+    if (k === 'at_time') { PL.cur.at_min = plMin(t.value); return; }
     PL.cur[k] = t.value;
   }
   function plLoad() {
@@ -2628,7 +2631,7 @@ function bindEvents() {
   function plPick(day) {
     PL.day = day;
     clRpc('mw_rec_plan_get', { p_day: day }).then(function (j) {
-      PL.cur = { songs: (j && j.songs) || [], blurb: (j && j.blurb) || '', intro: (j && j.intro) || '', cover: (j && j.cover) || '' };
+      PL.cur = { songs: (j && j.songs) || [], blurb: (j && j.blurb) || '', intro: (j && j.intro) || '', cover: (j && j.cover) || '', at_min: (j && j.at_min) || 0 };
       plRender();
     }, function () { PL.cur = { songs: [], blurb: '', intro: '', cover: '' }; plRender(); });
   }
@@ -2644,11 +2647,15 @@ function bindEvents() {
       var it = PL.items[d], on = d === PL.day;
       h += '<button data-pl="pick" data-day="' + d + '" style="flex:0 0 auto;border:1px solid ' + (on ? '#7f8c6b' : '#dcd5c4') + ';background:' + (on ? '#eef1e6' : '#fff') + ';border-radius:12px;padding:6px 10px;font:inherit;font-size:12px;text-align:center;cursor:pointer;color:#3c3a33">' +
         '<b style="display:block;font-size:13px">' + plShort(d) + '</b>' + plWeek(d) +
-        '<i style="display:block;font-style:normal;color:' + (it ? '#7f8c6b' : '#b3ab97') + ';font-size:11px">' + (it ? (it.n + ' 首') : '未排') + '</i></button>';
+        '<i style="display:block;font-style:normal;color:' + (it ? '#7f8c6b' : '#b3ab97') + ';font-size:11px">' + (it ? (it.n + ' 首' + (it.at > 0 ? '·' + it.at2 : '')) : '未排') + '</i></button>';
     });
     h += '</div>';
     h += '<div style="border-top:1px dashed #ddd6c5;margin:0 0 10px"></div>' +
       '<div style="font-size:13px;font-weight:600;margin-bottom:8px">' + PL.day + ' · ' + plWeek(PL.day) + (PL.day === PL.today ? '（今天）' : '') + '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="font-size:12px;color:#8a8472">这天几点起换</span>' +
+      '<input type="time" data-k="at_time" value="' + plHm(c.at_min) + '" style="border:1px solid #dcd5c4;border-radius:10px;padding:5px 9px;font:inherit;font-size:13px;background:#fff;color:#3c3a33">' +
+      '<span style="font-size:12px;color:#a49d8a">默认 00:00</span></div>' +
       '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">推荐语</div>' +
       '<input data-k="blurb" value="' + plEsc(c.blurb) + '" placeholder="一句话，显示在日推卡片上" style="width:100%;box-sizing:border-box;border:1px solid #dcd5c4;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;background:#fff;margin-bottom:8px;color:#3c3a33">' +
       '<div style="font-size:12px;color:#8a8472;margin-bottom:3px">详情介绍</div>' +
@@ -2659,7 +2666,7 @@ function bindEvents() {
     if (PL.pick) h += plPickHTML();
     h += '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px"><span style="font-size:12px;color:#8a8472">歌</span><span style="font-size:12px;color:#a49d8a">' + c.songs.length + ' 首</span></div>';
     if (!c.songs.length) {
-      h += '<p style="margin:6px 0 2px;font-size:13px;color:#a49d8a">这天还没排歌。可以点下面的「从当前日推复制」，再删改。</p>';
+      h += '<p style="margin:6px 0 2px;font-size:13px;color:#a49d8a">点下方的按钮添加。</p>';
     }
     c.songs.forEach(function (s, i) {
       var nm = s && s.name ? s.name : '（未命名）', ar = s && s.artist ? s.artist : '';
@@ -2680,16 +2687,23 @@ function bindEvents() {
   }
 
   function plPickHTML() {
-    var kw = String(PL.kw || '').toLowerCase(), fav = lib.fav || [], h = '';
-    var shown = fav.filter(function (s) {
-      return !kw || String(s.name || '').toLowerCase().indexOf(kw) >= 0 || String(s.artist || '').toLowerCase().indexOf(kw) >= 0;
-    });
+    var fav = lib.fav || [], h = '', shown = fav.slice(0, 60);
     h += '<div style="border:1px solid #ddd6c5;border-radius:12px;padding:10px;margin-bottom:10px;background:#fff">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
       '<b style="font-size:13px">加歌</b>' +
       '<button data-pl="addclose" style="border:0;background:transparent;color:#8a8472;font:inherit;font-size:13px;cursor:pointer">收起</button></div>' +
-      '<input data-plkw value="' + plEsc(PL.kw || '') + '" placeholder="在「我喜欢」里找歌，回车筛选" style="width:100%;box-sizing:border-box;border:1px solid #e0d9c8;border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;margin-bottom:8px;color:#3c3a33">' +
-      '<div style="font-size:12px;color:#8a8472;margin-bottom:2px">我喜欢的音乐（' + fav.length + ' 首）</div>';
+      '<div style="display:flex;gap:6px;margin-bottom:8px">' +
+      '<input data-plkw value="' + plEsc(PL.kw || '') + '" placeholder="搜歌名或歌手，回车" style="flex:1;min-width:0;box-sizing:border-box;border:1px solid #e0d9c8;border-radius:10px;padding:7px 10px;font:inherit;font-size:13px;color:#3c3a33">' +
+      '<button data-pl="dosearch" style="border:1px solid #7f8c6b;background:#7f8c6b;color:#fff;border-radius:10px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer">搜</button></div>';
+    if (PL.state === 'loading') h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">搜索中…</p>';
+    else if (PL.state === 'err') h += '<p style="margin:2px 0 8px;font-size:12px;color:#b25a4a">' + plEsc(PL.msg || '没搜到') + '</p>';
+    else if (PL.state === 'ok') {
+      if (!PL.res.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">没有找到相关的歌，换个词试试</p>';
+      PL.res.forEach(function (sg, i) {
+        h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f4efe4"><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">' + plEsc(sg.name) + ' <i style="font-style:normal;color:#a49d8a;font-size:12px">' + plEsc(sg.artist || '') + (sg.album ? ' · ' + plEsc(sg.album) : '') + '</i></span><button data-pl="addres" data-i="' + i + '" style="border:0;background:transparent;color:#7f8c6b;font-size:18px;line-height:1;cursor:pointer;padding:0 6px">＋</button></div>';
+      });
+    }
+    h += '<div style="font-size:12px;color:#8a8472;margin:10px 0 2px">我喜欢的音乐（' + fav.length + ' 首）</div>';
     if (!shown.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">' + (kw ? '没找到' : '收藏还是空的，先去音乐里标心') + '</p>';
     shown.slice(0, 60).forEach(function (s) {
       h += '<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #f4efe4">' +
@@ -2707,6 +2721,20 @@ function bindEvents() {
     });
     h += '</div>';
     return h;
+  }
+  function plSearch() {
+    var kw = String(PL.kw || '').trim();
+    if (!kw) { toast('写个歌名或歌手吧'); return; }
+    PL.state = 'loading'; PL.msg = ''; plRender();
+    var tk = PL.tk = (PL.tk || 0) + 1;
+    api('/api/search', { kw: kw, limit: 30 }).then(function (j) {
+      if (PL.tk !== tk) return;
+      PL.res = ((j && j.songs) || []).map(normSong).filter(Boolean);
+      PL.state = 'ok'; plRender();
+    }, function (e) {
+      if (PL.tk !== tk) return;
+      PL.state = 'err'; PL.msg = (e && e.message) || '搜索没成功，再试一次'; plRender();
+    });
   }
   function plAddSongs(arr) {
     if (!PL.cur) return;
@@ -2737,15 +2765,15 @@ function bindEvents() {
   function plKey(e) {
     var t = e.target;
     if (!t || !t.hasAttribute || !t.hasAttribute('data-plkw')) return;
-    if (e.key === 'Enter') { PL.kw = t.value; plRender(); }
+    if (e.key === 'Enter') { PL.kw = t.value; plSearch(); }
   }
 
   function plSave() {
     var c = PL.cur || {};
     if (!c.songs || !c.songs.length) { toast('这天还没有歌，先复制或从别处加上'); return; }
-    clRpc('mw_rec_plan_put', { p_day: PL.day, p: { songs: c.songs, blurb: c.blurb || '', intro: c.intro || '', cover: c.cover || '' } })
+    clRpc('mw_rec_plan_put', { p_day: PL.day, p: { songs: c.songs, blurb: c.blurb || '', intro: c.intro || '', cover: c.cover || '', at_min: c.at_min || 0 } })
       .then(function (r) {
-        toast('已排好 ' + PL.day + ' · ' + ((r && r.n) || c.songs.length) + ' 首');
+        toast('已排好 ' + PL.day + ' ' + plHm(c.at_min) + ' 起 · ' + ((r && r.n) || c.songs.length) + ' 首');
         plLoad();
         try { cloudRecPull(); setTimeout(function () { try { renderRec(); } catch (e) { } }, 600); } catch (e) { }
       }, function (e) { toast('保存失败：' + ((e && e.message) || '稍后再试')); });
@@ -2775,7 +2803,9 @@ function bindEvents() {
       toast('已复制 ' + b.length + ' 首，点「存下这一天」生效');
       return;
     }
-    if (a === 'addopen') { PL.pick = true; plRender(); return; }
+    if (a === 'addopen') { PL.pick = true; PL.state = ''; plRender(); return; }
+    if (a === 'dosearch') { plSearch(); return; }
+    if (a === 'addres') { var rs = PL.res[+t.getAttribute('data-i')]; plAddSongs(rs ? [rs] : []); return; }
     if (a === 'addclose') { PL.pick = false; plRender(); return; }
     if (a === 'pickcover') { var fi = PL.el.querySelector('[data-coverfile]'); if (fi) fi.click(); return; }
     if (a === 'addfav') { var fs = lib.fav[+t.getAttribute('data-i')]; plAddSongs(fs ? [fs] : []); return; }
