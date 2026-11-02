@@ -260,7 +260,7 @@
      发布出去的内容来源（优先级从低到高）：本地缓存 < MW_CONFIG.rec（直接写在页面里）< recUrl（一个 json 地址，每次打开都会去取最新的）。
      站长改动先存成「草稿」（只在站长自己的浏览器里），点「发布」才会交给 MW_CONFIG.recSave(rec)（接后端用），没接后端时就导出 json。 */
   var MWC = (window.MW_CONFIG && typeof window.MW_CONFIG === 'object') ? window.MW_CONFIG : {};
-  var RECKEY = 'mw:rec:v1', RDKEY = 'mw:rec:draft:v1', OWNKEY = 'mw:owner:v1', BASEKEY = 'mw:rec:base:v1', DIRTYKEY = 'mw:rec:dirty:v1';
+  var RECKEY = 'mw:rec:v1', RDKEY = 'mw:rec:draft:v1', OWNKEY = 'mw:owner:v1', BASEKEY = 'mw:rec:base:v1', BASEJSON = 'mw:rec:basejson:v1', DIRTYKEY = 'mw:rec:dirty:v1';
   var OWNER_HASH = String(ds.ownerHash || MWC.ownerHash || '7e84cc0247b68453a1fdec03e08f07e7ee42fea7f12f4b92c61d4b4fb76ec5c4').toLowerCase();
   var RECURL = ds.recUrl || MWC.recUrl || '';
   var hooks = { recSave: typeof MWC.recSave === 'function' ? MWC.recSave : null, owner: typeof MWC.owner === 'boolean' ? MWC.owner : null,
@@ -340,6 +340,8 @@
     try { j = JSON.parse(lsGet(RDKEY)); } catch (e) { j = null; }
     recDraft = (j && typeof j === 'object') ? normRec(j) : null;
     edDirty = !!recDraft && lsGet(DIRTYKEY) === '1';
+    // 草稿和已发布的内容一模一样（多半是发布成功了但草稿没清掉）→ 直接丢掉，别一直挂着「有改动还没发布」
+    if (recDraft) { try { if (JSON.stringify(recDraft) === JSON.stringify(REC)) recDraft = null; } catch (e) { } }
     recVer++;
   }
   function saveRecCache() { lsSet(RECKEY, JSON.stringify(REC)); }
@@ -425,7 +427,7 @@
   function recName(id) { var x = recFind(id); return id === 'daily' ? '日推' : (x ? x.name || '推荐歌单' : '推荐歌单'); }
   function recEdit(fn, direct) {
     if (!staff()) return false;
-    if (!recDraft) { recDraft = normRec(REC); lsSet(BASEKEY, sha256(JSON.stringify(REC))); }
+    if (!recDraft) { recDraft = normRec(REC); lsSet(BASEKEY, sha256(JSON.stringify(REC))); try { lsSet(BASEJSON, JSON.stringify(REC)); } catch (e) { } }
     if (direct && !adm()) edDirty = true;
     fn(recDraft); recVer++; saveDraft(); return true;
   }
@@ -454,6 +456,21 @@
         P[k].upsert.push(x);
       });
       base[k].forEach(function (x) { if (mine(x) && !n[x.id]) P[k].remove.push(x.id); });
+    });
+    return P;
+  }
+  // 站长发布时交给后端的「相对自己看到的那版」的改动：只带自己动过的，别人新加的不会被盖掉
+  function recPatchAll() {
+    var base = REC;
+    try { var b = JSON.parse(lsGet(BASEJSON)); if (b && typeof b === 'object') base = normRec(b); } catch (e) { }
+    var d = recCur(), ix = function (a) { var m = {}; a.forEach(function (x) { m[x.id] = x; }); return m; };
+    var bd = ix(base.daily.songs), dd = ix(d.daily.songs);
+    var P = { daily: { add: d.daily.songs.filter(function (x) { return !bd[x.id]; }), remove: base.daily.songs.filter(function (x) { return !dd[x.id]; }).map(function (x) { return x.id; }) }, cats: { upsert: [], remove: [] }, lists: { upsert: [], remove: [] } };
+    ['blurb', 'intro', 'cover'].forEach(function (k) { if (String(d.daily[k] || '') !== String(base.daily[k] || '')) P.daily[k] = String(d.daily[k] || ''); });
+    ['cats', 'lists'].forEach(function (k) {
+      var b2 = ix(base[k]), n = ix(d[k]);
+      d[k].forEach(function (x) { var bx = b2[x.id]; if (bx && JSON.stringify(bx) === JSON.stringify(x)) return; P[k].upsert.push(x); });
+      base[k].forEach(function (x) { if (!n[x.id]) P[k].remove.push(x.id); });
     });
     return P;
   }
@@ -2926,7 +2943,7 @@ function bindEvents() {
   function recPublish(mode) {
     var direct = mode === 'direct', O = adm();
     if (!recDraft) { if (!direct) toast('没有待发布的改动'); return; }
-    var patch = O ? null : recPatch(direct);
+    var patch = O ? recPatchAll() : recPatch(direct);
     if (!O && patchEmpty(patch)) { if (!direct) toast('没有待发布的改动'); return; }
     if (!hooks.recSave) {
       if (O) openSheet({ kind: 'rjson', note: '还没接后端，先把内容导出：粘贴到页面的 MW_CONFIG.rec 里，或存成 .json 文件用 data-rec-url 指向它。' });
@@ -3499,7 +3516,7 @@ function bindEvents() {
       CL.on = true; CL.uid = me.uid; CL.role = me.role || 'user'; CL.name = me.name || '';
       hooks.owner = (CL.role === 'owner');
       hooks.user = { id: CL.uid, name: CL.name || '我', role: (CL.role === 'owner' ? 'owner' : (CL.role === 'editor' ? 'editor' : 'user')) };
-      hooks.recSave = function (rec) {
+      hooks.recSave = function (rec, ctx) {
         if (!CL.on) return Promise.reject(new Error('还没连上后端'));
         if (CL.role !== 'owner' && CL.role !== 'editor') return Promise.reject(new Error('这个账号没有推荐的编辑权'));
         if (PLAN_DAY) {
@@ -3507,7 +3524,12 @@ function bindEvents() {
           return clRpc('mw_rec_plan_put', { p_day: PLAN_DAY, p: { songs: pd0.songs || [], blurb: pd0.blurb || '', intro: pd0.intro || '', cover: pd0.cover || '' } })
             .then(function () { coverSweep(); toast('已更新 ' + PLAN_DAY + ' 的排期'); return true; });
         }
-        return clRpc('mw_rec_put', { p: rec }).then(function () { coverSweep(); return true; });
+        // 把「只含自己改动」的 patch 一起交给后端：后端在最新内容上合并，别人新加的不会被盖掉
+        var pt = (ctx && ctx.patch) || null;
+        return clRpc('mw_rec_put', { p: rec, patch: pt }).then(function (j) {
+          coverSweep();
+          return (j && j.rec) ? { rec: j.rec } : true;
+        });
       };
       switchAccount(CL.uid);
       if (uiReady) { admChanged(); renderRec(); }
