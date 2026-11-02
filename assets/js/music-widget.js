@@ -342,6 +342,8 @@
     edDirty = !!recDraft && lsGet(DIRTYKEY) === '1';
     // 草稿和已发布的内容一模一样（多半是发布成功了但草稿没清掉）→ 直接丢掉，别一直挂着「有改动还没发布」
     if (recDraft) { try { if (JSON.stringify(recDraft) === JSON.stringify(REC)) recDraft = null; } catch (e) { } }
+    // 老草稿没有「基准快照」（升级前留下的）：它会把别人新加的都藏起来，直接作废，以线上为准
+    if (recDraft && !lsGet(BASEJSON)) { recDraft = null; try { localStorage.removeItem(akey(DIRTYKEY)); } catch (e) { } }
     recVer++;
   }
   function saveRecCache() { lsSet(RECKEY, JSON.stringify(REC)); }
@@ -403,7 +405,32 @@
   var rcMemo = { v: -1, d: null, o: null };
   function recCur() {
     if (!recDraft || !staff()) return REC;
-    if (adm()) return recDraft;
+    if (adm()) {
+      // 站长看到的 = 线上最新内容 + 自己草稿里真正改过的那部分（别人新加的照样能看见，不会被旧草稿挡住）
+      if (rcMemo.v === recVer && rcMemo.d === recDraft && rcMemo.u === '#owner') return rcMemo.o;
+      var o = normRec(REC), b = null;
+      try { b = JSON.parse(lsGet(BASEJSON)); } catch (e) { b = null; }
+      if (b && typeof b === 'object') {
+        b = normRec(b);
+        var ix = function (a) { var m = {}; a.forEach(function (x) { m[x.id] = x; }); return m; };
+        var bm = ix(b.daily.songs), dm = ix(recDraft.daily.songs), del = {}, add = [];
+        b.daily.songs.forEach(function (x) { if (!dm[x.id]) del[x.id] = 1; });
+        recDraft.daily.songs.forEach(function (x) { if (!bm[x.id]) add.push(x); });
+        var ss = o.daily.songs.filter(function (x) { return !del[x.id]; });
+        add.forEach(function (x) { if (!ss.some(function (y) { return y.id === x.id; })) ss.push(x); });
+        o.daily.songs = ss.slice(0, 200);
+        ['name', 'blurb', 'intro', 'cover'].forEach(function (k) { if (String(recDraft.daily[k] || '') !== String(b.daily[k] || '')) o.daily[k] = recDraft.daily[k]; });
+        ['cats', 'lists'].forEach(function (k) {
+          var pb = ix(b[k]), pd = ix(recDraft[k]), out = [];
+          o[k].forEach(function (x) { var dx = pd[x.id]; if (dx) out.push(JSON.stringify(pb[x.id]) === JSON.stringify(dx) ? x : dx); else if (!pb[x.id]) out.push(x); });
+          recDraft[k].forEach(function (x) { if (!pb[x.id] && !out.some(function (y) { return y.id === x.id; })) out.push(x); });
+          o[k] = out;
+        });
+        o.lists.forEach(function (l) { if (l.cat && !o.cats.some(function (c) { return c.id === l.cat; })) l.cat = ''; });
+      }
+      rcMemo = { v: recVer, d: recDraft, u: '#owner', o: o };
+      return o;
+    }
     var u = editorUser(); if (!u) return REC;
     // 合作者看到的 = 最新发布的内容 + 自己草稿里属于自己的那部分（别人的改动不会被他的旧草稿盖掉）
     if (rcMemo.v === recVer && rcMemo.d === recDraft && rcMemo.u === u.id && rcMemo.y === edDirty) return rcMemo.o;
@@ -2514,7 +2541,7 @@ function bindEvents() {
     };
     if (R.view === 'home') {
       if (O) {
-        var dirty = !!recDraft, lock = hooks.owner === true || hooks.user !== undefined;
+        var dirty = !!recDraft && !patchEmpty(recPatchAll()), lock = hooks.owner === true || hooks.user !== undefined;
         h += '<div class="obar"><div class="ot"><b>设置权</b><span>只有你看得见 · ' + (dirty ? '有改动还没发布' : '内容已是最新') + '</span></div>' +
           (draftStale() ? '<div class="ow">推荐内容在你开始编辑之后又被更新过（可能是别人发布的），现在发布会覆盖他们的改动。</div>' : '') + '<div class="ob">' +
           '<button class="pri' + (dirty ? '' : ' dis') + '" data-act="rpub">发布</button>' +
@@ -2946,6 +2973,7 @@ function bindEvents() {
     if (!recDraft) { if (!direct) toast('没有待发布的改动'); return; }
     var patch = O ? recPatchAll() : recPatch(direct);
     if (!O && patchEmpty(patch)) { if (!direct) toast('没有待发布的改动'); return; }
+    if (O && patchEmpty(patch)) { recDraft = null; saveDraft(); recVer++; renderRec(); toast('内容已是最新，没有要发布的改动'); return; }
     if (!hooks.recSave) {
       if (O) openSheet({ kind: 'rjson', note: '还没接后端，先把内容导出：粘贴到页面的 MW_CONFIG.rec 里，或存成 .json 文件用 data-rec-url 指向它。' });
       else toast('发布功能还没接好，稍后再试');
