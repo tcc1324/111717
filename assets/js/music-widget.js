@@ -461,16 +461,17 @@
   }
   // 站长发布时交给后端的「相对自己看到的那版」的改动：只带自己动过的，别人新加的不会被盖掉
   function recPatchAll() {
-    var base = REC;
-    try { var b = JSON.parse(lsGet(BASEJSON)); if (b && typeof b === 'object') base = normRec(b); } catch (e) { }
+    var base = REC, known = false;
+    try { var b = JSON.parse(lsGet(BASEJSON)); if (b && typeof b === 'object') { base = normRec(b); known = true; } } catch (e) { }
     var d = recCur(), ix = function (a) { var m = {}; a.forEach(function (x) { m[x.id] = x; }); return m; };
     var bd = ix(base.daily.songs), dd = ix(d.daily.songs);
-    var P = { daily: { add: d.daily.songs.filter(function (x) { return !bd[x.id]; }), remove: base.daily.songs.filter(function (x) { return !dd[x.id]; }).map(function (x) { return x.id; }) }, cats: { upsert: [], remove: [] }, lists: { upsert: [], remove: [] } };
+    // 不知道自己当初看到的是哪一版（旧草稿没快照）→ 只加不删，绝不误伤别人新加的
+    var P = { daily: { add: d.daily.songs.filter(function (x) { return !bd[x.id]; }), remove: known ? base.daily.songs.filter(function (x) { return !dd[x.id]; }).map(function (x) { return x.id; }) : [] }, cats: { upsert: [], remove: [] }, lists: { upsert: [], remove: [] } };
     ['blurb', 'intro', 'cover'].forEach(function (k) { if (String(d.daily[k] || '') !== String(base.daily[k] || '')) P.daily[k] = String(d.daily[k] || ''); });
     ['cats', 'lists'].forEach(function (k) {
       var b2 = ix(base[k]), n = ix(d[k]);
       d[k].forEach(function (x) { var bx = b2[x.id]; if (bx && JSON.stringify(bx) === JSON.stringify(x)) return; P[k].upsert.push(x); });
-      base[k].forEach(function (x) { if (!n[x.id]) P[k].remove.push(x.id); });
+      if (known) base[k].forEach(function (x) { if (!n[x.id]) P[k].remove.push(x.id); });
     });
     return P;
   }
