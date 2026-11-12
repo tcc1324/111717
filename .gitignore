@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -55,3 +56,13 @@ supabase/
 # 字体源文件（3MB，仅本地子集化用，不上传）
 assets/fonts/hanyi-youyuan-src.ttf
 assets/fonts/*-src.ttf
+
+# 未完工页面（别推线上）
+/shop.html
+/market.html
+/bank.html
+/invest.html
+/yuniao.html
+/article.html
+/assets/js/wz-db.js
+/assets/music/kinema-betsuno-test.mp3

@@ -12,10 +12,14 @@ const R = (level, name, msg = '') => ({ level, name, msg });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ───────────────────────── 上下文：扫出要管哪些文件 ─────────────────────────
+// 兜底：.gitignore 里声明过的未完工页面 + 这份清单。
+// 为什么要兜底：CI 检出的是仓库里的 .gitignore，若它比本地旧（少了那段），
+// 判定会从「提醒」变成「失败」——同样一份代码，本地绿、CI 红，纯属误会。
+export const KNOWN_UNBUILT = ['shop.html', 'market.html', 'bank.html', 'invest.html', 'yuniao.html', 'article.html'];
 function readIgnoredPages() {
   // .gitignore 里形如 "/shop.html" 的行 = 未完工、不推线上的页面
   const gi = path.join(ROOT, '.gitignore');
-  const set = new Set();
+  const set = new Set(KNOWN_UNBUILT);
   if (!fs.existsSync(gi)) return set;
   for (const line of fs.readFileSync(gi, 'utf8').split('\n')) {
     const m = line.trim().match(/^\/([A-Za-z0-9._-]+\.html)$/);
