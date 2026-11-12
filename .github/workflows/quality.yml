@@ -30,7 +30,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24' # jsdom 30 要 Node >=22.22，用 20 会 import 失败
 
       # 版本写死（不是 jsdom@30），否则哪天上游发个新版，CI 会自己变红，白查半天
       - name: 安装 jsdom
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24' # jsdom 30 要 Node >=22.22，用 20 会 import 失败
 
       # 没配 Secrets 就跳过，不会报红。secret 只能放在 env/run 里，不能写进 if:（会解析失败）
       - name: 看有没有后端凭据
@@ -96,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24' # jsdom 30 要 Node >=22.22，用 20 会 import 失败
       - name: 比对
         run: node tests/online.mjs
 
@@ -109,7 +109,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24' # jsdom 30 要 Node >=22.22，用 20 会 import 失败
 
       - name: 安装 jsdom + playwright
         run: |

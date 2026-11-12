@@ -47,8 +47,16 @@ async function jsdomLib() {
   if (_jsdom) return _jsdom;
   try {
     _jsdom = await import('jsdom');
-  } catch {
-    throw new Error('找不到 jsdom：请在项目根目录执行  ln -s /root/node_modules node_modules');
+  } catch (e) {
+    // 别把「装了但 import 失败」说成「没装」——CI 上就被这条谎话骗过一次
+    const why = (e && e.message ? e.message : String(e)).split('\n')[0].slice(0, 200);
+    const hints = [];
+    if (!fs.existsSync(path.join(ROOT, 'node_modules'))) {
+      hints.push('项目根目录没有 node_modules（本地：ln -s /root/node_modules node_modules；CI：npm install jsdom）');
+    } else {
+      hints.push('node_modules 存在，但 jsdom 装不上或版本不兼容——jsdom 30 要 Node >= 22.22，检查 node -v');
+    }
+    throw new Error(`jsdom 不可用：${why}　｜　${hints.join('；')}`);
   }
   return _jsdom;
 }
