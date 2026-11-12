@@ -23,7 +23,7 @@ concurrency:
 jobs:
   check:
     name: 静态检查 + 冒烟 + 密钥扫描
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # 不写 latest：2026-11 起 latest 已升到 26.04，Playwright 不认
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
     name: 后端体检（只读）
     # PR 不跑（fork 拿不到 Secrets）；push、定时、手动跑
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # 不写 latest：2026-11 起 latest 已升到 26.04，Playwright 不认
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +90,7 @@ jobs:
   online:
     name: 线上字节校验（仓库 vs 线上 Pages）
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # 不写 latest：2026-11 起 latest 已升到 26.04，Playwright 不认
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +103,7 @@ jobs:
   visual:
     name: 视觉回归（截图对比，较慢，手动触发）
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # 不写 latest：2026-11 起 latest 已升到 26.04，Playwright 不认
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

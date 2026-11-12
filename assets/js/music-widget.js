@@ -408,7 +408,7 @@
     if (adm()) {
       // 站长看到的 = 线上最新内容 + 自己草稿里真正改过的那部分（别人新加的照样能看见，不会被旧草稿挡住）
       if (rcMemo.v === recVer && rcMemo.d === recDraft && rcMemo.u === '#owner') return rcMemo.o;
-      var o = normRec(REC), b = null;
+      let o = normRec(REC), b = null;
       try { b = JSON.parse(lsGet(BASEJSON)); } catch (e) { b = null; }
       if (b && typeof b === 'object') {
         b = normRec(b);
@@ -2764,7 +2764,7 @@ function bindEvents() {
       });
     }
     h += '<div style="font-size:12px;color:#8a8472;margin:10px 0 2px">我喜欢的音乐（' + fav.length + ' 首）</div>';
-    if (!shown.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">' + (kw ? '没找到' : '收藏还是空的，先去音乐里标心') + '</p>';
+    if (!shown.length) h += '<p style="margin:2px 0 8px;font-size:12px;color:#a49d8a">' + (PL.kw ? '没找到' : '收藏还是空的，先去音乐里标心') + '</p>';
     shown.slice(0, 60).forEach(function (s) {
       h += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f4efe4">' +
         plCov(s, 28) +
