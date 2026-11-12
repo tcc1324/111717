@@ -117,6 +117,12 @@ jobs:
 
       - name: 安装 Chromium（带系统依赖）
         run: npx playwright install --with-deps chromium
+      # 像素对比用 Pillow（visual_diff.py）；用 setup-python 装，避开 24.04 的 PEP 668 限制
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 安装 Pillow（像素对比用）
+        run: pip install --quiet pillow
 
       # 基线在仓库里才真能比对；没有就只拍图（并提示）
       - name: 截图并与基线比对
