@@ -19,6 +19,13 @@
     "check": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs && node tests/backend.mjs && node tests/visual.mjs",
     "check:offline": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs",
     "hook": "node tests/hook.mjs",
-    "hook:watch": "node tests/hook.mjs --watch"
+    "hook:watch": "node tests/hook.mjs --watch",
+    "hooks": "node tests/hooks.mjs list",
+    "hooks:pre": "node tests/hooks.mjs pre",
+    "hooks:fail": "node tests/hooks.mjs fail",
+    "hooks:session": "node tests/hooks.mjs session",
+    "hooks:stop": "node tests/hooks.mjs stop",
+    "hooks:anchor": "node tests/hooks.mjs compact",
+    "hooks:end": "node tests/hooks.mjs end"
   }
 }

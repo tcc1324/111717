@@ -148,3 +148,37 @@ npm run hook:watch    # 看门狗：每 15 秒扫一次，一变就查（关掉�
 实测：只改一个 CSS → 1 秒；改一个 JS → 约 24 秒（带冒烟）；首次全量 → 约 30 秒。
 
 **注意：它不会自己启动。** 我改完文件后会主动跑 `npm run hook` 再说“改好了”——这是纪律，不是系统强制。
+
+---
+
+## Claude Code 的事件钩子清单 → 本机对应 `npm run hooks`
+
+Claude Code 官方现在有 **32 个事件钩子**（工具/输入/回合/上下文/会话/环境六类）。`tests/hooks.mjs` 把它们逐个映射成三种状态：**已实现 / 自制等价 / 不适用**。
+
+```bash
+npm run hooks           # 列出全部 32 个事件和本机对应方式（最该先看的）
+npm run hooks:pre -- index.html   # 改之前过红线（密钥/基线/线上页面/大文件/后台 SQL）
+npm run hooks:session   # 开工简报：站点地址、git 状态、上次检查结果、最后一条笔记
+npm run hooks:stop      # 收尾自检：有「改了没验」就报红
+npm run hooks:anchor    # 写上下文锚点 .ai/context-anchor.md（压缩后靠它恢复状态）
+npm run hooks:end       # 追加一条会话小结到 .ai/session-log.txt
+npm run hooks:fail      # 失败现场记录 + 排查方向
+```
+
+### 三类的意思
+
+| 状态 | 含义 | 事件 |
+|---|---|---|
+| 已实现 | 真能跑，和 Claude 那边效果接近 | `PostToolUse`→`hook.mjs`、`PostToolUseFailure`→`hooks:fail`、`PostToolBatch`→`hook.mjs` 一次跑完、`FileChanged`→`hook.mjs --watch` |
+| 自制等价 | 工具不一样，但结果差不多；**得人主动触发** | `PreToolUse`→`hooks:pre`、`Stop`→`hooks:stop`、`PreCompact`/`PostCompact`→`hooks:anchor`、`SessionStart`→`hooks:session`、`SessionEnd`→`hooks:end`、`ConfigChange`→`hook.mjs` 覆盖 |
+| 不适用 | Operit 没有这个机制，硬做是假的 | 权限询问、斜杠命令、MCP 追问、子代理/多代理、任务队列、worktree、通知等 21 项 |
+
+### 老实说清一件事
+
+**真正的「工具执行前后自动触发」我拿不到。** 那是 Claude Code 服务端的能力（工具层拦截）。Operit 只给我「工具」和「能注入提示词的包」，没有让我拦截自己执行过程的接口。所以这里的 pre / stop / session 全部靠 **我一个人主动跑**，不是系统保证。
+
+真正不靠人、一定会发生的只有两道：
+1. `npm run hook:watch` 开着的看门狗（改了文件 → 15 秒内自动查）
+2. GitHub Actions（推上 main 就硬跑，红灯就是红灯）
+
+锚点/会话日志/失败现场都在 `.ai/` 下，不上传。
