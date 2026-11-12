@@ -17,6 +17,8 @@
     "visual": "node tests/visual.mjs",
     "visual:update": "node tests/visual.mjs --update",
     "check": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs && node tests/backend.mjs && node tests/visual.mjs",
-    "check:offline": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs"
+    "check:offline": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs",
+    "hook": "node tests/hook.mjs",
+    "hook:watch": "node tests/hook.mjs --watch"
   }
 }

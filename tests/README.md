@@ -122,3 +122,29 @@ npm run secrets
 - 真浏览器端到端点击流（登录、跳转、控制台报错）：截图那条线已经在用真 Chromium，点击流可以顺着加。
 - 幂等 / 并发测试（同一请求发两遍不能扣两次币、整份覆盖写不能丢更新）：要写数据，得专门开测试账号 + 假数据，风险最高，单独决定。
 - Supabase 本地栈（`supabase start`）：本机 proot 没有 docker daemon，跑不了，已放弃。
+
+## 钩子：改完就查 `npm run hook`
+
+这是在「Claude Code 那种 hooks」上能拿到的最佳近似：**不是系统级拦截（Operit 没给我们这个钩子），而是“一比就知道改了什么、只跑受影响的那几套”**。
+
+```bash
+npm run hook          # 跑一次：跟上次快照比，没改动就直接说没改动
+npm run hook -- --force   # 忽略快照，按受影响套件全跑
+npm run hook:watch    # 看门狗：每 15 秒扫一次，一变就查（关掉进程就停）
+```
+
+怎么决定跑什么：
+
+| 改了什么 | 自动跑 |
+|---|---|
+| `*.html` | syntax + html + links + version + guard + smoke |
+| `assets/js/*.js` | syntax + smoke + ESLint |
+| `assets/css/*.css` | css |
+| `supabase/*.sql` | 后端体检 + 密钥扫描 |
+| `.github/*.yml` | YAML 合法性 |
+| `tests/*` | syntax（自检） |
+
+快照存在 `.ai/hook-state.json`，日志追加到 `.ai/hook-log.txt`（都不上传）。
+实测：只改一个 CSS → 1 秒；改一个 JS → 约 24 秒（带冒烟）；首次全量 → 约 30 秒。
+
+**注意：它不会自己启动。** 我改完文件后会主动跑 `npm run hook` 再说“改好了”——这是纪律，不是系统强制。
