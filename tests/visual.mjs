@@ -15,13 +15,23 @@ import { createRequire } from 'node:module';
 import { ROOT, context } from './checks.mjs';
 
 const require = createRequire(import.meta.url);
-// playwright 装在 /root/pw（不在本项目里，避免把几百 MB 塞进仓库）
-const PW_PATH = '/root/pw/node_modules/playwright';
+// playwright 优先按常规模块解析（CI 里 npm 装到项目 node_modules）
+// 本机没装进项目，就回落到 /root/pw（几百 MB，故意不塞仓库）
+const PW_CANDIDATES = ['playwright', '/root/pw/node_modules/playwright'];
 let chromium;
-try {
-  ({ chromium } = require(PW_PATH));
-} catch {
-  console.error('没找到 playwright：先跑  cd /root/pw && npm i playwright && npx playwright install --with-deps chromium');
+let pwUsed = '';
+for (const c of PW_CANDIDATES) {
+  try {
+    ({ chromium } = require(c));
+    pwUsed = c;
+    break;
+  } catch { /* 试下一个 */ }
+}
+if (!chromium) {
+  console.error(
+    '没找到 playwright。本机：cd /root/pw && npm i playwright && npx playwright install --with-deps chromium\n' +
+      '        CI：npm i playwright 后再 npx playwright install --with-deps chromium'
+  );
   process.exit(2);
 }
 
@@ -214,7 +224,7 @@ const MOCK_PROFILE = [{ nickname: '铃儿', uid5: '00000', joined_at: '2026-10-0
   srv.close();
 
   const tag = { pass: '\x1b[32m✓\x1b[0m', fail: '\x1b[31m✗\x1b[0m', warn: '\x1b[33m!\x1b[0m', base: '\x1b[36m▣\x1b[0m', new: '\x1b[36m+\x1b[0m' };
-  console.log(`\x1b[1m视觉回归${UPDATE ? '（更新基线）' : ''}\x1b[0m \x1b[2m${VIEW.width}×${VIEW.height} @${VIEW.deviceScaleFactor}x · ${pages.length} 页\x1b[0m\n`);
+  console.log(`\x1b[1m视觉回归${UPDATE ? '（更新基线）' : ''}\x1b[0m \x1b[2m${VIEW.width}×${VIEW.height} @${VIEW.deviceScaleFactor}x · ${pages.length} 页 · playwright 来自 ${pwUsed}\x1b[0m\n`);
   for (const r of results) console.log(` ${tag[r.level]} ${r.page}  \x1b[2m${r.msg}\x1b[0m`);
   const fail = results.filter((r) => r.level === 'fail').length;
   console.log(fail ? `\n\x1b[31m结论：${fail} 页视觉有变化，图在 .ai/visual/（确认好看就用 --update 收成新基线）\x1b[0m` : '\n\x1b[32m结论：视觉与基线一致\x1b[0m');
