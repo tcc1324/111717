@@ -1,0 +1,22 @@
+{
+  "name": "lingyu-park",
+  "private": true,
+  "type": "module",
+  "description": "给聆遇的游乐园 —— 静态站点质量流水线（零依赖）",
+  "scripts": {
+    "test": "node tests/run.mjs",
+    "test:fast": "node tests/run.mjs --only=syntax,html,css,links,version",
+    "test:guard": "node tests/run.mjs --only=guard",
+    "test:smoke": "node tests/run.mjs --only=smoke",
+    "lint": "node tests/run.mjs --only=syntax,html,css",
+    "lint:js": "node tests/lint.mjs",
+    "backend": "node tests/backend.mjs",
+    "backend:baseline": "node tests/backend.mjs --update",
+    "online": "node tests/online.mjs",
+    "secrets": "node tests/secrets.mjs",
+    "visual": "node tests/visual.mjs",
+    "visual:update": "node tests/visual.mjs --update",
+    "check": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs && node tests/backend.mjs && node tests/visual.mjs",
+    "check:offline": "node tests/run.mjs && node tests/secrets.mjs && node tests/lint.mjs"
+  }
+}

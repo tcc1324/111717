@@ -1,0 +1,134 @@
+# 质量闸门 —— push 到 main / 开 PR / 每天定时 / 网页上手动点
+# 只检查，不碰页面；红了就是真有问题，绿了才敢说「这版是好的」
+name: 质量闸门
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', '.ai/**', 'LICENSE']
+  pull_request:
+  workflow_dispatch: # 网页上手动点一下
+  schedule:
+    - cron: '17 3 * * *' # 每天 11:17（北京时间）体检一次：库被人悄悄改了也能发现
+
+# 最小权限：这个 workflow 只读代码，不给写权限
+permissions:
+  contents: read
+
+# 连着推三次，只保留最后一次在跑，前面的自动取消（省时间，也避免旧结果误报）
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: 静态检查 + 冒烟 + 密钥扫描
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 版本写死（不是 jsdom@30），否则哪天上游发个新版，CI 会自己变红，白查半天
+      - name: 安装 jsdom
+        run: npm install --no-save --no-audit --no-fund jsdom@30.1.3
+
+      - name: 语法 / HTML / CSS / 链接 / 版本号 / 登录门 / 冒烟
+        run: node tests/run.mjs
+
+      - name: 密钥泄露扫描（公开仓库的最后一道闸）
+        run: node tests/secrets.mjs
+
+      - name: 安装 ESLint（只做防低级错误，不搞风格）
+        run: npm install --no-save --no-audit --no-fund eslint@9
+
+      - name: ESLint（error 级问题会拦下）
+        run: node tests/lint.mjs
+
+      # 红了也能下载报告，看是哪条失败
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: .ai/test-report.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  backend:
+    name: 后端体检（只读）
+    # PR 不跑（fork 拿不到 Secrets）；push、定时、手动跑
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 没配 Secrets 就跳过，不会报红。secret 只能放在 env/run 里，不能写进 if:（会解析失败）
+      - name: 看有没有后端凭据
+        id: has
+        env:
+          SB_PAT: ${{ secrets.SB_PAT }}
+        run: |
+          if [ -n "$SB_PAT" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: 体检（RLS / definer / 匿名可调 / 对账 / 不变量 / 授权基线）
+        if: steps.has.outputs.ok == 'true'
+        env:
+          SB_REF: ${{ secrets.SB_REF }}
+          SB_PAT: ${{ secrets.SB_PAT }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_ANON: ${{ secrets.SB_ANON }}
+        run: node tests/backend.mjs
+
+  online:
+    name: 线上字节校验（仓库 vs 线上 Pages）
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 比对
+        run: node tests/online.mjs
+
+  visual:
+    name: 视觉回归（截图对比，较慢，手动触发）
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 安装 jsdom + playwright
+        run: |
+          npm install --no-save --no-audit --no-fund jsdom@30.1.3 playwright@1.56.0
+
+      - name: 安装 Chromium（带系统依赖）
+        run: npx playwright install --with-deps chromium
+
+      # 基线在仓库里才真能比对；没有就只拍图（并提示）
+      - name: 截图并与基线比对
+        run: node tests/visual.mjs
+
+      - name: 上传截图与差异图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: |
+            .ai/visual/current
+            .ai/visual/diff
+          if-no-files-found: ignore
+          retention-days: 7
