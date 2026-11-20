@@ -62,8 +62,6 @@ assets/fonts/*-src.ttf
 
 # 未完工页面（别推线上）
 /shop.html
-/market.html
-/invest.html
 /yuniao.html
 /article.html
 /assets/js/wz-db.js

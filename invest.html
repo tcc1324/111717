@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link rel="preconnect" href="https://zvuvncxdyxsgiqurkork.supabase.co" crossorigin>
+  <link rel="dns-prefetch" href="//zvuvncxdyxsgiqurkork.supabase.co">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投资卡 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;%3E%3Ctext y=&#39;.9em&#39; font-size=&#39;90&#39;%3E🌙%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/base.css?v=2026112002">
+  <style>
+    /* 本地最小的重置：Supabase 上的 base.css 偶尔会连不上，
+       不能因为那份没到就连内边距都塌掉 */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; background: linear-gradient(180deg, #fff8e1 0%, #fdeaf0 52%, #e6f1ff 100%); color: #222; display: flex; flex-direction: column; align-items: center; }
+    .top { width: calc(100% - 32px); max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+    .top a { color: #222; text-decoration: none; font-size: 16px; }
+    .top h1 { font-size: 22px; font-weight: normal; letter-spacing: .2em; margin: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+    .top h1 small { font-family: Georgia, "Times New Roman", serif; font-size: 8.5px; font-weight: normal; letter-spacing: .3em; color: #bda994; margin-top: 4px; margin-right: -.3em; }
+
+    .bar { width: calc(100% - 44px); max-width: 480px; margin-top: 26px; display: flex; align-items: baseline; justify-content: flex-end; }
+    .bar .note { font-size: 11.5px; color: #b0a094; letter-spacing: .06em; }
+    .bar .coin { font-size: 12px; color: #a8874a; letter-spacing: .1em; }
+    .bar .coin b { font-family: Georgia, "Songti SC", serif; font-size: 16px; font-weight: normal; color: #6b5120; margin-left: 5px; }
+
+    .hint { width: calc(100% - 60px); max-width: 440px; margin-top: 16px; font-size: 11.5px; line-height: 1.95; color: #8d7c6b; letter-spacing: .05em; text-align: center; }
+
+    .tomarket { margin-top: 12px; font-size: 11.5px; letter-spacing: .08em; }
+    .tomarket a { color: #8a7a6a; text-decoration: none; border-bottom: 1px dashed rgba(150,124,98,.4); padding-bottom: 2px; }
+    .tomarket a:hover { color: #5f5142; }
+    .card .repay { padding: 0 18px 15px; }
+    .card .repay button {
+      width: 100%; padding: 9px 0; border-radius: 11px; border: 1px solid rgba(150,124,98,.34);
+      background: rgba(207,159,90,.14); color: #8a6320; font-size: 12px; letter-spacing: .08em;
+      font-family: inherit; cursor: pointer; transition: background .22s ease, border-color .22s ease;
+    }
+    .card .repay button:hover { background: rgba(207,159,90,.24); border-color: #cf9f5a; }
+    .card .repay button:disabled { opacity: .55; cursor: default; }
+    .card .chgline { font-size: 10.5px; letter-spacing: .04em; color: #a4937f; font-variant-numeric: tabular-nums; }
+    .card .chgline.up { color: #5f8a6b; }
+    .card .chgline.down { color: #b0543c; }
+
+    .tabs { width: calc(100% - 44px); max-width: 480px; margin-top: 20px; display: flex; gap: 26px; }
+    .tabs button { appearance: none; -webkit-appearance: none; background: none; border: none; padding: 0 0 9px; font-family: inherit; font-size: 14px; letter-spacing: .16em; color: #ab9a8b; cursor: pointer; position: relative; transition: color .25s; -webkit-tap-highlight-color: transparent; }
+    .tabs button::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 0; height: 1.5px; border-radius: 1px; background: #6f9fb0; transform: translateX(-50%); transition: width .28s cubic-bezier(.22,.8,.3,1); }
+    .tabs button.on { color: #3f362e; }
+    .tabs button.on::after { width: 100%; }
+    .tabs button:hover { color: #6f6255; }
+    .tabs button:focus-visible { outline: 2px solid #6f9fb0; outline-offset: 4px; border-radius: 3px; }
+
+    .pane { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .pane[hidden] { display: none !important; }
+
+    .empty { width: calc(100% - 32px); max-width: 480px; margin-top: 22px; padding: 36px 26px 30px; border-radius: 18px; background: rgba(255,255,255,.46); border: 1px dashed rgba(150,124,98,.28); text-align: center; animation: rise .5s ease both; }
+    .empty .ring { width: 46px; height: 46px; margin: 0 auto 18px; border-radius: 50%; border: 1px dashed rgba(150,124,98,.42); display: flex; align-items: center; justify-content: center; }
+    .empty .ring i { display: block; width: 17px; height: 17px; border-radius: 50%; background: #6f9fb0; opacity: .32; }
+    .empty h3 { margin: 0; font-size: 15px; font-weight: normal; letter-spacing: .12em; color: #4a4038; }
+    .empty p { margin: 11px 0 0; font-size: 12px; line-height: 2; color: #8d7c6b; letter-spacing: .04em; }
+    .empty .go { margin-top: 20px; display: inline-block; padding: 8px 18px; border-radius: 10px; border: 1px dashed rgba(111,159,176,.55); background: rgba(255,255,255,.6); color: #6f9fb0; font-family: inherit; font-size: 12px; letter-spacing: .1em; cursor: pointer; }
+    .empty .go:hover { background: rgba(255,255,255,.9); }
+
+    .cards { width: calc(100% - 32px); max-width: 480px; margin-top: 20px; display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .cards[hidden] { display: none !important; }
+
+    .kv { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 11px 14px; }
+    .kv span { font-size: 11px; color: #a3927f; letter-spacing: .08em; }
+    .kv b { display: block; margin-top: 5px; font-weight: normal; font-family: Georgia, "Songti SC", serif; font-size: 14.5px; color: #4a4038; letter-spacing: .02em; }
+    .kv b.up { color: #5f8f76; }
+    .kv b.down { color: #b3796f; }
+    .tag { font-style: normal; font-size: 11px; color: #8d7c6b; letter-spacing: .1em; margin-left: 9px; }
+    .tag.warn { color: #b3796f; }
+
+    .card { position: relative; overflow: hidden; border-radius: 18px; background: rgba(255,255,255,.66); border: 1px solid rgba(150,124,98,.16); box-shadow: 0 8px 26px -18px rgba(120,96,72,.55); animation: rise .5s ease both; }
+    .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #6f9fb0; }
+    @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .card { animation: none; } }
+
+    .head { display: block; padding: 20px 20px 18px; text-decoration: none; color: inherit; outline: none; -webkit-tap-highlight-color: transparent; transition: background .2s; }
+    .head:hover { background: rgba(255,255,255,.42); }
+    .head:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; border-radius: 18px; }
+    .card h2 { font-size: 19px; font-weight: normal; margin: 0; letter-spacing: .1em; color: #3f362e; }
+    .card .desc { margin: 11px 0 0; font-size: 12.8px; line-height: 1.95; color: #6f6255; letter-spacing: .02em; white-space: pre-line; }
+
+    .price { margin-top: 15px; display: flex; align-items: baseline; justify-content: space-between; }
+    .price .v { font-family: Georgia, "Songti SC", serif; font-size: 17px; color: #4a4038; letter-spacing: .02em; }
+    .price .v i { font-style: normal; font-family: inherit; font-size: 10.5px; color: #a3927f; letter-spacing: .1em; margin-left: 6px; }
+    .price .more { font-size: 11px; color: #b0a094; letter-spacing: .12em; transition: color .2s; }
+    .head:hover .more { color: #8a7a6a; }
+
+    .foot { margin-top: auto; padding: 40px 0 28px; color: #ab9a8b; font-size: 12.5px; letter-spacing: .07em; text-align: center; line-height: 2.1; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="bank.html" id="back">‹ 回去</a><h1>投资卡<small>INVESTMENT CARDS</small></h1><span style="width:48px"></span></div>
+
+  <div class="bar">
+    <div class="coin">月光币<b id="bal">—</b></div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button id="tab-mine" class="on" role="tab" aria-selected="true" aria-controls="pane-mine">我的</button>
+    <button id="tab-shop" role="tab" aria-selected="false" aria-controls="pane-shop">购买</button>
+  </div>
+
+  <section class="pane" id="pane-mine" role="tabpanel" aria-labelledby="tab-mine">
+    <div class="empty" id="mine-empty">
+      <div class="ring"><i></i></div>
+      <h3>还没有买过卡</h3>
+    </div>
+    <div class="cards" id="mine-cards" hidden></div>
+  </section>
+
+  <section class="pane" id="pane-shop" role="tabpanel" aria-labelledby="tab-shop" hidden>
+    <div class="hint">每张卡按 0.1 股起买，一张卡共 10 股<br>要卖的时候，得等月光指数走到卡上写的那一段</div>
+
+    <div class="tomarket"><a href="market.html">要卖的时候，去市场的窗口 ›</a></div>
+
+    <div class="cards" id="cards"></div>
+  </section>
+
+
+  <script src="assets/js/card-pool.js?v=2026112003"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/common.js?v=2026100802"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/auth.js?v=2026100802"></script>
+  <script>
+    (function () {
+      const $ = id => document.getElementById(id);
+      const PREVIEW = new URLSearchParams(location.search).has('preview');
+      // 卡池数值统一放在 assets/js/card-pool.js
+      const CARDS = window.CARD_POOL || [];
+
+      const esc = s => String(s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+
+      // 顶栏两页：我的（实际买下的卡）／购买（卡池）
+      const panes = { mine: $('pane-mine'), shop: $('pane-shop') };
+      const tabs = { mine: $('tab-mine'), shop: $('tab-shop') };
+      function showTab(name) {
+        Object.keys(panes).forEach(function (k) {
+          const on = k === name;
+          panes[k].hidden = !on;
+          tabs[k].classList.toggle('on', on);
+          tabs[k].setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        try { history.replaceState(null, '', name === 'shop' ? '#购买' : '#我的'); } catch (e) {}
+      }
+      tabs.mine.onclick = function () { showTab('mine'); };
+      tabs.shop.onclick = function () { showTab('shop'); };
+      // hash 在浏览器里是编码过的（%F0...），先解码再比对，否则从详情页回来会落回「我的」
+      (function () {
+        let h = location.hash || '';
+        try { h = decodeURIComponent(h); } catch (e) {}
+        if (h === '#购买') showTab('shop');
+        else if (h === '#我的') showTab('mine');
+      })();
+
+      // 「回去」：从别处进来的就退回上一页，直接打开的回银行
+      (function () {
+        const back = $('back');
+        back.addEventListener('click', function (e) {
+          const ref = document.referrer || '';
+          const sameSite = ref && (ref.indexOf(location.origin) === 0 || ref.indexOf('tcc1324.github.io') >= 0);
+          // 从卡详情、市场这些子页回来时，「回去」跳过它们回银行，不会在两页之间打转
+          const fromChild = /card\.html|market\.html/.test(ref);
+          if (sameSite && !fromChild && history.length > 1) {
+            e.preventDefault();
+            history.back();
+          }
+        });
+      })();
+
+      let QM = {};
+      function drawShop() {
+        $('cards').innerHTML = CARDS.map(function (c) {
+          const q = QM[c.id];
+          const now = q ? Number(q.price) : Number(c.price);
+          const chg = q ? Number(q.chg) : 0;
+          const cls = chg > 0 ? ' up' : (chg < 0 ? ' down' : '');
+          const sign = chg > 0 ? '+' : '';
+          return '<article class="card" style="--c:' + c.c + '">' +
+            '<a class="head" href="card.html?id=' + encodeURIComponent(c.id) + '&from=shop">' +
+              '<h2>' + esc(c.name) + '</h2>' +
+              '<p class="desc">' + esc(c.desc) + '</p>' +
+              '<div class="price">' +
+                '<span class="v">' + now.toFixed(2) + ' 月光币<i>/ 0.1 股</i></span>' +
+                '<span class="chgline' + cls + '">' + sign + chg.toFixed(2) + '%</span>' +
+                '<span class="more">详情 ›</span>' +
+              '</div>' +
+            '</a>' +
+          '</article>';
+        }).join('');
+      }
+      drawShop();
+
+      async function loadQuotes() {
+        try {
+          const r = await fetch(Park.sb.url + '/rest/v1/rpc/card_quotes', {
+            method: 'POST',
+            headers: { apikey: Park.sb.key, Authorization: 'Bearer ' + Park.sb.key, 'Content-Type': 'application/json' },
+            body: '{}'
+          });
+          const list = r.ok ? await r.json() : null;
+          if (Array.isArray(list)) {
+            QM = {};
+            list.forEach(function (q) { QM[q.card] = q; });
+            drawShop();
+          }
+        } catch (e) {}
+      }
+
+      async function repay(id, btn) {
+        if (!window.Park) { if (window.toast) toast('先登录'); return; }
+        btn.disabled = true;
+        const old = btn.textContent;
+        btn.textContent = '正在补缴…';
+        try {
+          const r = await Park.api('rpc/card_repay', { method: 'POST', body: JSON.stringify({ p_id: id }) });
+          const j = r.ok ? await r.json().catch(function () { return null; }) : null;
+          if (!j || !j.ok) {
+            if (window.toast) toast((j && j.msg) || '没补上，再试一次');
+            btn.disabled = false; btn.textContent = old;
+            return;
+          }
+          if (window.toast) toast('补上了 · 卡解冻了');
+          load(true);
+        } catch (e) {
+          if (window.toast) toast('网络不稳，没补上');
+          btn.disabled = false; btn.textContent = old;
+        }
+      }
+
+      let MW = false, lastLoad = 0;
+      async function load(force) {
+        // pageshow 和 visibilitychange 会在同一刹同时触发，隔开一点避免重复拉两遍账
+        const t = Date.now();
+        if (!force && t - lastLoad < 200) return;
+        lastLoad = t;
+        loadQuotes();
+        const s = PREVIEW ? null : await Park.session().catch(() => null);
+        //没登录：去登录页；带 ?preview 的预览页照旧不跳，只把余额显示成「—」
+        if (!s) { if (!PREVIEW) location.replace('login.html'); return; }
+
+        // 音乐球会检查登录态、没登录就跳登录页，所以登上了才挂它
+        if (!MW) {
+          MW = true;
+          const mw = document.createElement('script');
+          mw.src = 'https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/music-widget.js?v=2026110222';
+          document.body.appendChild(mw);
+        }
+
+        let uid = '';
+        try {
+          const p = atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+          uid = JSON.parse(p).sub || '';
+        } catch (e) {}
+        const trimNum = v => {
+          const n = Number(v);
+          if (!isFinite(n)) return '0';
+          if (Number.isInteger(n)) return String(n);
+          return String(Number(n.toFixed(4)));
+        };
+        try {
+          const r = await Park.api('profiles?select=moon_coins&id=eq.' + uid);
+          const me = r.ok ? (await r.json())[0] : null;
+          $('bal').textContent = me ? trimNum(me.moon_coins ?? 0) : '—';
+        } catch (e) { $('bal').textContent = '—'; }
+
+        // 我的持仓：真数据，来自 card_my()
+        const money = v => {
+          const n = Number(v);
+          if (!isFinite(n)) return '—';
+          return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(4)));
+        };
+        const shares = u => {
+          const n = Number(u) / 10;
+          return (Number.isInteger(n) ? String(n) : String(Number(n.toFixed(1)))) + ' 股';
+        };
+        function renderMine(list) {
+          if (!list || !list.length) {
+            $('mine-cards').hidden = true;
+            $('mine-empty').hidden = false;
+            return;
+          }
+          $('mine-empty').hidden = true;
+          $('mine-cards').hidden = false;
+          $('mine-cards').innerHTML = list.map(function (h) {
+            const now = Number(h.price_now) * Number(h.units);
+            const pnl = now - Number(h.cost);
+            const cls = pnl > 0 ? 'up' : (pnl < 0 ? 'down' : '');
+            const sign = pnl > 0 ? '+' : '';
+            const frozen = h.state === 'frozen';
+            return '' +
+              '<article class="card" style="--c:' + h.color + '">' +
+                '<a class="head" href="card.html?id=' + encodeURIComponent(h.card) + '&from=mine">' +
+                  '<h2>' + esc(h.name) +
+                    '<i class="tag' + (frozen ? ' warn' : '') + '">' +
+                      (frozen ? '保证金已扣光 · 待补缴' : shares(h.units)) +
+                    '</i>' +
+                  '</h2>' +
+                  '<div class="kv">' +
+                    '<div><span>我付了</span><b>' + money(h.cost) + '</b></div>' +
+                    '<div><span>现在值</span><b class="' + cls + '">' + money(now) + '</b></div>' +
+                    '<div><span>浮动</span><b class="' + cls + '">' + sign + money(pnl) + '</b></div>' +
+                    '<div><span>已结收益</span><b>' + money(h.accrued) + '</b></div>' +
+                    '<div><span>保证金还剩</span><b>' + money(h.deposit_left) + ' / ' + money(h.deposit_full) + '</b></div>' +
+                    '<div><span>持股</span><b>' + shares(h.units) + '</b></div>' +
+                  '</div>' +
+                '</a>' +
+                (frozen ? '<div class="repay"><button type="button" data-repay="' + h.id + '">补缴 ' +
+                    money(h.deposit_full) + ' · 解冻</button></div>' : '') +
+              '</article>';
+          }).join('');
+          $('mine-cards').onclick = function (e) {
+            const b = e.target.closest ? e.target.closest('[data-repay]') : null;
+            if (!b) return;
+            e.preventDefault();
+            repay(Number(b.getAttribute('data-repay')), b);
+          };
+        }
+        try {
+          const r = await Park.api('rpc/card_my', { method: 'POST', body: '{}' });
+          if (r.ok) renderMine(await r.json());
+        } catch (e) {}
+      }
+
+      load();
+      // 行情每 30 秒刷一次（卡价是活的）
+      setInterval(function () {
+        if (document.visibilityState === 'visible') loadQuotes();
+      }, 30000);
+      // 从详情页退回时（bfcache）重新讀一次，余额和持仓才是新的
+      window.addEventListener('pageshow', function (e) { if (e.persisted) load(); });
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') load();
+      });
+    })();
+  </script>
+</body>
+</html>

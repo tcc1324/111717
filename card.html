@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link rel="preconnect" href="https://zvuvncxdyxsgiqurkork.supabase.co" crossorigin>
+  <link rel="dns-prefetch" href="//zvuvncxdyxsgiqurkork.supabase.co">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>投资卡 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;%3E%3Ctext y=&#39;.9em&#39; font-size=&#39;90&#39;%3E🌙%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/base.css?v=2026112002">
+  <style>
+    /* 本地最小的重置：Supabase 上的 base.css 偶尔会连不上，
+       不能因为那份没到就连内边距都塌掉 */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { min-height: 100vh; margin: 0; background: linear-gradient(180deg, #fff8e1 0%, #fdeaf0 52%, #e6f1ff 100%); color: #222; display: flex; flex-direction: column; align-items: center; }
+    .top { width: calc(100% - 32px); max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+    .top a { color: #222; text-decoration: none; font-size: 16px; }
+    .top h1 { font-size: 22px; font-weight: normal; letter-spacing: .2em; margin: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+    .top h1 small { font-family: Georgia, "Times New Roman", serif; font-size: 8.5px; font-weight: normal; letter-spacing: .3em; color: #bda994; margin-top: 4px; margin-right: -.3em; }
+
+    .card { position: relative; width: calc(100% - 32px); max-width: 480px; margin-top: 26px; border-radius: 20px; padding: 22px 20px 20px; background: rgba(255,255,255,.72); border: 1px solid rgba(150,124,98,.16); box-shadow: 0 10px 30px -20px rgba(120,96,72,.6); overflow: hidden; }
+    .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: #6f9fb0; }
+    .card h2 { font-size: 21px; font-weight: normal; margin: 0; letter-spacing: .12em; color: #3f362e; }
+    .card .sub { font-size: 11px; color: #a3927f; letter-spacing: .16em; margin-top: 7px; }
+    .card .desc { margin: 14px 0 0; font-size: 13px; line-height: 2; color: #6f6255; letter-spacing: .02em; white-space: pre-line; }
+
+    .panel { width: calc(100% - 32px); max-width: 480px; margin-top: 18px; border-radius: 18px; padding: 18px 18px 16px; background: rgba(255,255,255,.66); border: 1px solid rgba(150,124,98,.14); box-shadow: 0 8px 26px -20px rgba(120,96,72,.5); }
+    .panel h3 { margin: 0 0 4px; font-size: 13px; font-weight: normal; letter-spacing: .12em; color: #7c6a58; display: flex; align-items: baseline; justify-content: space-between; }
+    .panel h3 small { font-family: Georgia, serif; font-size: 8.5px; letter-spacing: .24em; color: #c0ad99; }
+
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.4px; padding: 5px 0; }
+    .row span { color: #a3927f; letter-spacing: .04em; }
+    .row b { font-family: Georgia, "Songti SC", serif; font-weight: normal; color: #4a4038; letter-spacing: .02em; }
+    .row.total b { font-size: 15px; color: #3f362e; }
+
+    .step { display: flex; align-items: center; gap: 9px; flex: 0 0 auto; }
+    .step button:not(.quick) { width: 26px; height: 26px; border-radius: 50%; border: 1px solid rgba(150,124,98,.3); background: rgba(255,255,255,.8); color: #6f6255; font-size: 15px; line-height: 1; cursor: pointer; }
+    .step button:disabled { opacity: .35; cursor: default; }
+    .step b { min-width: 46px; white-space: nowrap; text-align: center; font-family: Georgia, "Songti SC", serif; font-size: 14px; color: #3f362e; }
+    .quick { flex: 0 0 auto; white-space: nowrap; margin-left: 2px; padding: 5px 10px; border-radius: 8px; border: 1px dashed rgba(150,124,98,.44); background: rgba(255,255,255,.7); font-size: 11px; line-height: 1.2; color: var(--c); filter: brightness(.78); letter-spacing: .06em; cursor: pointer; font-family: inherit; }
+
+    .btn { display: block; box-sizing: border-box; width: 100%; margin-top: 12px; padding: 11px; text-align: center; text-decoration: none; border-radius: 12px; border: none; background: #6f9fb0; color: #fff; font-size: 13.5px; letter-spacing: .16em; cursor: pointer; font-family: inherit; }
+    .btn:active { filter: brightness(.85); }
+    .tip { margin-top: 9px; font-size: 11.5px; line-height: 2; color: #8a7a6a; letter-spacing: .03em; min-height: 20px; }
+    .rule p { margin: 8px 0 0; font-size: 12px; line-height: 1.95; color: #6f6053; letter-spacing: .02em; }
+    .odds h3.t2 { margin-top: 16px; padding-top: 14px; border-top: 1px dashed rgba(150,124,98,.18); }
+    .odds .line { display: flex; flex-wrap: wrap; column-gap: 7px; row-gap: 7px; margin: 2px 0 0; }
+    .odds .o { white-space: nowrap; font-size: 12px; letter-spacing: .02em; color: #4a4038; background: rgba(150,124,98,.08); border-radius: 9px; padding: 4px 8px; }
+    .odds .o b { font-weight: 600; }
+    .odds .o.neg { color: #b0543c; background: rgba(176,84,60,.09); }
+    .odds .sum { margin: 9px 0 0; font-size: 11.5px; line-height: 1.9; color: #93826f; letter-spacing: .03em; }
+    .rule p b { color: #3f362e; font-weight: 600; }
+    .chg { margin-left: 6px; font-size: 10.5px; letter-spacing: .02em; font-style: normal; }
+    .chg.up { color: #5f8a6b; }
+    .chg.down { color: #b0543c; }
+    .btn.warn { background: #cf9f5a; margin-top: 10px; }
+    .panel.locked { opacity: .58; }
+
+    .foot { margin-top: 26px; padding-bottom: 34px; color: #ab9a8b; font-size: 11.5px; letter-spacing: .06em; text-align: center; line-height: 2; width: calc(100% - 60px); max-width: 440px; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="invest.html" id="back">‹ 投资卡</a><h1 id="name">—</h1><span style="width:56px"></span></div>
+
+  <div class="card" style="--c:#6f9fb0">
+    <h2 id="cname">—</h2>
+    <div class="sub" id="sub">—</div>
+    <p class="desc" id="desc">—</p>
+  </div>
+
+  <section class="panel">
+    <h3>买入<small>BUY</small></h3>
+    <div class="row">
+      <span>买多少</span>
+      <span class="step">
+        <button id="minus" aria-label="减少">−</button>
+        <b id="units">0.1 股</b>
+        <button id="plus" aria-label="增加">+</button>
+        <button class="quick" id="all" aria-label="买满一整张 10 股">全买</button>
+      </span>
+    </div>
+    <div class="row"><span>单价<i class="chg" id="chg"></i></span><b id="per">—</b></div>
+    <div class="row"><span>本金</span><b id="cost">—</b></div>
+    <div class="row"><span>保证金</span><b id="dep">—</b></div>
+    <div class="row total"><span>一共要付</span><b id="sum">—</b></div>
+    <div class="row"><span>我的月光币</span><b id="bal">—</b></div>
+    <div class="row" id="myrow" hidden><span>我持有</span><b id="mine">—</b></div>
+    <div class="row"><span>预计</span><b id="forecast">—</b></div>
+    <button class="btn" id="buy">买入</button>
+    <div class="tip" id="buytip">每天 00:05 自动结算一次收益与亏损。</div>
+  </section>
+
+  <section class="panel" id="sellp">
+    <h3>掷售<small>SELL</small></h3>
+    <div class="row"><span>我手上</span><b id="sunits">—</b></div>
+    <div class="row"><span>要卖</span>
+      <span class="step">
+        <button id="sminus" aria-label="减少">−</button>
+        <b id="snum">—</b>
+        <button id="splus" aria-label="增加">+</button>
+        <button class="quick" id="sall" aria-label="全部卖出">全卖</button>
+      </span>
+    </div>
+    <div class="row"><span>此刻月光指数</span><b id="sidx">—</b></div>
+    <div class="row"><span>这张卡的窗口</span><b id="swin">—</b></div>
+    <div class="row total"><span>能拿</span><b id="sget">—</b></div>
+    <button class="btn" id="sell" disabled>卖出</button>
+    <button class="btn warn" id="repay" hidden>补缴 · 解冻</button>
+    <div class="tip" id="selltip">指数走进窗口才能卖。可以只卖一部分。</div>
+  </section>
+
+  <section class="panel odds">
+    <h3>收益骰<small>DAILY</small></h3>
+    <div class="line" id="payline"></div>
+    <p class="sum" id="paysum"></p>
+    <h3 class="t2">亏损骰<small>LOSS</small></h3>
+    <div class="line" id="riskline"></div>
+    <p class="sum" id="risksum"></p>
+  </section>
+
+  <section class="panel rule">
+    <h3>保证金<small>DEPOSIT</small></h3>
+    <p>亏的钱从保证金里扣。扣光了卡不会立刻消失——它先冻住，不再结算收益，同时给你发一封邮件。你在 <b>72 小时</b>内补缴 <b id="repl">—</b>，卡就回到正常状态；不补，卡作废，卡和本金都不再回来。</p>
+  </section>
+
+  <script src="assets/js/card-pool.js?v=2026112003"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/common.js?v=2026100802"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/auth.js?v=2026100802"></script>
+  <script>
+    (function () {
+      const $ = id => document.getElementById(id);
+      const QS = new URLSearchParams(location.search);
+      const POOL = window.CARD_POOL || [];
+      const c = POOL.filter(x => x.id === QS.get('id'))[0] || POOL[0];
+      const esc = s => String(s).replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+      const money = v => (Number.isInteger(v) ? String(v) : String(Number(Number(v).toFixed(4))));
+      if (!c) { $('cname').textContent = '找不到这张卡'; return; }
+
+      document.title = c.name + ' · 投资卡';
+      document.documentElement.style.setProperty('--c', c.c);
+      document.querySelectorAll('.card, .panel').forEach(function (e) { e.style.setProperty('--c', c.c); });
+      $('name').innerHTML = esc(c.name) + '<small>INVESTMENT CARD</small>';
+      $('cname').textContent = c.name;
+      $('sub').textContent = c.sub;
+      $('desc').textContent = c.desc;
+
+      /* ============ 回去 ============ */
+      (function () {
+        const back = $('back');
+        const from = QS.get('from') || '';
+        // 从哪个页签点进来的，就回哪个页签；直接打开的，回「我的」总览
+        const label = from === 'shop' ? '‹ 购买' : (from === 'mine' ? '‹ 我的' : '‹ 投资卡');
+        back.textContent = label;
+        back.href = from === 'shop' ? 'invest.html#购买' : (from === 'mine' ? 'invest.html#我的' : 'invest.html');
+        const ref = document.referrer || '';
+        const sameSite = ref && (ref.indexOf(location.origin) === 0 || ref.indexOf('tcc1324.github.io') >= 0);
+        const fromInvest = sameSite && /invest\.html(?:$|[?#])/.test(ref);
+        back.addEventListener('click', function (e) {
+          // 是从投资卡列表点进来的：直接退回去，保留对方的页签和滚动位置
+          if (fromInvest && history.length > 1) { e.preventDefault(); history.back(); }
+        });
+      })();
+
+      /* ============ 买入预览 ============ */
+      let units = 1, BAL = null, MY = 0, tipMsg = '';
+      let LIVE = null, HOLD = null, IDX = null, SELL_BUSY = false, sellMsg = '', SELL_UNITS = 0;
+      // 卡价是活的：有行情就用行情价，没拿到退回卡面上写的价
+      const priceNow = () => (LIVE ? LIVE.price : Number(c.price));
+      const E_pay = c.pay.reduce((s, p) => s + p[0] / 100 * p[1], 0) / c.cycle;
+      const E_loss = (c.risk.p / 100) * c.risk.out.reduce((s, o) => s + o[0] / 100 * o[1], 0) / c.risk.every;
+
+      /* ----------骰子清单 ---------- */
+      $('payline').innerHTML = c.pay.map(function (p) {
+        return '<span class="o' + (p[1] < 0 ? ' neg' : '') + '">' + p[0] + '% → <b>' + money(p[1]) + '</b></span>';
+      }).join('');
+      $('paysum').textContent = '每天结算一次，期望 +' + E_pay.toFixed(1) + '　·　按期望回本约 ' + ((c.price + c.deposit) / (E_pay - E_loss)).toFixed(1) + ' 天';
+      $('riskline').innerHTML = c.risk.out.map(function (o) {
+        return '<span class="o neg">' + (c.risk.out.length > 1 ? o[0] + '% ' : '') + '亏 <b>' + money(o[1]) + '</b></span>';
+      }).join('');
+      $('risksum').textContent = '每 ' + c.risk.every + ' 天判一次，命中 ' + c.risk.p + '%　·　期望每天 −' + (E_loss < 0.1 ? E_loss.toFixed(2) : E_loss.toFixed(1)) + '　·　从保证金里扣，扣光就冻卡';
+
+      function showMine() {
+        if (!MY) return;
+        $('mine').textContent = (MY / 10).toFixed(1) + ' 股';
+        $('myrow').hidden = false;
+      }
+
+      function drawBuy() {
+        const p = priceNow();
+        const cost = p * units, dep = c.deposit * units, sum = cost + dep;
+        $('units').textContent = (units / 10).toFixed(1) + ' 股';
+        $('per').textContent = money(p) + ' 月光币 / 0.1 股';
+        const chgEl = $('chg');
+        if (LIVE) {
+          const chg = LIVE.chg || 0;
+          chgEl.textContent = (chg > 0 ? '+' : '') + chg.toFixed(2) + '%';
+          chgEl.className = 'chg' + (chg > 0 ? ' up' : (chg < 0 ? ' down' : ''));
+        } else {
+          chgEl.textContent = '';
+          chgEl.className = 'chg';
+        }
+        $('cost').textContent = money(cost) + ' 月光币';
+        $('dep').textContent = money(dep) + ' 月光币';
+        $('repl').textContent = money(dep) + ' 月光币';
+        $('sum').textContent = money(sum) + ' 月光币';
+        $('bal').textContent = BAL === null ? '—' : money(BAL) + ' 月光币';
+        $('forecast').textContent = '每天 +' + money(E_pay * units) + ' · 亏损期望 -' + money(E_loss * units);
+        $('minus').disabled = units <= 1;
+        $('plus').disabled = units >= 10;
+        const lack = BAL !== null && sum > BAL;
+        $('buytip').textContent = tipMsg || (lack
+          ? '月光币不够，还差 ' + money(sum - BAL) + '。'
+          : '每天 00:05 自动结算一次收益与亏损。');
+      }
+      const step = d => function () {
+        const n = units + d;
+        if (n < 1 || n > 10) return;
+        units = n; tipMsg = ''; drawBuy();
+      };
+      $('minus').onclick = step(-1);
+      $('plus').onclick = step(1);
+      $('all').onclick = function () { units = 10; tipMsg = ''; drawBuy(); };
+      function sellStep(d) {
+        const max = HOLD ? Number(HOLD.units) || 0 : 0;
+        const n = SELL_UNITS + d;
+        if (n < 1 || n > max) return;
+        SELL_UNITS = n; sellMsg = ''; drawSell();
+      }
+      $('sminus').onclick = function () { sellStep(-1); };
+      $('splus').onclick = function () { sellStep(1); };
+      $('sall').onclick = function () { SELL_UNITS = HOLD ? Number(HOLD.units) || 0 : 0; sellMsg = ''; drawSell(); };
+
+      let BUSY = false;
+      $('buy').onclick = async function () {
+        if (BUSY) return;
+        if (!window.Park) { tipMsg = '请先登录再买。'; drawBuy(); return; }
+        BUSY = true;
+        $('buy').disabled = true;
+        $('buy').textContent = '正在买…';
+        tipMsg = '';
+        try {
+          const r = await Park.api('rpc/card_buy', {
+            method: 'POST',
+            body: JSON.stringify({ p_card: c.id, p_units: units })
+          });
+          const j = r.ok ? await r.json().catch(() => null) : null;
+          if (!j) {
+            tipMsg = '网络不稳，没买到，再试一次。';
+          } else if (!j.ok) {
+            tipMsg = j.msg || '没买到。';
+          } else {
+            BAL = Number(j.bal);
+            MY = Number(j.units);
+            showMine();
+            tipMsg = '买到了：' + (j.units / 10).toFixed(1) + ' 股，付了 '
+                   + money(Number(j.cost)) + ' 月光币。这张卡你现在持有 '
+                   + (j.units / 10).toFixed(1) + ' 股。';
+            if (window.toast) toast('买到了 · ' + c.name + ' ' + (j.units / 10).toFixed(1) + ' 股');
+          }
+        } catch (e) {
+          tipMsg = '网络不稳，没买到，再试一次。';
+        } finally {
+          BUSY = false;
+          $('buy').disabled = false;
+          $('buy').textContent = '买入';
+          drawBuy();
+        }
+      };
+
+      /* ============ 卖出（掷售） ============ */
+      function drawSell() {
+        const p = priceNow();
+        const u = HOLD ? Number(HOLD.units) || 0 : 0;
+        const st = HOLD ? HOLD.state : '';
+        const dep = HOLD ? Number(HOLD.deposit_left) || 0 : 0;
+        const winLo = Number(c.sell[0]), winHi = Number(c.sell[1]);
+        const inWin = IDX !== null && IDX >= winLo && IDX <= winHi;
+
+        if (SELL_UNITS > u) SELL_UNITS = u;
+        if (SELL_UNITS < 1 && u > 0) SELL_UNITS = u;
+        $('sunits').textContent = u > 0 ? (u / 10).toFixed(1) + ' 股' : '—';
+        $('snum').textContent = u > 0 ? (SELL_UNITS / 10).toFixed(1) + ' 股' : '—';
+        $('sminus').disabled = SELL_UNITS <= 1;
+        $('splus').disabled = SELL_UNITS >= u;
+        $('sall').disabled = u <= 0;
+        $('sidx').textContent = IDX === null ? '—' : IDX.toFixed(2);
+        $('swin').textContent = winLo.toFixed(2) + ' — ' + winHi.toFixed(2);
+        $('sget').textContent = u > 0
+          ? money(Number((p * SELL_UNITS + dep * SELL_UNITS / u).toFixed(4))) + ' 月光币'
+          : '—';
+
+        const btn = $('sell');
+        const can = u > 0 && st === 'normal' && inWin && !SELL_BUSY;
+        btn.disabled = !can;
+        btn.textContent = SELL_BUSY ? '正在卖…' : '卖出';
+        $('sellp').classList.toggle('locked', u > 0 && st !== 'normal');
+
+        const rb = $('repay');
+        if (st === 'frozen') {
+          rb.hidden = false;
+          rb.disabled = SELL_BUSY;
+          rb.textContent = '补缴 ' + money(Number(HOLD.need_repay || HOLD.deposit_full || 0)) + ' · 解冻';
+        } else {
+          rb.hidden = true;
+        }
+
+        if (sellMsg) { $('selltip').textContent = sellMsg; return; }
+        let t;
+        if (!window.Park) t = '先登录，卖了钱才知道给谁。';
+        else if (!HOLD || u <= 0) t = '你手上还没有这张卡。';
+        else if (st === 'void') t = '这张卡已经作废了。';
+        else if (st === 'frozen') t = '保证金扣光了，卡先冻着；补缴之后才能卖。';
+        else if (IDX === null) t = '正在问月光指数…';
+        else if (!inWin) t = '现在指数 ' + IDX.toFixed(2) + '，还没走进 '
+          + winLo.toFixed(2) + ' — ' + winHi.toFixed(2) + '，再等等。';
+        else t = '时候到了，现在可以卖。想留一部分就少卖几份。';
+        $('selltip').textContent = t;
+      }
+
+      // 行情是公开的：用 anon key 直连，不走 Park.api（它会因为没登录把人赶去登录页）
+      async function rpcAnon(name, body) {
+        const r = await fetch(Park.sb.url + '/rest/v1/rpc/' + name, {
+          method: 'POST',
+          headers: { apikey: Park.sb.key, Authorization: 'Bearer ' + Park.sb.key, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body || {})
+        });
+        if (!r.ok) return null;
+        return r.json().catch(function () { return null; });
+      }
+
+      async function loadLive() {
+        try {
+          const list = await rpcAnon('card_quotes', {});
+          const q = Array.isArray(list) ? list.filter(function (x) { return x.card === c.id; })[0] : null;
+          if (q) {
+            LIVE = { price: Number(q.price), open: Number(q.open), chg: Number(q.chg) };
+            drawBuy(); drawSell();
+          }
+        } catch (e) {}
+      }
+
+      // 权威指数由 edge function 重算，卖出时以它为准
+      async function serverIndex() {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(function () { ctrl.abort(); }, 6000);
+          const r = await fetch(Park.sb.url + '/functions/v1/index-now', {
+            headers: { apikey: Park.sb.key, Authorization: 'Bearer ' + Park.sb.key },
+            signal: ctrl.signal
+          });
+          clearTimeout(timer);
+          const j = await r.json();
+          return j && j.ok ? Number(j.idx) : null;
+        } catch (e) { return null; }
+      }
+
+      async function loadIndex() {
+        const v = await serverIndex();
+        if (v === null) return;
+        IDX = v;
+        drawSell();
+      }
+
+      /* 没登录 → 回登录页（只跳一次，别重复 replace） */
+      let BOUNCED = false;
+      function needLogin() {
+        if (BOUNCED) return;
+        BOUNCED = true;
+        location.replace('login.html');
+      }
+      async function loadMine() {
+        const s = await Park.session().catch(function () { return null; });
+        if (!s) { needLogin(); return; }
+        try {
+          const r = await Park.api('rpc/card_my', { method: 'POST', body: '{}' });
+          if (!r.ok) return;
+          const list = await r.json();
+          HOLD = Array.isArray(list) ? (list.filter(function (x) { return x.card === c.id; })[0] || null) : null;
+          MY = HOLD ? Number(HOLD.units) || 0 : 0;
+          if (MY) showMine(); else $('myrow').hidden = true;
+          drawSell();
+        } catch (e) {}
+      }
+
+      async function loadBal() {
+        try {
+          const s = await Park.session().catch(function () { return null; });
+          if (!s) { needLogin(); return false; }
+          let uid = '';
+          try {
+            const p = atob(s.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+            uid = JSON.parse(p).sub || '';
+          } catch (e) {}
+          const r = await Park.api('profiles?select=moon_coins&id=eq.' + uid);
+          const me = r.ok ? (await r.json())[0] : null;
+          if (me) { BAL = Number(me.moon_coins) || 0; drawBuy(); }
+          return true;
+        } catch (e) { return false; }
+      }
+
+      /* ============ 卖出按钮 ============ */
+      $('sell').onclick = async function () {
+        if (SELL_BUSY) return;
+        if (!window.Park) { sellMsg = '先登录再卖。'; drawSell(); return; }
+        SELL_BUSY = true; sellMsg = ''; drawSell();
+        try {
+          const real = await serverIndex();
+          if (real !== null) { IDX = real; }
+          drawSell();
+          if (IDX === null) { sellMsg = '问不到月光指数，再按一次。'; return; }
+          const winLo = Number(c.sell[0]), winHi = Number(c.sell[1]);
+          if (IDX < winLo || IDX > winHi) {
+            sellMsg = '现在指数 ' + IDX.toFixed(2) + '，还没走进 '
+              + winLo.toFixed(2) + ' — ' + winHi.toFixed(2) + '，再等等。';
+            return;
+          }
+          const rr = await Park.api('rpc/card_my', { method: 'POST', body: '{}' });
+          const list = rr.ok ? await rr.json() : [];
+          const h = Array.isArray(list) ? list.filter(function (x) {
+            return x.card === c.id && x.state === 'normal';
+          })[0] : null;
+          if (!h) { sellMsg = '你手上没有可卖的「' + c.name + '」。'; return; }
+          const r = await Park.api('rpc/card_sell', {
+            method: 'POST',
+            body: JSON.stringify({ p_id: h.id, p_units: Math.min(SELL_UNITS || h.units, h.units), p_index: IDX })
+          });
+          const j = r.ok ? await r.json().catch(function () { return null; }) : null;
+          if (!j) { sellMsg = '网络不稳，没卖掉，再按一次。'; }
+          else if (!j.ok) { sellMsg = j.msg || '没卖掉。'; }
+          else {
+            const sh = function (v) { return (Number(v) / 10).toFixed(1) + ' 股'; };
+            BAL = Number(j.bal);
+            const leftN = Number(j.left) || 0;
+            sellMsg = '卖掉了：' + sh(j.units) + '，成交价 ' + Number(j.price).toFixed(2)
+              + (j.up ? '（上升段加成）' : '') + '，拿到 ' + money(j.amount)
+              + '，退回保证金 ' + money(j.deposit_back)
+              + '，一共 ' + money(j.total) + ' 月光币。'
+              + (leftN > 0 ? '还留着 ' + sh(leftN) + '，指数下次再走进窗口还能卖。' : '');
+            if (window.toast) toast('卖掉了 · ' + c.name + ' ' + sh(j.units));
+            SELL_UNITS = leftN;
+            await loadMine();
+          }
+        } catch (e) {
+          sellMsg = '网络不稳，没卖掉，再按一次。';
+        } finally {
+          SELL_BUSY = false;
+          drawBuy(); drawSell();
+        }
+      };
+
+      /* ============ 补缴 ============ */
+      $('repay').onclick = async function () {
+        if (!window.Park || !HOLD || SELL_BUSY) return;
+        SELL_BUSY = true; sellMsg = ''; drawSell();
+        try {
+          const r = await Park.api('rpc/card_repay', {
+            method: 'POST',
+            body: JSON.stringify({ p_id: HOLD.id })
+          });
+          const j = r.ok ? await r.json().catch(function () { return null; }) : null;
+          if (!j || !j.ok) sellMsg = (j && j.msg) || '没补上，再试一次。';
+          else {
+            sellMsg = '补上了，卡解冻了，回到正常状态。';
+            if (window.toast) toast('补上了 · 卡解冻了');
+            await loadBal();
+            await loadMine();
+          }
+        } catch (e) {
+          sellMsg = '网络不稳，没补上，再按一次。';
+        } finally {
+          SELL_BUSY = false;
+          drawSell();
+        }
+      };
+
+      /* ============ 启动 ============ */
+      drawBuy();
+      drawSell();
+      // 指数公开可看，不等登录
+      loadIndex();
+      loadLive();
+      (async function () {
+        const ok = await loadBal();
+        if (!ok) return;
+        await loadMine();
+      })();
+      setInterval(function () {
+        if (document.visibilityState !== 'visible') return;
+        loadLive(); loadIndex();
+      }, 30000);
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') { loadBal(); loadMine(); loadLive(); loadIndex(); }
+      });
+    })();
+  </script>
+</body>
+</html>

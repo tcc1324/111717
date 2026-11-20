@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <link rel="preconnect" href="https://zvuvncxdyxsgiqurkork.supabase.co" crossorigin>
+  <link rel="dns-prefetch" href="//zvuvncxdyxsgiqurkork.supabase.co">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>市场 · 给聆遇的游乐园</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌙%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/base.css?v=2026112002">
+  <style>
+    body { min-height: 100vh; margin: 0; background: linear-gradient(180deg, #fff8e1 0%, #fdeaf0 52%, #e6f1ff 100%); color: #222; display: flex; flex-direction: column; align-items: center; }
+    .top { width: calc(100% - 32px); max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-top: 20px; }
+    .top a { color: #222; text-decoration: none; font-size: 16px; }
+    .top h1 { font-size: 22px; font-weight: normal; letter-spacing: .2em; margin: 0; display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+    .top h1 small { font-family: Georgia, "Times New Roman", serif; font-size: 8.5px; font-weight: normal; letter-spacing: .3em; color: #bda994; margin-top: 4px; margin-right: -.3em; }
+
+    .idx { margin-top: 30px; width: calc(100% - 64px); max-width: 420px; background: rgba(255,255,255,.74); border: 1.5px solid rgba(122,92,72,.16); border-radius: 24px; padding: 22px 22px 14px; box-shadow: 0 10px 30px rgba(180,150,120,.16); box-sizing: border-box; }
+    .idx .lb { font-size: 11.5px; letter-spacing: .28em; color: #b08a3d; }
+    .idx .mid { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 6px; }
+    .idx .num { font-family: Georgia, "Songti SC", serif; font-size: 42px; line-height: 1.12; color: #6b5120; letter-spacing: .01em; font-variant-numeric: tabular-nums; transition: color .3s ease; }
+    .idx .chg { font-size: 13px; letter-spacing: .04em; padding-bottom: 8px; font-variant-numeric: tabular-nums; }
+    .idx .chart { margin-top: 12px; }
+    .idx .chart svg { display: block; width: 100%; height: 96px; }
+
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(122,92,72,.14); }
+    .stats div { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .stats span { font-size: 9.5px; color: #c3b3a3; letter-spacing: .14em; }
+    .stats b { font-family: Georgia, "Songti SC", serif; font-weight: normal; font-size: 14px; color: #7a6552; font-variant-numeric: tabular-nums; }
+
+    .seedline { margin-top: 13px; padding-top: 10px; border-top: 1px dashed rgba(122,92,72,.14); font-size: 9.5px; color: #b8a898; letter-spacing: .02em; line-height: 1.85; font-family: ui-monospace, Menlo, Consolas, monospace; word-break: break-all; }
+    .seedline b { font-weight: normal; color: #a8874a; }
+    @keyframes tick { 0% { opacity: .35; } 100% { opacity: 1; } }
+    .idx .num.tick { animation: tick .5s ease; }
+
+    .up, .dn { color: #6b82a6; }
+
+    .stalls { margin-top: 16px; width: calc(100% - 64px); max-width: 420px; box-sizing: border-box; background: rgba(255,255,255,.74); border: 1.5px solid rgba(122,92,72,.16); border-radius: 24px; padding: 18px 18px 14px; box-shadow: 0 10px 30px rgba(180,150,120,.14); }
+    .stalls h3 { margin: 0; font-size: 12.5px; font-weight: normal; letter-spacing: .2em; color: #b08a3d; display: flex; align-items: baseline; justify-content: space-between; }
+    .stalls h3 small { font-family: Georgia, serif; font-size: 8px; letter-spacing: .24em; color: #cdbca6; }
+    .stall { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 2px; border-top: 1px dashed rgba(122,92,72,.12); }
+    .stall:first-child { border-top: none; }
+    .stall .n { font-size: 13px; color: #4a4038; letter-spacing: .06em; }
+    .stall .r { font-family: Georgia, "Songti SC", serif; font-size: 11px; color: #b3a291; letter-spacing: .02em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .stall .p { font-size: 10.5px; color: #b08a3d; letter-spacing: .04em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .stall .s { font-size: 10.5px; color: #a4937f; letter-spacing: .04em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .stall.on .s { color: #3d6472; font-weight: 600; }
+    .stall.up .s { color: #8a6320; font-weight: 600; }
+    .stall.sel { background: rgba(207,159,90,.11); border-radius: 10px; box-shadow: inset 2px 0 0 #cf9f5a; }
+    .stall { cursor: pointer; }
+    .stall .go { flex: 0 0 auto; padding: 6px 15px; border-radius: 9px; border: 1px solid rgba(150,124,98,.3); background: rgba(255,255,255,.55); color: #b3a291; font-size: 11.5px; letter-spacing: .1em; font-family: inherit; cursor: pointer; transition: background .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease; }
+    .stall .go.lit { background: #7d93b4; border-color: #7d93b4; color: #fff; box-shadow: 0 3px 10px rgba(125,147,180,.4); }
+    .stall .ops { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+    .stall .pin { padding: 5px 9px; border-radius: 8px; border: 1px dashed rgba(150,124,98,.32); background: transparent; color: #b3a291; font-size: 10.5px; letter-spacing: .04em; font-family: inherit; cursor: pointer; transition: all .22s ease; }
+    .stall .pin.on { border-style: solid; border-color: #cf9f5a; background: rgba(207,159,90,.13); color: #a8772f; }
+    .stip a { color: #a8772f; text-decoration: none; border-bottom: 1px dashed rgba(168,119,47,.45); padding-bottom: 1px; }
+    .stip { margin-top: 10px; font-size: 10.5px; color: #b3a291; letter-spacing: .04em; line-height: 1.85; }
+    .sempty { padding: 16px 2px 12px; font-size: 11.5px; color: #a4937f; letter-spacing: .05em; line-height: 1.9; }
+    .sempty a { color: #a8772f; text-decoration: none; border-bottom: 1px dashed rgba(168,119,47,.45); padding-bottom: 1px; }
+    .stall .u { font-style: normal; font-size: 10px; color: #b3a291; margin-left: 5px; letter-spacing: .02em; }
+    .stall .go[disabled] { opacity: .45; cursor: not-allowed; }
+    .stall .qty { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; font-size: 10.5px; color: #a4937f; font-variant-numeric: tabular-nums; }
+    .stall .qty button { width: 19px; height: 19px; padding: 0; border-radius: 50%; border: 1px solid rgba(150,124,98,.3); background: rgba(255,255,255,.7); color: #6f6255; font-size: 12px; line-height: 1; cursor: pointer; }
+    .stall .qty b { min-width: 24px; text-align: center; font-weight: normal; }
+  </style>
+</head>
+<body>
+  <div class="top"><a href="bank.html" id="back">‹ 回去</a><h1>市场<small>MOONLIGHT INDEX</small></h1><span style="width:48px"></span></div>
+
+  <div class="idx">
+    <div class="lb">月光指数</div>
+    <div class="mid">
+      <div class="num" id="idxNum">—</div>
+      <div class="chg" id="idxChg"></div>
+    </div>
+    <div class="chart">
+      <svg id="idxSpark" viewBox="0 0 300 96" preserveAspectRatio="none" fill="none"></svg>
+    </div>
+    <div class="stats">
+      <div><span>今日开盘</span><b id="sOpen">—</b></div>
+      <div><span>今日最高</span><b id="sHigh">—</b></div>
+      <div><span>今日最低</span><b id="sLow">—</b></div>
+    </div>
+    <div class="seedline" id="seedline">正在问今天的锚点…</div>
+  </div>
+
+    <section class="stalls">
+    <h3>掷售台<small>SELL</small></h3>
+    <div id="slist"></div>
+    <div class="stip" id="stip"></div>
+  </section>
+
+
+<script src="assets/js/card-pool.js?v=2026112003"></script>
+<script>
+  (function () {
+    const $ = id => document.getElementById(id);
+    const money = v => {
+      const n = Number(v);
+      if (!isFinite(n)) return '0';
+      return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(4)));
+    };
+
+    /* ========== 参数 ========== */
+    const TAG = '111717';
+    const START = '2026-10-01';       // 指数从这天开盘的 1000 点起算
+    const BASE_IDX = 1000;
+    const PERIOD = 3500;              // 每 3.5 秒一步
+    const SEG_STEPS = 312;            // 一段 312 步 = 18.2 分钟（性格换一次）
+    const DAY_MS = 86400000;
+    const STEPS_DAY = Math.floor(DAY_MS / PERIOD);          // 一天 24685 步
+    const SEGS_DAY = STEPS_DAY / SEG_STEPS;                 // 一天 79.12 段（漂移折算用）
+
+    /* ========== 后端 ========== */
+    const SB_URL = 'https://zvuvncxdyxsgiqurkork.supabase.co';
+    const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA';
+    const withKey = url => url + (url.indexOf('?') < 0 ? '?' : '&') + 'apikey=' + encodeURIComponent(SB_ANON);
+
+    async function rpc(name, body) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
+      try {
+        const r = await fetch(withKey(SB_URL + '/rest/v1/rpc/' + name), {
+          method: 'POST',
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body || {}),
+          signal: ctrl.signal
+        });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch (e) {
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // 带着登录态调 RPC（market 页不引 auth.js，免得没登录就被赶去登录页）
+    function myToken() {
+      try {
+        const s = JSON.parse(localStorage.getItem('park.session') || 'null');
+        return s && s.access_token ? s.access_token : null;
+      } catch (e) { return null; }
+    }
+    async function rpcMe(name, body) {
+      const t = myToken();
+      if (!t) return null;
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const r = await fetch(SB_URL + '/rest/v1/rpc/' + name, {
+          method: 'POST',
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body || {}),
+          signal: ctrl.signal
+        });
+        const j = await r.json().catch(() => null);
+        if (!r.ok) return { ok: false, msg: (j && (j.message || j.msg)) || ('后台拒绝了（' + r.status + '）') };
+        return j;
+      } catch (e) {
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // 权威指数：由 edge function 重算，卖出时以它为准
+    async function serverIndex() {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const r = await fetch(SB_URL + '/functions/v1/index-now', {
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON },
+          signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        const j = await r.json();
+        return j && j.ok ? Number(j.idx) : null;
+      } catch (e) { return null; }
+    }
+
+    async function fetchAnchors() {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
+      try {
+        const r = await fetch(withKey(SB_URL + '/rest/v1/index_anchor?select=day,open_price,close_price&order=day.asc'), {
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON },
+          signal: ctrl.signal
+        });
+        if (!r.ok) return null;
+        const arr = await r.json();
+        return Array.isArray(arr) ? arr : null;
+      } catch (e) {
+        return null;
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    /* ========== SHA-256（纯 JS） ========== */
+    function sha256(str) {
+      const R = (v, a) => (v >>> a) | (v << (32 - a));
+      const pw = Math.pow, MAX = pw(2, 32);
+      let result = '';
+      const words = [], bitLen = str.length * 8;
+      const H = sha256.h || (sha256.h = []);
+      const k = sha256.k || (sha256.k = []);
+      let counter = k.length;
+      if (counter < 64) {
+        const isComp = {};
+        for (let c = 2; counter < 64; c++) {
+          if (!isComp[c]) {
+            for (let i = 0; i < 313; i += c) isComp[i] = c;
+            H[counter] = (pw(c, .5) * MAX) | 0;
+            k[counter++] = (pw(c, 1 / 3) * MAX) | 0;
+          }
+        }
+      }
+      let s = str + '\x80';
+      while (s.length % 64 - 56) s += '\x00';
+      for (let i = 0; i < s.length; i++) words[i >> 2] |= s.charCodeAt(i) << ((3 - i) % 4) * 8;
+      words[words.length] = (bitLen / MAX) | 0;
+      words[words.length] = bitLen;
+
+      let cv = H.slice(0, 8);            // 链值：每块结束后更新，但不回写常量表
+      for (let j = 0; j < words.length;) {
+        const w = words.slice(j, j += 16);
+        const old = cv;
+        let h = cv.slice(0, 8);
+        for (let i = 0; i < 64; i++) {
+          const w15 = w[i - 15], w2 = w[i - 2];
+          const a = h[0], e = h[4];
+          const t1 = h[7] + (R(e, 6) ^ R(e, 11) ^ R(e, 25)) + ((e & h[5]) ^ (~e & h[6])) + k[i] +
+            (w[i] = i < 16 ? w[i] : (w[i - 16] + (R(w15, 7) ^ R(w15, 18) ^ (w15 >>> 3)) + w[i - 7] + (R(w2, 17) ^ R(w2, 19) ^ (w2 >>> 10)) | 0));
+          const t2 = (R(a, 2) ^ R(a, 13) ^ R(a, 22)) + ((a & h[1]) ^ (a & h[2]) ^ (h[1] & h[2]));
+          h = [(t1 + t2) | 0].concat(h);
+          h[4] = (h[4] + t1) | 0;
+        }
+        const next = new Array(8);
+        for (let i = 0; i < 8; i++) next[i] = ((h[i] || 0) + (old[i] || 0)) | 0;
+        cv = next;
+      }
+      for (let i = 0; i < 8; i++) {
+        for (let j = 3; j + 1; j--) {
+          const b = (cv[i] >> (j * 8)) & 255;
+          result += (b < 16 ? '0' : '') + b.toString(16);
+        }
+      }
+      return result;
+    }
+
+    /* ========== 随机数 ========== */
+    function mulberry32(a) {
+      return function () {
+        a = (a + 0x6D2B79F5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function gauss(rng) {
+      let u = 0, v = 0;
+      while (u === 0) u = rng();
+      while (v === 0) v = rng();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+    const seed14 = hex => (BigInt('0x' + hex) % 100000000000000n).toString().padStart(14, '0');
+    const pad2 = n => String(n).padStart(2, '0');
+    const normDay = d => String(d).replace(/-/g, '');   // 后端 date 带横线，统一成 20261001
+    const dayKey = d => '' + d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate());
+
+    /* ========== 长期锚：让指数不漂走，在 950~1150 之间来回走 ==========
+       做法：当天的「参照点」不再等于开盘价，而是往锚点靠 PIVOT_PULL 那么多。
+       于是每天的收盘会被轻轻拉回锚点附近，跨日累积形成回归，指数不会走远。
+       PIVOT_PULL = 0 就是旧行为（指数会一路漂走）。 */
+    const PIVOT = 1050;
+    const PIVOT_PULL = 0.08;
+    const pivotRef = open => Math.log(open) + PIVOT_PULL * (Math.log(PIVOT) - Math.log(open));
+
+    /* ========== 每天的缓慢漂移（-1.2% ~ +1.2%） ========== */
+    function dayTrend(dstr) {
+      const r = mulberry32(parseInt(sha256(dstr + TAG + '#trend').slice(0, 8), 16));
+      return (r() - 0.5) * 0.024;
+    }
+
+    /* ========== 每段的性格 ========== */
+    function segParams(dstr, idx) {
+      const hex = sha256(dstr + TAG + '#' + idx);
+      const rp = mulberry32(parseInt(hex.slice(0, 8), 16));   // 噪声流
+      const rq = mulberry32(parseInt(hex.slice(8, 16), 16));  // 参数流
+      return {
+        rng: rp,
+        sigma: 0.004 + 0.010 * rq(),
+        mu: (rq() - 0.5) * 0.002,
+        lambda: rq() * 1.2,
+        jSd: 0.003 + 0.007 * rq(),
+        jMean: -0.0008,
+        kappa: 0.6
+      };
+    }
+
+    /* ========== 单条路径（对数域） ========== */
+    function walk(p, f) {
+      let d = (p.mu - .5 * p.sigma * p.sigma) * f + p.sigma * Math.sqrt(f) * gauss(p.rng);
+      d += p.kappa * (p.logRef - p.logS) * f;
+      if (p.rng() < p.lambda * f) d += p.jMean + p.jSd * gauss(p.rng);
+      p.logS += d;
+      p.logRef += p.trend / SEGS_DAY * f;
+      return Math.exp(p.logS);
+    }
+
+    /* ========== 状态 ========== */
+    const S = { logS: Math.log(BASE_IDX), logRef: Math.log(BASE_IDX), trend: 0, P: null };
+    let TODAY_KEY = '';
+    let TODAY_OPEN = BASE_IDX;
+    let stepsLocal = 0;
+    let dayHigh = BASE_IDX, dayLow = BASE_IDX;
+    let hist = [];
+    let serverMode = false;
+    const ANCHOR = { ms: 0, steps: 0 };   // 时间基准，用来校正定时器漂移
+
+    /* 完整走完某一天，返回当天收盘价 */
+    function runOneDay(key, openPrice) {
+      let logS = Math.log(openPrice), logRef = pivotRef(openPrice), tr = dayTrend(key);
+      let done = 0, idx = 0;
+      while (done < STEPS_DAY) {
+        const len = Math.min(SEG_STEPS, STEPS_DAY - done);
+        const p = segParams(key, idx);
+        p.logS = logS; p.logRef = logRef; p.trend = tr;
+        logS = Math.log(walk(p, len / SEG_STEPS));
+        done += len; idx++;
+      }
+      return Math.exp(logS);
+    }
+
+    /* 从 START 推到 untilDay（不含），但「后端已锁的日子直接跟着走，不重算」，
+       只把缺的、或者 close 还是空的行算出来。anchors 传 null 就全部重算。
+       返回 { rows: 要补的行, close: untilDay 当天的开盘价 } */
+    function fillGaps(anchors, untilDay) {
+      const have = {};
+      if (anchors) anchors.forEach(function (r) { have[normDay(r.day)] = r; });
+      const rows = [];
+      let price = BASE_IDX;                       // 前一天的收盘
+      const [sy, sm, sd] = START.split('-').map(Number);
+      const cursor = new Date(sy, sm - 1, sd);
+      while (dayKey(cursor) < untilDay) {
+        const key = dayKey(cursor);
+        const row = have[key];
+        if (row && Number(row.close_price) > 0) {   // 已锁：直接沿用
+          price = Number(row.close_price);
+        } else {                                    // 缺：模型补齐
+          const open = (row && Number(row.open_price) > 0) ? Number(row.open_price) : price;
+          const close = runOneDay(key, open);
+          rows.push({ d: key, o: Number(open.toFixed(6)), c: Number(close.toFixed(6)) });
+          price = close;
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return { rows: rows, close: price };
+    }
+
+    /* 完全不知道后端时用：从 1000 点一路算下来 */
+    function runHistory(untilDay) {
+      const g = fillGaps(null, untilDay);
+      return { rows: g.rows, logS: Math.log(g.close) };
+    }
+
+    /* 走今天：从开盘价推到第 steps 步 */
+    function buildToday(key, openPrice, steps) {
+      TODAY_KEY = key;
+      TODAY_OPEN = openPrice;
+      S.logS = Math.log(openPrice);
+      S.logRef = pivotRef(openPrice);
+      S.trend = dayTrend(key);
+      S.P = null;
+
+      const path = [];
+      let hi = openPrice, lo = openPrice;
+      let done = 0, idx = 0;
+      while (done < steps) {
+        const p = segParams(key, idx);
+        p.logS = S.logS; p.logRef = S.logRef; p.trend = S.trend;
+        S.P = p;
+        const len = Math.min(SEG_STEPS, steps - done);
+        for (let i = 0; i < len; i++) {
+          const v = walk(p, 1 / SEG_STEPS);
+          path.push(v);
+          if (v > hi) hi = v;
+          if (v < lo) lo = v;
+        }
+        S.logS = p.logS; S.logRef = p.logRef;
+        done += len; idx++;
+      }
+      if (!S.P) {                                  // 0 点刚过，一步还没走
+        const p = segParams(key, 0);
+        p.logS = S.logS; p.logRef = S.logRef; p.trend = S.trend;
+        S.P = p;
+      }
+      stepsLocal = path.length;
+      dayHigh = hi; dayLow = lo;
+      hist = path;
+      if (!hist.length) hist.push(openPrice);
+      ANCHOR.ms = Date.now(); ANCHOR.steps = stepsLocal;
+    }
+
+    /* ========== 画曲线 ========== */
+    /* 全天走势：横轴铺满一天（0 点 → 24 点），曲线从左边生长 */
+    function drawDay(w, h, color, fill) {
+      const n = hist.length;
+      if (n < 2) return '';
+      const MAXP = 600;
+      const pts = [];
+      if (n <= MAXP) {
+        for (let i = 0; i < n; i++) pts.push([i, hist[i]]);
+      } else {
+        // 每桶保留最高和最低，尖峰不会被抹平
+        const bucket = n / MAXP;
+        for (let b = 0; b < MAXP; b++) {
+          const i0 = Math.floor(b * bucket);
+          const i1 = Math.min(n - 1, Math.floor((b + 1) * bucket) - 1);
+          if (i1 < i0) continue;
+          let hi = hist[i0], lo = hist[i0], iHi = i0, iLo = i0;
+          for (let i = i0; i <= i1; i++) {
+            if (hist[i] > hi) { hi = hist[i]; iHi = i; }
+            if (hist[i] < lo) { lo = hist[i]; iLo = i; }
+          }
+          if (iHi <= iLo) { pts.push([iHi, hi]); pts.push([iLo, lo]); }
+          else { pts.push([iLo, lo]); pts.push([iHi, hi]); }
+        }
+      }
+      if (pts.length && pts[pts.length - 1][0] < n - 1) pts.push([n - 1, hist[n - 1]]);
+      const min = Math.min(dayLow, TODAY_OPEN), max = Math.max(dayHigh, TODAY_OPEN);
+      const span = (max - min) || 1;
+      const P = pts.map(function (q) {
+        const x = (q[0] / Math.max(1, n - 1)) * w;   // 铺满：把已走的部分拉满整宽
+        const y = h - 3 - ((q[1] - min) / span) * (h - 8);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      });
+      if (P.length < 2) return '';
+      const lastP = P[P.length - 1].split(',');
+      const yOpen = (h - 3 - ((TODAY_OPEN - min) / span) * (h - 8)).toFixed(1);
+      let out = '<line x1="0" y1="' + yOpen + '" x2="' + w + '" y2="' + yOpen + '" stroke="rgba(122,101,82,.20)" stroke-width=".8" stroke-dasharray="2 3"/>' +
+        '<polygon points="0,' + h + ' ' + P.join(' ') + ' ' + lastP[0] + ',' + h + '" fill="' + fill + '"/>' +
+        '<polyline points="' + P.join(' ') + '" stroke="' + color + '" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>' +
+        '<circle cx="' + lastP[0] + '" cy="' + lastP[1] + '" r="2.1" fill="' + color + '"/>';
+      return out;
+    }
+
+    function paint(animate) {
+      if (!TODAY_KEY) return;
+      const cur = Math.exp(S.logS);
+      const pct = (cur / TODAY_OPEN - 1) * 100;
+      const up = pct >= 0;
+
+      const numEl = $('idxNum');
+      numEl.textContent = cur.toFixed(2);
+      numEl.className = 'num' + (animate ? ' tick' : '');
+      if (animate) { void numEl.offsetWidth; }
+
+      $('idxChg').className = 'chg ' + (up ? 'up' : 'dn');
+      $('idxChg').textContent = (up ? '▲ ' : '▼ ') + Math.abs(pct).toFixed(2) + '%';
+
+      $('idxSpark').innerHTML = drawDay(300, 96, '#7d93b4', 'rgba(125,147,180,.10)');
+
+      $('sOpen').textContent = TODAY_OPEN.toFixed(2);
+      $('sHigh').textContent = dayHigh.toFixed(2);
+      $('sLow').textContent = dayLow.toFixed(2);
+
+      const seg = Math.max(0, Math.floor((stepsLocal - 1) / SEG_STEPS));
+      const stepIn = stepsLocal - seg * SEG_STEPS;
+      const daySeed = seed14(sha256(TODAY_KEY + TAG));
+      $('seedline').innerHTML =
+        '<div>' + TODAY_KEY + TAG + ' → SHA-256 → <b>' + daySeed + '</b></div>' +
+        '<div>第 ' + (seg + 1) + ' 段 · 第 ' + Math.max(1, stepIn) + '/' + SEG_STEPS + ' 步 · 每 3.5 秒一步</div>';
+
+      window.__cur = cur;
+      paintStalls(cur);
+      window.__repaintStalls = function () { paintStalls(window.__cur); };
+    }
+
+    /* ========== 掷售台：指数走进哪张卡的区间，哪一张就能卖 ========== */
+    /* ========== 行情：卡的价格另有一份，每 30 秒拉一次 ========== */
+    let QUOTES = {};
+    async function loadQuotes() {
+      try {
+        const list = await rpc('card_quotes', {});
+        if (Array.isArray(list)) {
+          QUOTES = {};
+          list.forEach(function (q) { QUOTES[q.card] = q; });
+          if (window.__repaintStalls) window.__repaintStalls();
+        }
+      } catch (e) {}
+    }
+    loadQuotes();
+    setInterval(function () { if (document.visibilityState === 'visible') loadQuotes(); }, 30000);
+    /* ========== 我手上的卡：掷售台只摆自己有的 ========== */
+    let HOLD = {}, HOLD_STATE = 'loading';
+    async function loadMine() {
+      if (!myToken()) {
+        HOLD = {}; HOLD_STATE = 'guest';
+        if (window.__repaintStalls) window.__repaintStalls();
+        return;
+      }
+      const list = await rpcMe('card_my', {});
+      if (!Array.isArray(list)) {          // 拉不到就保留上一次，不闪屏
+        if (HOLD_STATE === 'loading') HOLD_STATE = 'error';
+        if (window.__repaintStalls) window.__repaintStalls();
+        return;
+      }
+      const m = {};
+      list.forEach(function (h) {
+        if (h && h.card && Number(h.units) > 0) m[h.card] = h;
+      });
+      HOLD = m; HOLD_STATE = 'ok';
+      if (PIN && !HOLD[PIN]) { PIN = null; savePin(); }   // 卖掉/没持有的卡不再置顶
+      if (HILIGHT && HOLD[HILIGHT] && PIN !== HILIGHT) { PIN = HILIGHT; savePin(); }  // 从卡页跳来 → 只在自己有的卡上置顶
+      if (window.__repaintStalls) window.__repaintStalls();
+      drawStip();
+    }
+    loadMine();
+    setInterval(function () { if (document.visibilityState === 'visible') loadMine(); }, 30000);
+    function myPool() {
+      return (window.CARD_POOL || []).filter(function (c) { return !!HOLD[c.id]; });
+    }
+
+    const HILIGHT = new URLSearchParams(location.search).get('card');
+    let SEL = HILIGHT;              // 选中的是哪张卡（一张卡同一时间只选一张）
+    let selDone = false;
+
+    /* 置顶：一次只置一张，存在本机 */
+    const PIN_KEY = 'moon_stalls_pin_v2';
+    let PIN = (function () {
+      try { return localStorage.getItem(PIN_KEY) || null; } catch (e) { return null; }
+    })();
+    function savePin() { try { if (PIN) localStorage.setItem(PIN_KEY, PIN); else localStorage.removeItem(PIN_KEY); } catch (e) {} }
+    function orderPool(pool) {
+      const top = PIN ? pool.filter(c => c.id === PIN) : [];
+      return top.concat(pool.filter(c => c.id !== PIN));
+    }
+    let TIP_LOCK = false;          // 显示过结果（卖出/失败）就不让下一次重绘盖掉
+    const QTY = {};                // 每张卡这次打算卖几份（0.1 股一档）
+    function drawStip() {
+      if (TIP_LOCK) return;
+      const pinCard = PIN ? (myPool().filter(c => c.id === PIN)[0] || null) : null;
+      if (pinCard) {
+        $('stip').textContent = '正在看「' + pinCard.name + '」';
+        return;
+      }
+      const selCard = SEL ? (myPool().filter(c => c.id === SEL)[0] || null) : null;
+      $('stip').innerHTML = selCard
+        ? '已选中「' + selCard.name + '」。它在 ' + selCard.sell[0].toFixed(2) + ' — ' + selCard.sell[1].toFixed(2)
+          + '，指数走到这里，右边按钮才会亮。'
+        : '';
+    }
+    function $APP_pool() { return window.CARD_POOL || []; }
+    function paintStalls(cur) {
+      const pool = myPool();
+      const box = $('slist');
+      if (!box) return;
+      if (!pool.length) {                 // 没卡就不摆摊位，给一句话
+        let msg;
+        if (HOLD_STATE === 'guest') msg = '先登录，才看得到你手上的卡 · <a href="login.html">去登录 ›</a>';
+        else if (HOLD_STATE === 'loading') msg = '正在翻你手上的卡…';
+        else if (HOLD_STATE === 'error') msg = '没连上后台，稍后再看。';
+        else msg = '你还没有买过卡 · <a href="invest.html">去购买 ›</a>';
+        const ehtml = '<div class="sempty">' + msg + '</div>';
+        if (box.innerHTML !== ehtml) { box.innerHTML = ehtml; drawStip(); }
+        return;
+      }
+      const html = orderPool(pool).map(function (c, i) {
+        const inS = cur >= c.sell[0] && cur <= c.sell[1];
+        const inU = cur >= c.up[0] && cur <= c.up[1];
+        const sel = c.id === SEL;
+        const h = HOLD[c.id] || {};
+        const mu = Number(h.units) || 0;
+        if (!QTY[c.id] || QTY[c.id] > mu) QTY[c.id] = mu;
+        if (QTY[c.id] < 1) QTY[c.id] = mu;
+        const frozen = h.state === 'frozen';
+        let cls = '', st = '';
+        if (frozen) { st = '冻结中 · 补缴后才能卖'; }
+        else if (inU) { cls = 'up'; st = '上升区 · +' + c.upPct + '%'; }
+        else if (inS) { cls = 'on'; st = '窗口开'; }
+        else if (cur < c.sell[0]) st = '还差 ' + (c.sell[0] - cur).toFixed(1) + ' 点';
+        else st = '已过顶 ' + (cur - c.sell[1]).toFixed(1) + ' 点';
+        if (sel) cls += ' sel';
+        const lit = inS && sel && !frozen;   // 到时候了 + 选了这张卡 + 没被冻 → 才亮
+        return '<div class="stall' + (cls ? ' ' + cls : '') + '" data-id="' + c.id + '">' +
+          '<div class="l"><div class="n">' + c.name +
+            ' <em class="u">持股 ' + (Number(h.units) / 10).toFixed(1) + ' 股</em></div>' +
+          '<div class="r">' + c.sell[0].toFixed(2) + ' — ' + c.sell[1].toFixed(2) + '</div>' +
+          '<div class="p">现价 ' + (QUOTES[c.id] ? Number(QUOTES[c.id].price).toFixed(2) : Number(c.price).toFixed(2))
+            + (QUOTES[c.id] ? ' · ' + (QUOTES[c.id].chg >= 0 ? '+' : '') + Number(QUOTES[c.id].chg).toFixed(2) + '%' : '') + '</div>' +
+          '<div class="s">' + st + '</div></div>' +
+          '<div class="ops">' +
+            (mu > 1 ? '<span class="qty"><button class="mn" data-id="' + c.id + '">−</button><b>' + (QTY[c.id] / 10).toFixed(1) + '</b><button class="pl" data-id="' + c.id + '">+</button></span>' : '') +
+            (i === 0 ? '' : '<button class="pin" data-id="' + c.id + '">置顶</button>') +
+            '<button class="go' + (lit ? ' lit' : '') + '"' + (frozen ? ' disabled' : '') + ' data-id="' + c.id + '">掷售</button>' +
+          '</div>' +
+          '</div>';
+      }).join('');
+      if (box.innerHTML !== html) { box.innerHTML = html; drawStip(); }
+      if (HILIGHT && !selDone) {
+        selDone = true;
+        const row = box.querySelector('.stall.sel');
+        if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    }
+
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('.stall')) TIP_LOCK = false;
+      const stall = e.target.closest ? e.target.closest('.stall') : null;
+      if (!stall) return;
+      const id = stall.getAttribute('data-id');
+      const c = myPool().filter(x => x.id === id)[0];
+      if (!c) return;
+      if (HOLD[id] && HOLD[id].state === 'frozen') { $('stip').textContent = '「' + c.name + '」正在冻结期，先补缴才能掷售。'; return; }
+      if (e.target.closest('.mn') || e.target.closest('.pl')) {
+        const d = e.target.closest('.mn') ? -1 : 1;
+        const mu2 = Number((HOLD[id] || {}).units) || 0;
+        const n = (QTY[id] || mu2) + d;
+        if (n < 1 || n > mu2) return;
+        QTY[id] = n;
+        if (window.__repaintStalls) window.__repaintStalls();
+        return;
+      }
+      if (e.target.closest('.pin')) {            // 置顶（一次只一张，前一张自动回到原位）
+        PIN = id; savePin(); drawStip();
+        if (window.__repaintStalls) window.__repaintStalls();
+        return;
+      }
+      const isGo = e.target.closest('.go');
+
+      if (!isGo) {                    // 点行 → 选/取消选这张卡
+        SEL = (SEL === id) ? null : id;
+        $('stip').textContent = SEL
+          ? '已选中「' + c.name + '」。它在 ' + c.sell[0].toFixed(2) + ' — ' + c.sell[1].toFixed(2)
+            + '，指数走到这里，右边按钮才会亮。'
+          : '已取消选中。';
+        if (window.__repaintStalls) window.__repaintStalls();
+        return;
+      }
+
+      // 按了掷售
+      const idx = window.__cur;
+      const inS = idx >= c.sell[0] && idx <= c.sell[1];
+      if (SEL !== id) { $('stip').textContent = '先点一下「' + c.name + '」这张卡选定它，按钮才会亮。'; return; }
+      if (!inS) { $('stip').textContent = '「' + c.name + '」还没到时候，指数没走进区间，卖了会被拒。'; return; }
+      sellNow(c, idx, QTY[id] || Number((HOLD[id] || {}).units) || 1);
+    });
+
+    /* ========== 真卖 ========== */
+    async function sellNow(c, idx, wantUnits) {
+      const tip = $('stip');
+      TIP_LOCK = true;
+      tip.textContent = '正在掷售「' + c.name + '」…';
+      try {
+        if (!myToken()) { tip.textContent = '先登录，卖了钱才知道给谁。'; return; }
+        const real = await serverIndex();
+        const use = real === null ? idx : real;
+        if (use < c.sell[0] || use > c.sell[1]) {
+          tip.textContent = '现在指数 ' + use.toFixed(2) + '，还没进「' + c.name + '」的 ' 
+            + c.sell[0].toFixed(2) + ' — ' + c.sell[1].toFixed(2) + '，再等等。';
+          return;
+        }
+        const list = await rpcMe('card_my', {});
+        const h = (Array.isArray(list) ? list : []).filter(function (x) {
+          return x.card === c.id && x.state === 'normal';
+        })[0];
+        if (!h) { tip.textContent = '你手上没有「' + c.name + '」，这回没卖成。'; return; }
+        const sendUnits = Math.min(Math.max(1, Number(wantUnits) || h.units), Number(h.units));
+        const j = await rpcMe('card_sell', { p_id: h.id, p_units: sendUnits, p_index: use });
+        if (!j) { tip.textContent = '网络不稳，没卖掉，再按一次。'; return; }
+        if (!j.ok) {
+          tip.textContent = j.msg || '没卖掉。';
+          if (window.toast) toast(j.msg || '没卖掉');
+          return;
+        }
+        const sh = function (v) { return (Number(v) / 10).toFixed(1) + ' 股'; };
+        const leftN = Number(j.left) || 0;
+        if (leftN > 0) QTY[c.id] = leftN; else delete QTY[c.id];
+        await loadMine();
+        loadQuotes();
+        tip.textContent = '卖掉了：' + sh(j.units) + '，成交价 ' + Number(j.price).toFixed(2)
+          + '，拿到 ' + money(j.amount) + '，退回保证金 ' + money(j.deposit_back)
+          + '，一共 ' + money(j.total) + ' 月光币。'
+          + (leftN > 0 ? '还留着 ' + sh(leftN) + '，指数下次再走进窗口还能卖。' : '');
+        if (window.toast) toast('卖掉了 · ' + c.name + ' ' + sh(j.units));
+      } catch (e) {
+        tip.textContent = '网络不稳，没卖掉，再按一次。';
+      }
+    }
+
+    /* ========== 走一步 ========== */
+    function stepOne() {
+      if (!S.P || stepsLocal >= STEPS_DAY) return false;
+      if (stepsLocal % SEG_STEPS === 0) {          // 进入新的一段，换脾气
+        const p = segParams(TODAY_KEY, stepsLocal / SEG_STEPS);
+        p.logS = S.logS; p.logRef = S.logRef; p.trend = S.trend;
+        S.P = p;
+      }
+      const v = walk(S.P, 1 / SEG_STEPS);
+      S.logS = S.P.logS; S.logRef = S.P.logRef;
+      stepsLocal++;
+      if (hist.length < STEPS_DAY + 1) hist.push(v);
+      if (v > dayHigh) dayHigh = v;
+      if (v < dayLow) dayLow = v;
+      return true;
+    }
+
+    /* 定时器会漂移（卡顿、丢帧），所以每一拍先问「按真实时间现在该走到第几步」，
+       落后就一次补齐，不落后就等下一拍。曲线因此永远贴着真实时钟。 */
+    function tickOnce() {
+      if (!S.P) return;
+      const want = ANCHOR.steps + Math.floor((Date.now() - ANCHOR.ms) / PERIOD);
+      let moved = false, guard = 0;
+      while (stepsLocal < want && stepsLocal < STEPS_DAY && guard++ < 4000) {
+        if (!stepOne()) break;
+        moved = true;
+      }
+      if (moved) paint(true);
+    }
+
+
+    /* ========== 启动 ========== */
+    function localNow() {
+      const d = new Date();
+      const sec = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds();
+      return { day: dayKey(d), sec: sec };
+    }
+
+    function startLocal() {
+      const n = localNow();
+      const h = runHistory(n.day);
+      buildToday(n.day, Math.exp(h.logS), Math.min(STEPS_DAY, Math.floor(n.sec / 3.5)));
+      paint(false);
+      startTicking();
+    }
+
+    async function boot() {
+      const st0 = await rpc('index_today');
+      if (!st0 || !st0.ok) { startLocal(); return; }        // 后端不通就自己算
+
+      serverMode = true;
+      const day = normDay(st0.day);
+
+      // 先读后端已锁的日线，只补「缺的、或者收盘还是空的」那些天。
+      // 都齐了就一行都不上传，页面只算今天不到一天的步数。
+      const anchors = await fetchAnchors();
+      const gap = fillGaps(anchors, day);
+      if (gap.rows.length) await rpc('index_backfill', { p_rows: gap.rows });
+
+      const info = gap.rows.length ? ((await rpc('index_today')) || st0) : st0;
+      let open = Number(info.open_price);
+      if (!(open > 0)) open = gap.close;    // 后端还是没有开盘价，就用模型算出的昨收
+      const steps = Math.min(STEPS_DAY, Math.floor(Number(info.sec_of_day) / (PERIOD / 1000)));
+      buildToday(normDay(info.day), open, steps);
+      paint(false);
+
+      startTicking();
+    }
+
+    /* 定时器 + 前后台对表：后端模式和本地模式共用 */
+    function startTicking() {
+      setInterval(() => {
+        if (stepsLocal >= STEPS_DAY) { location.reload(); return; }   // 走满一天，刷新进入新的一天
+        tickOnce();
+      }, PERIOD);
+
+      document.addEventListener('visibilitychange', async () => {
+        if (document.visibilityState === 'hidden') return;
+        if (serverMode) {
+          const s2 = await rpc('index_today');
+          if (!s2 || !s2.ok) return;
+          if (normDay(s2.day) !== TODAY_KEY) { location.reload(); return; }
+          const steps2 = Math.min(STEPS_DAY, Math.floor(Number(s2.sec_of_day) / (PERIOD / 1000)));
+          if (Math.abs(steps2 - stepsLocal) > 2) buildToday(TODAY_KEY, Number(s2.open_price), steps2);
+        } else {
+          const n = localNow();
+          if (n.day !== TODAY_KEY) { location.reload(); return; }
+          const steps2 = Math.min(STEPS_DAY, Math.floor(n.sec / 3.5));
+          if (Math.abs(steps2 - stepsLocal) > 2) {
+            const h = runHistory(n.day);
+            buildToday(n.day, Math.exp(h.logS), steps2);
+          }
+        }
+        paint(false);
+      });
+
+    }
+
+    // 「回去」：从投资卡（或其它页）进来就退回上一页，直接打开的回银行
+    (function () {
+      const back = document.getElementById('back');
+      if (!back) return;
+      const ref = document.referrer || '';
+      const sameSite = ref && (ref.indexOf(location.origin) === 0 || ref.indexOf('tcc1324.github.io') >= 0);
+      if (sameSite && /invest\.html|card\.html/.test(ref)) {
+        back.textContent = '‹ 投资卡';
+        back.addEventListener('click', function (e) {
+          if (history.length > 1) { e.preventDefault(); history.back(); }
+        });
+      }
+    })();
+
+    boot();
+  })();
+</script>
+</body>
+</html>
