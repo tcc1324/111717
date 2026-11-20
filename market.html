@@ -682,7 +682,7 @@
         loadQuotes();
         tip.textContent = '卖掉了：' + sh(j.units) + '，成交价 ' + Number(j.price).toFixed(2)
           + '，拿到 ' + money(j.amount) + '，退回保证金 ' + money(j.deposit_back)
-          + '，一共 ' + money(j.total) + ' 月光币。'
+          + (Number(j.accrued_back) > 0 ? '，已结收益 ' + money(j.accrued_back) : '') + '，一共 ' + money(j.total) + ' 月光币。'
           + (leftN > 0 ? '还留着 ' + sh(leftN) + '，指数下次再走进窗口还能卖。' : '');
         if (window.toast) toast('卖掉了 · ' + c.name + ' ' + sh(j.units));
       } catch (e) {
@@ -747,7 +747,7 @@
       // 都齐了就一行都不上传，页面只算今天不到一天的步数。
       const anchors = await fetchAnchors();
       const gap = fillGaps(anchors, day);
-      if (gap.rows.length) await rpc('index_backfill', { p_rows: gap.rows });
+      // 历史缺口只在本地补画，不再写库（写历史只归后台 cron）
 
       const info = gap.rows.length ? ((await rpc('index_today')) || st0) : st0;
       let open = Number(info.open_price);

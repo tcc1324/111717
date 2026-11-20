@@ -435,7 +435,7 @@
             sellMsg = '卖掉了：' + sh(j.units) + '，成交价 ' + Number(j.price).toFixed(2)
               + (j.up ? '（上升段加成）' : '') + '，拿到 ' + money(j.amount)
               + '，退回保证金 ' + money(j.deposit_back)
-              + '，一共 ' + money(j.total) + ' 月光币。'
+              + (Number(j.accrued_back) > 0 ? '，已结收益 ' + money(j.accrued_back) : '') + '，一共 ' + money(j.total) + ' 月光币。'
               + (leftN > 0 ? '还留着 ' + sh(leftN) + '，指数下次再走进窗口还能卖。' : '');
             if (window.toast) toast('卖掉了 · ' + c.name + ' ' + sh(j.units));
             SELL_UNITS = leftN;
