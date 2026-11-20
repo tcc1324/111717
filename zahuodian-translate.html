@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<link rel="preconnect" href="https://zvuvncxdyxsgiqurkork.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="//zvuvncxdyxsgiqurkork.supabase.co">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>翻译 · 杂货店 · 给聆遇的游乐园</title>
+<meta name="description" content="翻译语言。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/base.css?v=2026112002">
+<link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/butler.css?v=2026102910">
+<style>
+:root{
+  --ink:#2b2320;
+  --ink-soft:#6b5b53;
+  --paper:#fbf6ef;
+  --line:rgba(43,35,32,.14);
+  --accent:#c2707f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;background:#ece2d7}
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:transparent;
+  line-height:1.72;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+.bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(60% 50% at 18% 8%,#f7dce6,transparent 62%),
+    radial-gradient(55% 60% at 88% 26%,#d7e4f6,transparent 64%),
+    radial-gradient(70% 60% at 50% 100%,#f3e6d6,transparent 70%),
+    #ece2d7;
+}
+main{
+  position:relative;z-index:1;
+  max-width:720px;margin:0 auto;
+  padding:clamp(20px,4vh,40px) clamp(16px,4.5vw,32px) 72px;
+}
+.back{
+  display:inline-flex;align-items:center;
+  font-size:13px;letter-spacing:.09em;
+  color:var(--ink-soft);text-decoration:none;
+  padding:5px 0;margin:0 0 16px;
+  transition:color .18s ease;
+}
+.back:hover{color:var(--ink)}
+.head h1{
+  font-family:var(--font-body);
+  font-size:clamp(25px,4.4vw,33px);
+  font-weight:normal;letter-spacing:.26em;line-height:1.12;
+  margin:0;
+}
+.head .sub{
+  font-size:11px;letter-spacing:.34em;
+  color:rgba(107,91,83,.68);margin:7px 0 0;
+}
+.head .intro{
+  margin:16px 0 0;
+  font-size:clamp(13px,1.6vw,14.5px);
+  color:var(--ink-soft);letter-spacing:.03em;line-height:1.85;
+}
+.panel{
+  margin:clamp(18px,3.4vh,28px) 0 0;
+  background:rgba(253,249,242,.84);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:clamp(16px,3vw,24px);
+  -webkit-backdrop-filter:blur(10px) saturate(1.06);
+  backdrop-filter:blur(10px) saturate(1.06);
+  box-shadow:0 18px 40px rgba(84,60,52,.10);
+}
+.tr-label{
+  display:block;font-size:12.5px;color:var(--ink-soft);
+  letter-spacing:.05em;margin:0 0 7px;
+}
+textarea{
+  width:100%;min-height:180px;resize:vertical;
+  font:inherit;font-size:14.5px;line-height:1.78;
+  color:var(--ink);
+  background:rgba(255,255,255,.74);
+  border:1px solid var(--line);border-radius:12px;
+  padding:13px 15px;outline:none;
+  -webkit-appearance:none;appearance:none;
+  transition:border-color .2s ease,background .2s ease;
+}
+textarea::placeholder{color:rgba(107,91,83,.5)}
+textarea:focus{border-color:rgba(43,35,32,.32);background:#fff}
+.sel-row{
+  display:flex;align-items:center;gap:10px;
+  margin:16px 0 0;
+}
+.sel-row .tr-label{margin:0;flex:0 0 auto}
+select{
+  font:inherit;font-size:14px;
+  color:var(--ink);
+  background:rgba(255,255,255,.74);
+  border:1px solid var(--line);border-radius:999px;
+  padding:8px 34px 8px 15px;
+  outline:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b5b53' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  transition:border-color .2s ease,background-color .2s ease;
+}
+select:focus{border-color:rgba(43,35,32,.32);background-color:#fff}
+.tr-row{display:flex;align-items:center;gap:12px;margin:14px 0 0;flex-wrap:wrap}
+.tr-go{
+  font:inherit;font-size:13.5px;letter-spacing:.11em;
+  color:#fff;background:var(--accent);
+  border:0;border-radius:999px;
+  padding:10px 22px;cursor:pointer;
+  box-shadow:0 8px 20px rgba(194,112,127,.28);
+  transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease;
+}
+.tr-go:hover{transform:translateY(-1px);box-shadow:0 11px 24px rgba(194,112,127,.34)}
+.tr-go:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+.tr-msg{font-size:12.5px;color:var(--ink-soft);letter-spacing:.03em}
+.tr-res{
+  margin:20px 0 0;padding:16px 17px;
+  background:rgba(255,255,255,.7);
+  border:1px solid rgba(43,35,32,.08);
+  border-radius:12px;
+  animation:res-in .26s ease both;
+}
+.tr-res[hidden]{display:none}
+.tr-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;margin:0 0 9px;
+}
+.tr-head h3{
+  font-size:11.5px;font-weight:normal;color:var(--ink-soft);
+  letter-spacing:.14em;margin:0;
+}
+.tr-copy{
+  font:inherit;font-size:11.5px;letter-spacing:.08em;
+  color:var(--ink-soft);background:transparent;
+  border:1px solid rgba(43,35,32,.14);border-radius:999px;
+  padding:4px 12px;cursor:pointer;
+  transition:color .18s ease,border-color .18s ease,background-color .18s ease;
+}
+.tr-copy:hover{color:var(--ink);border-color:rgba(43,35,32,.3);background:rgba(255,255,255,.6)}
+.tr-out{
+  font-size:15px;line-height:1.85;
+  white-space:pre-wrap;word-break:break-word;
+}
+.tr-meta{
+  margin:12px 0 0;font-size:11px;
+  color:rgba(107,91,83,.66);letter-spacing:.04em;
+}
+@keyframes res-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .tr-res{animation:none}
+  .tr-go,.back,select,textarea{transition:none}
+  .tr-go:hover{transform:none}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<main class="page">
+  <a class="back" href="zahuodian.html">‹ 回杂货店</a>
+  <header class="head">
+    <h1>翻译</h1>
+    <div class="sub">TRANSLATE</div>
+    <p class="intro">翻译语言。</p>
+  </header>
+
+  <section class="panel">
+    <label class="tr-label" for="trIn">要翻的话</label>
+    <textarea id="trIn" placeholder="粘贴或写点什么都行……" spellcheck="false"></textarea>
+
+    <div class="sel-row">
+      <label class="tr-label" for="trLang">翻成</label>
+      <select id="trLang">
+        <option value="en" selected>英语</option>
+        <option value="zh-CN">中文</option>
+        <option value="ja">日语</option>
+        <option value="ko">韩语</option>
+        <option value="fr">法语</option>
+        <option value="de">德语</option>
+        <option value="es">西班牙语</option>
+        <option value="ru">俄语</option>
+        <option value="pt">葡萄牙语</option>
+        <option value="it">意大利语</option>
+        <option value="th">泰语</option>
+        <option value="vi">越南语</option>
+        <option value="ar">阿拉伯语</option>
+      </select>
+    </div>
+
+    <div class="tr-row">
+      <button class="tr-go" id="trGo" type="button">翻一翻</button>
+      <span class="tr-msg" id="trMsg" role="status" aria-live="polite"></span>
+    </div>
+
+    <div class="tr-res" id="trRes" hidden>
+      <div class="tr-head">
+        <h3>译文</h3>
+        <button class="tr-copy" id="trCopy" type="button">复制</button>
+      </div>
+      <div class="tr-out" id="trOut"></div>
+      <p class="tr-meta" id="trMeta"></p>
+    </div>
+
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var FN = "https://zvuvncxdyxsgiqurkork.supabase.co/functions/v1/zahuodian-tool";
+  var SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA";
+  var MAX = 10000;
+  var busy = false;
+
+  /* 拿登录令牌：中转函数只给园子里登上号的人用 */
+  function getToken() {
+    return new Promise(function (resolve) {
+      if (!window.Park || !Park.session) { resolve(''); return; }
+      Park.session().then(function (s) {
+        resolve(s && s.access_token ? s.access_token : '');
+      }, function () { resolve(''); });
+    });
+  }
+
+  function say(t) { document.getElementById('trMsg').textContent = t; }
+
+  function run() {
+    if (busy) return;
+    var text = document.getElementById('trIn').value;
+    var btn = document.getElementById('trGo');
+    var lang = document.getElementById('trLang').value;
+
+    if (!text.trim()) { say('先写点话进来。'); return; }
+    if (text.length > MAX) {
+      say('太长了，一次最多一万字（现在 ' + text.length + '）。');
+      return;
+    }
+
+    busy = true;
+    btn.disabled = true;
+    btn.textContent = '翻着…';
+    say('慢慢来，它要想一会儿。');
+
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, 40000) : null;
+
+    getToken().then(function (tk) {
+      if (!tk) throw new Error('need-login');
+      return fetch(FN, {
+        method: 'POST',
+        headers: {
+          'apikey': SB_ANON,
+          'Authorization': 'Bearer ' + tk,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ action: 'translate', text: text, target_lang: lang }),
+        signal: ctl ? ctl.signal : undefined
+      });
+    }).then(function (res) {
+      if (timer) clearTimeout(timer);
+      return res.json().catch(function () { return {}; }).then(function (j) {
+        if (!res.ok || !j || !j.ok) {
+          var e = new Error('api');
+          e.status = res.status;
+          e.msg = j && j.msg;
+          throw e;
+        }
+        return j;
+      });
+    }).then(function (j) {
+      if (!j.text) throw new Error('empty');
+      document.getElementById('trOut').textContent = j.text;
+      document.getElementById('trMeta').textContent = j.ms
+        ? '用时 ' + (j.ms / 1000).toFixed(1) + ' 秒'
+        : '';
+      document.getElementById('trRes').hidden = false;
+      say('');
+    }).catch(function (e) {
+      if (timer) clearTimeout(timer);
+      if (e && e.message === 'need-login') {
+        say('要先登录才能用。');
+      } else if (e && e.name === 'AbortError') {
+        say('它想得太久了，再试一次。');
+      } else if (e && e.status === 429) {
+        say('翻得太急了，喘口气再来。');
+      } else if (e && e.msg) {
+        say(e.msg);
+      } else {
+        say('没翻成，再试一次。');
+      }
+    }).then(function () {
+      busy = false;
+      btn.disabled = false;
+      btn.textContent = '翻一翻';
+    });
+  }
+
+  /* 复制译文 */
+  document.getElementById('trCopy').addEventListener('click', function () {
+    var btn = document.getElementById('trCopy');
+    var t = document.getElementById('trOut').textContent || '';
+    if (!t) return;
+    var done = function () {
+      btn.textContent = '已复制';
+      setTimeout(function () { btn.textContent = '复制'; }, 1500);
+    };
+    var fail = function () { say('没复制上，长按选一下吧。'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(done, fail);
+      return;
+    }
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = t;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      done();
+    } catch (e) { fail(); }
+  });
+
+  document.getElementById('trGo').addEventListener('click', run);
+  document.getElementById('trIn').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); run(); }
+  });
+})();
+</script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/common.js?v=2026100802"></script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/auth.js?v=2026100802"></script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/html2canvas.min.js?v=2026102823"></script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/butler.js?v=2026102910"></script>
+<script>
+  /* 与游园其他页面一致：没登录就回登录页 */
+  if (window.Park && Park.session) Park.session().then(s => { if (!s) location.replace('login.html'); });
+</script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/music-widget.js?v=2026110222"></script>
+</body>
+</html>

@@ -49,6 +49,9 @@ secrets*
 *.tmp
 *.temp
 
+# Codex 审计产物（codex runner 会往这里写报告）
+reports/
+
 # 本地备份与后台函数源码不上传
 .backup/
 supabase/
@@ -60,7 +63,6 @@ assets/fonts/*-src.ttf
 # 未完工页面（别推线上）
 /shop.html
 /market.html
-/bank.html
 /invest.html
 /yuniao.html
 /article.html

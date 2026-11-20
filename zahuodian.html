@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<link rel="preconnect" href="https://zvuvncxdyxsgiqurkork.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="//zvuvncxdyxsgiqurkork.supabase.co">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>杂货店 · 给聆遇的游乐园</title>
+<meta name="description" content="乱七八糟的小东西，什么都有。持续上新……">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧺%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/base.css?v=2026112002">
+<link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/butler.css?v=2026102910">
+<style>
+:root{
+  --ink:#2b2320;
+  --ink-soft:#6b5b53;
+  --paper:#fbf6ef;
+  --line:rgba(43,35,32,.14);
+  --accent:#c2707f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;background:#ece2d7}
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:transparent;      /* 底色交给 html，别再盖住背景层 */
+  line-height:1.72;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+
+/* ---------------- 回去：压在头图上，左上（与全站同款文字样式） ---------------- */
+.back{
+  position:absolute;z-index:4;
+  left:clamp(18px,4.5vw,52px);top:calc(clamp(10px,2vh,18px) + env(safe-area-inset-top));
+  font-size:13px;letter-spacing:.08em;color:rgba(255,255,255,.62);text-decoration:none;
+  text-shadow:0 1px 6px rgba(34,22,20,.42);
+}
+
+/* ---------------- 虚化背景 ---------------- */
+/* 底色本身做成粉蓝雾：图没来也不至于是一片死米色 */
+.bg{
+  position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:
+    radial-gradient(60% 50% at 18% 8%,#f7dce6,transparent 62%),
+    radial-gradient(55% 60% at 88% 26%,#d7e4f6,transparent 64%),
+    radial-gradient(70% 60% at 50% 100%,#f3e6d6,transparent 70%),
+    #ece2d7;
+}
+.bg img{
+  width:100%;height:100%;object-fit:cover;
+  filter:blur(14px) saturate(1.3) brightness(1.01);   /* 能看出是山、是天、是街道，但还不抢字 */
+  transform:scale(1.14);opacity:0;transition:opacity 1.2s ease;
+}
+.bg img.on{opacity:1}
+.bg::after{                       /* 统一色偏（粉→米→蓝）+ 纸色薄罩：不管抽到哪张图，色调都是这一套 */
+  content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(150deg,rgba(255,204,222,.20),rgba(255,238,214,.10) 46%,rgba(202,224,250,.20)),
+    linear-gradient(180deg,rgba(251,246,239,.20),rgba(251,246,239,.40) 55%,rgba(251,246,239,.52));
+}
+
+/* ---------------- 头图 ---------------- */
+.hero{
+  position:relative;
+  height:clamp(190px,28vh,300px);
+  overflow:hidden;
+  border-radius:0 0 24px 24px;
+  isolation:isolate;
+}
+.media{position:absolute;inset:0;
+  /* 图万一全都加载失败，这里也还是有一层暖色雾，不会露出白块 */
+  background:linear-gradient(122deg,#f3dbe3,#efe6d3 46%,#d8e3f3)}
+/* 左上角一层很淡的暗部，只为让白色标题在任何图上都读得清 */
+.hero::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(102deg,rgba(30,21,19,.44),rgba(30,21,19,.14) 44%,rgba(30,21,19,0) 66%);
+}
+.media img{
+  position:absolute;inset:0;   /* 两张图叠着放，交叉淡入时不会出现空白帧 */
+  width:100%;height:100%;
+  object-fit:cover;
+  object-position:50% 46%;
+  filter:saturate(.96) contrast(1.02) brightness(1.01);   /* 不再模糊，只做极轻的调色 */
+  transform:scale(1.01);
+  opacity:0;transition:opacity 1s ease;
+}
+.media img.on{opacity:1}
+
+/* 双色调染色：只加一层很薄的色偏，图还是图 */
+.media::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(122deg,#ffd0de 0%,#f8e3c2 34%,#cfe2f6 66%,#d9c8f0 100%);
+  mix-blend-mode:color;
+  opacity:.28;
+}
+/* 颗粒 + 极轻的上下渐变（只为压一点亮度，不做暗角） */
+.media::after{
+  content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.10),transparent 42%,rgba(58,38,32,.20) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.10;
+  mix-blend-mode:soft-light;
+}
+/* 底边融进纸色，头图不"贴"在页面上 */
+.hero::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:22%;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,transparent,rgba(251,246,239,.88));
+}
+
+.brand{
+  position:absolute;z-index:3;
+  left:clamp(18px,4.5vw,52px);
+  top:calc(clamp(10px,2vh,18px) + 32px + env(safe-area-inset-top));
+  color:rgba(247,239,225,.6);
+  text-shadow:0 1px 8px rgba(34,22,20,.26);
+}
+.brand h1{
+  font-family:var(--font-body);
+  font-size:clamp(27px,4.6vw,40px);
+  font-weight:normal;letter-spacing:.3em;line-height:1.08;
+}
+.brand .sub{
+  font-size:13px;letter-spacing:.3em;margin:2px 0 0 2px;
+  color:rgba(247,239,225,.56);
+}
+.shuffle{
+  position:absolute;z-index:3;right:clamp(16px,4vw,44px);bottom:clamp(16px,4vh,36px);
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12.5px;letter-spacing:.08em;color:#fff;
+  background:rgba(58,40,36,.28);
+  border:1px solid rgba(255,255,255,.42);
+  padding:7px 14px;border-radius:999px;
+  backdrop-filter:blur(6px);
+  cursor:pointer;transition:background .18s ease,transform .18s ease;
+}
+.shuffle:hover{background:rgba(58,40,36,.46);transform:translateY(-1px)}
+
+/* ---------------- 内容 ---------------- */
+main{
+  position:relative;z-index:1;
+  max-width:1000px;margin:0 auto;
+  padding:clamp(4px,2vh,20px) clamp(18px,4.5vw,32px) 80px;
+}
+.intro{
+  display:inline-block;max-width:100%;
+  font-family:var(--font-body);
+  color:var(--ink-soft);
+  font-size:clamp(13.5px,1.7vw,15.5px);
+  letter-spacing:.03em;
+  background:rgba(252,248,240,.5);
+  -webkit-backdrop-filter:blur(10px) saturate(1.04);
+  backdrop-filter:blur(10px) saturate(1.04);
+  border-radius:12px;
+  padding:10px 14px;
+  margin:clamp(18px,3vh,32px) 0 clamp(22px,4vh,38px);
+}
+.shelf{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(224px,1fr));
+  gap:clamp(14px,2vw,22px);
+}
+.card{
+  position:relative;
+  background:rgba(255,252,247,.74);
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:20px 20px 22px;
+  backdrop-filter:blur(8px) saturate(1.1);
+  transition:transform .22s ease,box-shadow .22s ease,background .22s ease;
+}
+.card:hover{transform:translateY(-3px);background:rgba(255,252,247,.9);
+  box-shadow:0 12px 28px rgba(84,60,52,.14)}
+.card:focus-visible{outline:2px solid rgba(194,112,127,.6);outline-offset:3px}
+.card h2{
+  font-family:var(--font-body);
+  font-size:17px;font-weight:normal;letter-spacing:.18em;margin:0 0 8px;
+}
+.card p{font-size:13.5px;color:var(--ink-soft);line-height:1.75}
+
+/* ---------------- 搜索 ---------------- */
+.find{margin:0 0 clamp(20px,3.4vh,30px)}
+.find input{
+  width:100%;box-sizing:border-box;
+  font:inherit;font-size:14px;letter-spacing:.04em;
+  color:var(--ink);
+  background:rgba(255,252,247,.72);
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:11px 18px;
+  outline:none;
+  -webkit-appearance:none;appearance:none;
+  backdrop-filter:blur(8px);
+  transition:border-color .2s ease,background .2s ease,box-shadow .2s ease;
+}
+.find input::placeholder{color:rgba(107,91,83,.6);letter-spacing:.06em}
+.find input:focus{
+  border-color:rgba(43,35,32,.34);
+  background:rgba(255,252,247,.94);
+  box-shadow:0 6px 18px rgba(84,60,52,.10);
+}
+.empty{
+  color:var(--ink-soft);font-size:13px;letter-spacing:.05em;
+  padding:2px;opacity:.82;
+}
+.is-hide{display:none !important}
+
+@media (prefers-reduced-motion:reduce){
+  .media img,.bg img{transition:none}
+  .card,.shuffle{transition:none}
+  .card:hover,.shuffle:hover{transform:none}
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <img id="bgImg" alt="" decoding="async">
+</div>
+
+<header class="hero">
+  <a class="back" href="play.html">‹ 回去</a>
+  <div class="media" aria-hidden="true">
+    <img id="heroImg" alt="" decoding="async">
+    <img id="heroHi" alt="" decoding="async">
+  </div>
+  <div class="brand">
+    <h1>杂货店</h1>
+    <div class="sub">GROCERY</div>
+  </div>
+  <button class="shuffle" id="shuffle" type="button">换一张 ↻</button>
+</header>
+
+<main>
+  <p class="intro">乱七八糟的小东西，什么都有。持续上新……</p>
+
+  <div class="find">
+    <input id="q" type="search" placeholder="找一件东西……" aria-label="搜索卡片标题" autocomplete="off">
+  </div>
+
+  <section class="shelf" id="shelf">
+    <article class="card" data-title="文本分析" data-tool="text-analyze">
+      <h2>文本分析</h2>
+      <p>分析字符数、标点数等。</p>
+    </article>
+    <article class="card" data-title="翻译" data-tool="translate">
+      <h2>翻译</h2>
+      <p>翻译语言。</p>
+    </article>
+    <article class="card" data-title="菜谱" data-tool="recipe">
+      <h2>菜谱</h2>
+      <p>今晚吃什么好呢？</p>
+    </article>
+  </section>
+
+  <p class="empty" id="empty"></p>
+
+  <!--
+    【新增内容模板】以后所有新增的小东西，都照下面这个结构写。
+    搜索、以及「最近进过的排第一个」，都是靠它自动生效的。
+
+    <article class="card" data-title="旧铁皮罐">
+      <h2>旧铁皮罐</h2>
+      <p>盖子有点瘪，装过茶叶，现在装别人写的字条。摇一摇会响。</p>
+    </article>
+
+    三条规矩：
+    1. data-title 必须和 h2 里的文字一模一样，搜索和排序都读它；
+    2. 卡片只放标题和一句话；
+    3. 点一下就算「进过」，记录在本机，下次打开它会排到第一个。
+  -->
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var tag = Math.random().toString(36).slice(2, 8);
+
+  /* 记住上次看过哪张，用来避免连续重复 */
+  var KEY = 'zahuodian.seen.v1';
+  var seen = {};
+  try { seen = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { seen = {}; }
+  function remember(k, v) {
+    seen[k] = v;
+    try { localStorage.setItem(KEY, JSON.stringify(seen)); } catch (e) {}
+  }
+
+  /* ---------- 虚化背景：alcy /fj，抓回来先看是不是和上次同一张 ---------- */
+  var bg = document.getElementById('bgImg');
+  bg.onload = function () { bg.classList.add('on'); };
+  function bgFallback() {
+    bg.onerror = null;
+    bg.src = 'https://picsum.photos/seed/bg' + tag + '/1600/1000';
+  }
+
+  function pickBg(tries) {
+    var url = 'https://t.alcy.cc/fj?r=' + Math.random().toString(36).slice(2, 9);
+    if (!window.fetch) { bg.onerror = bgFallback; bg.src = url; return; }
+    fetch(url, { cache: 'no-store' })
+      .then(function (res) {
+        var ct = (res.headers.get('content-type') || '');
+        if (!res.ok || ct.indexOf('image/') !== 0) throw new Error('not an image'); // 别把网页当图
+        var finalUrl = res.url || url;                 // 302 之后的真实地址，就是这张图的身份
+        return res.blob().then(function (blob) { return { u: finalUrl, b: blob }; });
+      })
+      .then(function (o) {
+        if (o.u === seen.bg && tries > 0) {            // 和上次同一张，再抽一次
+          setTimeout(function () { pickBg(tries - 1); }, 60);
+          return;
+        }
+        remember('bg', o.u);
+        bg.onerror = bgFallback;
+        bg.src = URL.createObjectURL(o.b);
+      })
+      .catch(function () {                             // file:// 或跨域被拦时退回直连
+        bg.onerror = bgFallback;
+        bg.src = url;
+      });
+  }
+  pickBg(2);
+
+  /* ---------- 头图：picsum 随机 seed；低清先出，高清叠上去淡入（不换 src，所以不闪） ---------- */
+  var hero = document.getElementById('heroImg');
+  var heroHi = document.getElementById('heroHi');
+  var seed = 'z' + Math.random().toString(36).slice(2, 10);
+
+  hero.onload = function () { hero.classList.add('on'); };
+  hero.onerror = function () {                      // 低清都打不开，用固定 seed 兜底
+    hero.onerror = null;
+    hero.src = 'https://picsum.photos/seed/zahuodian' + tag + '/1200/675';
+  };
+  hero.src = 'https://picsum.photos/seed/' + seed + '/480/270';
+
+  heroHi.onload = function () { heroHi.classList.add('on'); };   // 高清只“盖上去”，不动底层
+  heroHi.onerror = function () { if (heroHi.parentNode) heroHi.parentNode.removeChild(heroHi); };
+  heroHi.src = 'https://picsum.photos/seed/' + seed + '/1600/900';
+
+  /* ---------- 卡片：搜索标题 + 最近进过的排第一个 ---------- */
+  var shelf = document.getElementById('shelf');
+  var q = document.getElementById('q');
+  var empty = document.getElementById('empty');
+  var REC = 'zahuodian.recent.v1';
+  var recent = [];
+  try { recent = JSON.parse(localStorage.getItem(REC) || '[]') || []; } catch (e) { recent = []; }
+  if (!(recent instanceof Array)) recent = [];
+
+  var cards = Array.prototype.slice.call(shelf.querySelectorAll('.card'));
+
+  // 最近点过的排前面；没点过的保持 HTML 里的先后顺序
+  cards.sort(function (a, b) {
+    var ia = recent.indexOf(a.getAttribute('data-title') || '');
+    var ib = recent.indexOf(b.getAttribute('data-title') || '');
+    if (ia < 0 && ib < 0) return 0;
+    if (ia < 0) return 1;
+    if (ib < 0) return -1;
+    return ia - ib;
+  });
+  cards.forEach(function (c) { shelf.appendChild(c); });
+
+  // 点一下就算「进过」，记在本机，下次打开它排第一个
+  // 键盘也能用：Tab 走到卡片上按回车或空格，和点一下等价
+  cards.forEach(function (c) {
+    if (!c.hasAttribute('tabindex')) c.setAttribute('tabindex', '0');
+    function enter() {
+      var t = c.getAttribute('data-title') || '';
+      if (!t) return;
+      recent = recent.filter(function (x) { return x !== t; });
+      recent.unshift(t);
+      while (recent.length > 60) recent.pop();
+      try { localStorage.setItem(REC, JSON.stringify(recent)); } catch (e) {}
+      var tool = c.getAttribute('data-tool');
+      if (tool === 'text-analyze') { location.href = 'zahuodian-text.html'; return; }
+      if (tool === 'translate') { location.href = 'zahuodian-translate.html'; return; }
+      if (tool === 'recipe') { location.href = 'zahuodian-recipe.html'; return; }
+    }
+    c.addEventListener('click', enter);
+    c.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        enter();
+      }
+    });
+  });
+
+  // 搜索：只匹配标题（data-title）
+  function findCards() {
+    var kw = (q.value || '').trim().toLowerCase();
+    var shown = 0;
+    cards.forEach(function (c) {
+      var t = (c.getAttribute('data-title') || '').toLowerCase();
+      var hit = !kw || t.indexOf(kw) >= 0;
+      c.classList.toggle('is-hide', !hit);
+      if (hit) shown++;
+    });
+    if (!cards.length) {
+      empty.textContent = '这一格还空着。';
+      empty.classList.remove('is-hide');
+    } else if (!shown) {
+      empty.textContent = '没有找到「' + q.value.trim() + '」。';
+      empty.classList.remove('is-hide');
+    } else {
+      empty.classList.add('is-hide');
+    }
+  }
+  q.addEventListener('input', findCards);
+  q.addEventListener('search', findCards);
+  findCards();
+
+  /* ---------- 换一张 = 换头图和背景 ---------- */
+  document.getElementById('shuffle').addEventListener('click', function () {
+    location.reload();
+  });
+})();
+</script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/common.js?v=2026100802"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/auth.js?v=2026100802"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/html2canvas.min.js?v=2026102823"></script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/butler.js?v=2026102910"></script>
+  <script>
+    /* 与游园其他页面一致：没登录就回登录页 */
+    if (window.Park && Park.session) Park.session().then(s => { if (!s) location.replace('login.html'); });
+  </script>
+  <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/music-widget.js?v=2026110222"></script>
+</body>
+</html>

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<link rel="preconnect" href="https://zvuvncxdyxsgiqurkork.supabase.co" crossorigin>
+<link rel="dns-prefetch" href="//zvuvncxdyxsgiqurkork.supabase.co">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>菜谱 · 杂货店 · 给聆遇的游乐园</title>
+<meta name="description" content="今晚吃什么好呢？">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8D%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/base.css?v=2026112002">
+<link rel="stylesheet" href="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/css/butler.css?v=2026102910">
+<style>
+:root{
+  --ink:#2b2320;
+  --ink-soft:#6b5b53;
+  --paper:#fbf6ef;
+  --line:rgba(43,35,32,.14);
+  --accent:#c2707f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;background:#ece2d7}
+body{
+  font-family:var(--font-body);
+  color:var(--ink);
+  background:transparent;
+  line-height:1.72;
+  overflow-x:hidden;
+  min-height:100vh;
+}
+.bg{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(60% 50% at 18% 8%,#f7dce6,transparent 62%),
+    radial-gradient(55% 60% at 88% 26%,#d7e4f6,transparent 64%),
+    radial-gradient(70% 60% at 50% 100%,#f3e6d6,transparent 70%),
+    #ece2d7;
+}
+main{
+  position:relative;z-index:1;
+  max-width:720px;margin:0 auto;
+  padding:clamp(20px,4vh,40px) clamp(16px,4.5vw,32px) 72px;
+}
+.back{
+  display:inline-flex;align-items:center;
+  font-size:13px;letter-spacing:.09em;
+  color:var(--ink-soft);text-decoration:none;
+  padding:5px 0;margin:0 0 16px;
+  transition:color .18s ease;
+}
+.back:hover{color:var(--ink)}
+.head h1{
+  font-family:var(--font-body);
+  font-size:clamp(25px,4.4vw,33px);
+  font-weight:normal;letter-spacing:.26em;line-height:1.12;
+  margin:0;
+}
+.head .sub{
+  font-size:11px;letter-spacing:.34em;
+  color:rgba(107,91,83,.68);margin:7px 0 0;
+}
+.head .intro{
+  margin:16px 0 0;
+  font-size:clamp(13px,1.6vw,14.5px);
+  color:var(--ink-soft);letter-spacing:.03em;line-height:1.85;
+}
+.panel{
+  margin:clamp(18px,3.4vh,28px) 0 0;
+  background:rgba(253,249,242,.84);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:clamp(16px,3vw,24px);
+  -webkit-backdrop-filter:blur(10px) saturate(1.06);
+  backdrop-filter:blur(10px) saturate(1.06);
+  box-shadow:0 18px 40px rgba(84,60,52,.10);
+}
+.rc-label{
+  display:block;font-size:12.5px;color:var(--ink-soft);
+  letter-spacing:.05em;margin:0 0 7px;
+}
+.find-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+input[type="search"]{
+  flex:1 1 160px;min-width:0;
+  font:inherit;font-size:14.5px;
+  color:var(--ink);
+  background:rgba(255,255,255,.74);
+  border:1px solid var(--line);border-radius:999px;
+  padding:10px 16px;outline:none;
+  -webkit-appearance:none;appearance:none;
+  transition:border-color .2s ease,background-color .2s ease;
+}
+input[type="search"]::placeholder{color:rgba(107,91,83,.5)}
+input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
+.rc-go{
+  font:inherit;font-size:13.5px;letter-spacing:.11em;
+  color:#fff;background:var(--accent);
+  border:0;border-radius:999px;
+  padding:10px 22px;cursor:pointer;
+  box-shadow:0 8px 20px rgba(194,112,127,.28);
+  transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease;
+}
+.rc-go:hover{transform:translateY(-1px);box-shadow:0 11px 24px rgba(194,112,127,.34)}
+.rc-go:disabled{opacity:.6;cursor:default;transform:none;box-shadow:none}
+.rc-msg{display:block;font-size:12.5px;color:var(--ink-soft);letter-spacing:.03em;margin:10px 0 0}
+/* ---------------- 结果列表 ---------------- */
+.rc-list{list-style:none;margin:16px 0 0;padding:0;border-top:1px solid rgba(43,35,32,.09)}
+.rc-list[hidden]{display:none}
+.rc-list li{border-bottom:1px solid rgba(43,35,32,.09)}
+.rc-item{
+  display:flex;align-items:center;gap:10px;width:100%;
+  font:inherit;font-size:14.5px;line-height:1.6;
+  text-align:left;color:var(--ink);
+  background:transparent;border:0;
+  padding:12px 8px;cursor:pointer;
+  transition:background-color .16s ease;
+}
+.rc-item:hover{background:rgba(255,255,255,.62)}
+.rc-item .dot{
+  flex:0 0 auto;width:6px;height:6px;border-radius:50%;
+  background:var(--accent);opacity:.5;margin:0;
+}
+.rc-item .rc-thumb{
+  flex:0 0 auto;width:46px;height:46px;
+  border-radius:9px;object-fit:cover;
+  background:rgba(43,35,32,.07);
+}
+.rc-item .t{flex:1;min-width:0}
+/* ---------------- 菜谱详情 ---------------- */
+.rc-detail{margin:4px 0 0;animation:res-in .24s ease both}
+.rc-detail[hidden]{display:none}
+.rc-back2{
+  font:inherit;font-size:12.5px;letter-spacing:.08em;
+  color:var(--ink-soft);background:transparent;
+  border:1px solid rgba(43,35,32,.14);border-radius:999px;
+  padding:6px 16px;cursor:pointer;margin:16px 0 0;
+  transition:color .18s ease,border-color .18s ease;
+}
+.rc-back2:hover{color:var(--ink);border-color:rgba(43,35,32,.3)}
+.rc-cover{
+  display:block;width:100%;
+  height:clamp(150px,42vw,240px);
+  object-fit:cover;border-radius:14px;
+  margin:16px 0 0;
+  background:rgba(43,35,32,.06);
+}
+.rc-cover[hidden]{display:none}
+.rc-detail h2{
+  font-size:clamp(19px,3.4vw,23px);font-weight:normal;
+  letter-spacing:.06em;line-height:1.4;margin:16px 0 6px;
+}
+.rc-meta{font-size:12px;color:var(--ink-soft);letter-spacing:.06em}
+.rc-h3{
+  font-size:12px;font-weight:normal;color:var(--ink-soft);
+  letter-spacing:.16em;margin:22px 0 10px;
+}
+.rc-ing{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.rc-ing li{
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(43,35,32,.08);
+  border-radius:10px;padding:9px 12px;font-size:13.5px;
+}
+.rc-steps{list-style:none;padding:0;margin:0}
+.rc-steps li{
+  display:flex;gap:11px;font-size:14px;line-height:1.8;
+  padding:11px 0;border-bottom:1px dashed rgba(43,35,32,.1);
+}
+.rc-steps li:last-child{border-bottom:0}
+.rc-steps .n{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;
+  background:rgba(194,112,127,.14);color:#a4576a;
+  font-size:12px;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  margin-top:3px;
+}
+.rc-steps .tx{flex:1;min-width:0}
+.rc-stepimg{
+  display:block;width:100%;max-width:420px;height:auto;
+  border-radius:10px;margin:9px 0 2px;
+  background:rgba(43,35,32,.06);
+}
+@keyframes res-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .rc-detail{animation:none}
+  .rc-go,.back,.rc-item,.rc-back2,input[type="search"]{transition:none}
+  .rc-go:hover{transform:none}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<main class="page">
+  <a class="back" href="zahuodian.html">‹ 回杂货店</a>
+  <header class="head">
+    <h1>菜谱</h1>
+    <div class="sub">RECIPE</div>
+    <p class="intro">今晚吃什么好呢？</p>
+  </header>
+
+  <section class="panel">
+    <label class="rc-label" for="rcQ">想吃什么</label>
+    <div class="find-row">
+      <input id="rcQ" type="search" placeholder="番茄炒蛋、土豆、鸡腿……" autocomplete="off" enterkeyhint="search">
+      <button class="rc-go" id="rcGo" type="button">找菜谱</button>
+    </div>
+    <span class="rc-msg" id="rcMsg" role="status" aria-live="polite"></span>
+
+    <ul class="rc-list" id="rcList" hidden></ul>
+
+    <div class="rc-detail" id="rcDetail" hidden>
+      <button class="rc-back2" id="rcBack" type="button">‹ 回到搜索结果</button>
+      <img class="rc-cover" id="rcCover" alt="" hidden>
+      <h2 id="rcTitle"></h2>
+      <p class="rc-meta" id="rcMeta"></p>
+      <h3 class="rc-h3">食材</h3>
+      <ul class="rc-ing" id="rcIng"></ul>
+      <h3 class="rc-h3">做法</h3>
+      <ul class="rc-steps" id="rcSteps"></ul>
+    </div>
+
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+
+  var FN = "https://zvuvncxdyxsgiqurkork.supabase.co/functions/v1/zahuodian-tool";
+  var SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA";
+  var busy = false;
+
+  function getToken() {
+    return new Promise(function (resolve) {
+      if (!window.Park || !Park.session) { resolve(''); return; }
+      Park.session().then(function (s) {
+        resolve(s && s.access_token ? s.access_token : '');
+      }, function () { resolve(''); });
+    });
+  }
+
+  function say(t) { document.getElementById('rcMsg').textContent = t; }
+
+  /* 图床只给 http，页面是 https，图也走中转 */
+  function imgUrl(raw, size) {
+    if (!raw) return '';
+    return FN + '?img=' + encodeURIComponent(raw) + '&size=' + size;
+  }
+
+  /* 统一的失败说法 */
+  function why(e) {
+    if (e && e.message === 'need-login') return '要先登录才能用。';
+    if (e && e.name === 'AbortError') return '它想得太久了，再试一次。';
+    if (e && e.status === 429) return '问得太急了，喘口气再来。';
+    if (e && e.msg) return e.msg;
+    return '没成，再试一次。';
+  }
+
+  function callFn(payload) {
+    var ctl = window.AbortController ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, 30000) : null;
+    return getToken().then(function (tk) {
+      if (!tk) throw new Error('need-login');
+      return fetch(FN, {
+        method: 'POST',
+        headers: {
+          'apikey': SB_ANON,
+          'Authorization': 'Bearer ' + tk,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload),
+        signal: ctl ? ctl.signal : undefined
+      });
+    }).then(function (res) {
+      if (timer) clearTimeout(timer);
+      return res.json().catch(function () { return {}; }).then(function (j) {
+        if (!res.ok || !j || !j.ok) {
+          var e = new Error('api');
+          e.status = res.status;
+          e.msg = j && j.msg;
+          throw e;
+        }
+        return j;
+      });
+    });
+  }
+
+  /* ---------- 搜索 ---------- */
+  function search() {
+    if (busy) return;
+    var input = document.getElementById('rcQ');
+    var btn = document.getElementById('rcGo');
+    var kw = input.value.trim();
+    if (!kw) { say('写个菜名或食材吧。'); return; }
+    if (kw.length > 64) { say('关键词太长了，短一点。'); return; }
+
+    busy = true;
+    btn.disabled = true;
+    btn.textContent = '找着…';
+    say('');
+
+    callFn({ action: 'recipe', keyword: kw }).then(function (j) {
+      var items = j.items || [];
+      renderList(items);
+      say(items.length ? ('找到 ' + items.length + ' 张菜谱，挑一张看做法。') : '没找到相关的，换个词试试。');
+    }).catch(function (e) {
+      say(why(e));
+    }).then(function () {
+      busy = false;
+      btn.disabled = false;
+      btn.textContent = '找菜谱';
+    });
+  }
+
+  function renderList(items) {
+    var ul = document.getElementById('rcList');
+    ul.textContent = '';
+    items.forEach(function (it) {
+      var li = document.createElement('li');
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rc-item';
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      if (it.cover) {
+        var im = document.createElement('img');
+        im.className = 'rc-thumb';
+        im.loading = 'lazy';
+        im.alt = '';
+        im.src = imgUrl(it.cover, 'thumb');
+        im.addEventListener('error', function () {
+          if (im.parentNode) im.parentNode.removeChild(im);
+          if (!b.querySelector('.dot')) b.insertBefore(dot, b.firstChild);
+        });
+        b.appendChild(im);
+      } else {
+        b.appendChild(dot);
+      }
+      var t = document.createElement('span');
+      t.className = 't';
+      t.textContent = it.title;
+      b.appendChild(t);
+      b.addEventListener('click', function () { openDetail(it.id, it.title); });
+      li.appendChild(b);
+      ul.appendChild(li);
+    });
+    ul.hidden = items.length === 0;
+    document.getElementById('rcDetail').hidden = true;
+  }
+
+  /* ---------- 详情 ---------- */
+  function openDetail(id, title) {
+    if (busy) return;
+    busy = true;
+    say('翻着…');
+
+    callFn({ action: 'recipe_detail', id: id }).then(function (j) {
+      var cov = document.getElementById('rcCover');
+      cov.onerror = function () { cov.hidden = true; };
+      if (j.cover) {
+        cov.src = imgUrl(j.cover, 'full');
+        cov.hidden = false;
+      } else {
+        cov.hidden = true;
+        cov.removeAttribute('src');
+      }
+      document.getElementById('rcTitle').textContent = j.title || title || '';
+      var bits = [];
+      if (j.category) bits.push('分类 · ' + j.category);
+      if (j.rating) bits.push('评分 · ' + j.rating);
+      document.getElementById('rcMeta').textContent = bits.join('　');
+
+      var ing = document.getElementById('rcIng');
+      ing.textContent = '';
+      (j.ingredients || []).forEach(function (x) {
+        var li = document.createElement('li');
+        li.textContent = x;
+        ing.appendChild(li);
+      });
+
+      var st = document.getElementById('rcSteps');
+      st.textContent = '';
+      (j.steps || []).forEach(function (s, i) {
+        var li = document.createElement('li');
+        var n = document.createElement('span');
+        n.className = 'n';
+        n.textContent = String(s.step || (i + 1));
+        var tx = document.createElement('span');
+        tx.className = 'tx';
+        tx.textContent = s.text;
+        if (s.image) {
+          var sim = document.createElement('img');
+          sim.className = 'rc-stepimg';
+          sim.loading = 'lazy';
+          sim.alt = '';
+          sim.src = imgUrl(s.image, 'mid');
+          sim.addEventListener('error', function () {
+            if (sim.parentNode) sim.parentNode.removeChild(sim);
+          });
+          tx.appendChild(sim);
+        }
+        li.appendChild(n);
+        li.appendChild(tx);
+        st.appendChild(li);
+      });
+
+      document.getElementById('rcList').hidden = true;
+      document.getElementById('rcDetail').hidden = false;
+      say('');
+      window.scrollTo(0, 0);
+    }).catch(function (e) {
+      say(why(e));
+    }).then(function () {
+      busy = false;
+    });
+  }
+
+  document.getElementById('rcGo').addEventListener('click', search);
+  document.getElementById('rcQ').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); search(); }
+  });
+  document.getElementById('rcBack').addEventListener('click', function () {
+    document.getElementById('rcDetail').hidden = true;
+    document.getElementById('rcList').hidden = false;
+    say('');
+    window.scrollTo(0, 0);
+  });
+})();
+</script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/common.js?v=2026100802"></script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/auth.js?v=2026100802"></script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/html2canvas.min.js?v=2026102823"></script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/butler.js?v=2026102910"></script>
+<script>
+  /* 与游园其他页面一致：没登录就回登录页 */
+  if (window.Park && Park.session) Park.session().then(s => { if (!s) location.replace('login.html'); });
+</script>
+<script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/music-widget.js?v=2026110222"></script>
+</body>
+</html>
