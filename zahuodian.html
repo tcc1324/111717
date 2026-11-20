@@ -333,8 +333,8 @@ main{
   };
   hero.src = 'https://picsum.photos/seed/' + seed + '/480/270';
 
-  heroHi.onload = function () { heroHi.classList.add('on'); };   // 高清只“盖上去”，不动底层
-  heroHi.onerror = function () { if (heroHi.parentNode) heroHi.parentNode.removeChild(heroHi); };
+  heroHi.onload = function () { heroHi.style.display = ''; heroHi.classList.add('on'); };   // 高清只“盖上去”，不动底层
+  heroHi.onerror = function () { heroHi.classList.remove('on'); heroHi.style.display = 'none'; };
   heroHi.src = 'https://picsum.photos/seed/' + seed + '/1600/900';
 
   /* ---------- 卡片：搜索标题 + 最近进过的排第一个 ---------- */
@@ -408,10 +408,19 @@ main{
   q.addEventListener('search', findCards);
   findCards();
 
-  /* ---------- 换一张 = 换头图和背景 ---------- */
-  document.getElementById('shuffle').addEventListener('click', function () {
-    location.reload();
-  });
+  /* ---------- 换一张 = 就地换头图和背景（不刷新，免得在浏览历史里多留一层） ---------- */
+  function shuffleLook() {
+    var s = 'z' + Math.random().toString(36).slice(2, 10);
+    hero.classList.remove('on');
+    heroHi.classList.remove('on');
+    heroHi.style.display = 'none';
+    hero.onerror = function () { hero.onerror = null; hero.src = 'https://picsum.photos/seed/zahuodian' + tag + '/1200/675'; };
+    hero.src = 'https://picsum.photos/seed/' + s + '/480/270';
+    heroHi.onerror = function () { heroHi.classList.remove('on'); heroHi.style.display = 'none'; };
+    heroHi.src = 'https://picsum.photos/seed/' + s + '/1600/900';
+    pickBg(2);
+  }
+  document.getElementById('shuffle').addEventListener('click', shuffleLook);
 })();
 </script>
   <script src="https://zvuvncxdyxsgiqurkork.supabase.co/storage/v1/object/public/static/js/common.js?v=2026100802"></script>

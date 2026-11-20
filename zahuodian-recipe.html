@@ -189,7 +189,7 @@ input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
 <body>
 <div class="bg" aria-hidden="true"></div>
 <main class="page">
-  <a class="back" href="zahuodian.html">‹ 回杂货店</a>
+  <a class="back" id="rcExit" href="zahuodian.html">‹ 回杂货店</a>
   <header class="head">
     <h1>菜谱</h1>
     <div class="sub">RECIPE</div>
@@ -224,6 +224,7 @@ input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
 (function () {
   "use strict";
 
+  var listY = 0;          // 搜索结果滚到哪儿，回列表时还原
   var FN = "https://zvuvncxdyxsgiqurkork.supabase.co/functions/v1/zahuodian-tool";
   var SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2dXZuY3hkeXhzZ2lxdXJrb3JrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MTg4MzEsImV4cCI6MjEwNjQ5NDgzMX0.t94gMYY277tAPHo65HIctRbIRiMog-JO3Yv8tAa66aA";
   var busy = false;
@@ -291,6 +292,7 @@ input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
     var kw = input.value.trim();
     if (!kw) { say('写个菜名或食材吧。'); return; }
     if (kw.length > 64) { say('关键词太长了，短一点。'); return; }
+    listY = 0;                       // 新的一轮搜索，列表从顶部开始
 
     busy = true;
     btn.disabled = true;
@@ -344,6 +346,10 @@ input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
     });
     ul.hidden = items.length === 0;
     document.getElementById('rcDetail').hidden = true;
+    document.getElementById('rcExit').textContent = '‹ 回杂货店';
+    if (history.state && history.state.rc === 'detail') {
+      try { history.replaceState(null, '', location.href); } catch (e) {}   // 搜索会收掉详情，把那一层历史也抹平
+    }
   }
 
   /* ---------- 详情 ---------- */
@@ -402,8 +408,11 @@ input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
         st.appendChild(li);
       });
 
+      listY = window.scrollY;                    // 记住列表看到哪儿
       document.getElementById('rcList').hidden = true;
       document.getElementById('rcDetail').hidden = false;
+      try { history.pushState({ rc: 'detail' }, '', location.href); } catch (e) {}
+      document.getElementById('rcExit').textContent = '‹ 回搜索结果';
       say('');
       window.scrollTo(0, 0);
     }).catch(function (e) {
@@ -417,11 +426,29 @@ input[type="search"]:focus{border-color:rgba(43,35,32,.32);background:#fff}
   document.getElementById('rcQ').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); search(); }
   });
-  document.getElementById('rcBack').addEventListener('click', function () {
+  /* ---------- 返回分层：详情 → 搜索结果 → 杂货店 ---------- */
+  function showList() {
     document.getElementById('rcDetail').hidden = true;
     document.getElementById('rcList').hidden = false;
+    document.getElementById('rcExit').textContent = '‹ 回杂货店';
     say('');
-    window.scrollTo(0, 0);
+    window.scrollTo(0, listY || 0);
+  }
+  function leaveDetail() {
+    if (history.state && history.state.rc === 'detail') {
+      history.back();               // 交给 popstate 收尾，系统返回键也走同一条路
+    } else {
+      showList();
+    }
+  }
+  document.getElementById('rcBack').addEventListener('click', leaveDetail);
+  document.getElementById('rcExit').addEventListener('click', function (e) {
+    if (document.getElementById('rcDetail').hidden) return;   // 已经在列表里：正常回杂货店
+    e.preventDefault();
+    leaveDetail();
+  });
+  window.addEventListener('popstate', function () {
+    if (!document.getElementById('rcDetail').hidden) showList();
   });
 })();
 </script>
