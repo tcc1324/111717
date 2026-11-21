@@ -300,7 +300,7 @@
                     '<div><span>我付了</span><b>' + money(h.cost) + '</b></div>' +
                     '<div><span>现在值</span><b class="' + cls + '">' + money(now) + '</b></div>' +
                     '<div><span>浮动</span><b class="' + cls + '">' + sign + money(pnl) + '</b></div>' +
-                    '<div><span title="卖出这张卡时一起到账，卡作废则清零">已结收益</span><b>' + money(h.accrued) + '</b></div>' +
+                    '<div><span title="每天结算后直接进钱包，流水里能看到">累计收益</span><b>' + money(h.earn_total) + '</b></div>' +
                     '<div><span>保证金还剩</span><b>' + money(h.deposit_left) + ' / ' + money(h.deposit_full) + '</b></div>' +
                     '<div><span>持股</span><b>' + shares(h.units) + '</b></div>' +
                   '</div>' +
